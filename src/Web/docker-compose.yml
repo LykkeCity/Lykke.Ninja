@@ -1,0 +1,18 @@
+version: '2'
+services:
+  bcnbalance:
+    image: lykkex/lykkeninja:dev
+    container_name: lykkeninja
+    environment:
+      - SettingsUrl=${SettingsUrl}
+    ports:
+      - "${Port}:5000"
+    networks:
+      mynet:
+        aliases:
+          - lykkeninja
+   
+
+networks:
+  mynet:
+    driver: bridge
