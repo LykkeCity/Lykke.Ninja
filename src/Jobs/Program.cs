@@ -11,8 +11,6 @@ namespace Jobs
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-
             var settings = GetSettings();
 
             var appContainer = new AzureBinder().Bind(settings).Build();

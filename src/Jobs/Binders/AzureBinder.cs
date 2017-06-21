@@ -22,7 +22,10 @@ namespace Jobs.Binders
 
             var ioc = new ContainerBuilder();
 
-            var consoleWriter = new ConsoleLWriter(Console.WriteLine);
+            var consoleWriter = new ConsoleLWriter(p =>
+            {
+                Console.WriteLine($"{DateTime.UtcNow:T} -  {p}");
+            });
 
             ioc.RegisterInstance(consoleWriter).As<IConsole>();
 

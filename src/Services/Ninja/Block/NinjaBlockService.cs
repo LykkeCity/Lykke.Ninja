@@ -8,14 +8,14 @@ namespace Services.Ninja.Block
 {
     public class NinjaBlockHeader : INinjaBlockHeader
     {
-        public string BlockHash { get; set; }
+        public uint256 BlockId { get; set; }
         public int BlockHeight { get; set; }
 
         public static NinjaBlockHeader Create(BlockInformation source)
         {
             return new NinjaBlockHeader
             {
-                BlockHash = source.BlockId.ToString(),
+                BlockId = source.BlockId,
                 BlockHeight = source.Height
             };
         }

@@ -6,7 +6,7 @@ namespace Core.Ninja.Block
 {
     public interface INinjaBlockHeader
     {
-        string BlockHash { get; }
+        uint256 BlockId { get; }
 
         int BlockHeight { get; }
     }
