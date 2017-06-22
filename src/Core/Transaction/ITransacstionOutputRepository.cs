@@ -18,8 +18,17 @@ namespace Core.Transaction
         string DestinationAddress { get; }
     }
 
+    public interface ISetSpendableOperationResult
+    {
+        IEnumerable<ITransactionInput> Ok { get; }
+
+
+        IEnumerable<ITransactionInput> NotFound { get; }
+    }
+
     public interface ITransactionOutputRepository
     {
         Task Insert(IEnumerable<ITransactionOutput> outputs);
+        Task<ISetSpendableOperationResult> SetSpendedBulk(IEnumerable<ITransactionInput> inputs);
     }
 }

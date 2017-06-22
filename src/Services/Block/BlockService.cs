@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Core.Block;
 using Core.Settings;
 using Core.Transaction;
 using NBitcoin;
 using QBitNinja.Client.Models;
 using Services.Settings;
 
-namespace Services.Transaction
+namespace Services.Block
 {
 
     #region  TransactionOutput
@@ -74,7 +73,7 @@ namespace Services.Transaction
                 BlockId = blockInformation.BlockId.ToString(),
                 TransactionId = transaction.GetHash().ToString(),
                 Index = indexedTxIn.Index,
-                InputTxIn = Transaction.InputTxIn.Create(indexedTxIn.PrevOut)
+                InputTxIn = Block.InputTxIn.Create(indexedTxIn.PrevOut)
             };
         }
     }
@@ -99,13 +98,13 @@ namespace Services.Transaction
     #endregion
 
     
-    public class TransactionService: ITransactionService
+    public class BlockService: IBlockService
     {
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly ITransactionInputRepository _inputRepository;
         private readonly Network _network;
 
-        public TransactionService(ITransactionOutputRepository outputRepository, 
+        public BlockService(ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, 
             ITransactionInputRepository inputRepository)
         {
@@ -114,16 +113,23 @@ namespace Services.Transaction
             _network = baseSettings.UsedNetwork();
         }
 
-        public async Task Insert(GetBlockResponse block)
+        public async Task Parse(GetBlockResponse block)
         {
-            var insertInputs = _inputRepository.Insert(
-                block.Block.Transactions
-                .SelectMany(transaction => TransactionInput.Create(transaction, block.AdditionalInformation, _network)));
+            var inputs = block.Block.Transactions
+                .SelectMany(transaction => TransactionInput.Create(transaction, block.AdditionalInformation, _network))
+                .ToList();
 
-            var insertOutputs =  _outputRepository.Insert(block.Block.Transactions
-                .SelectMany(transaction => TransactionOutput.Create(transaction, block.AdditionalInformation, _network)));
+            var outputs = block.Block.Transactions
+                .SelectMany(transaction => TransactionOutput.Create(transaction, block.AdditionalInformation, _network))
+                .ToList();
 
+            var insertInputs = _inputRepository.Insert(inputs);
+            var insertOutputs =  _outputRepository.Insert(outputs);
             await Task.WhenAll(insertOutputs, insertInputs);
+            
+
+            var setSpendedResult =  await _outputRepository.SetSpendedBulk(inputs);
+            await _inputRepository.SetSpendedProcessedBulk(setSpendedResult);
         }
     }
 }

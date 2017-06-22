@@ -3,11 +3,11 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.AlertNotifications;
+using Core.Block;
 using Core.BlockStatus;
 using Core.Ninja.Block;
 using Core.ParseBlockCommand;
 using Core.Queue;
-using Core.Transaction;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 
@@ -17,7 +17,7 @@ namespace Jobs.BlockTasks
     {
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
-        private readonly ITransactionService _transactionService;
+        private readonly IBlockService _blockService;
 
         private readonly ILog _log;
         private readonly ISlackNotificationsProducer _slack;
@@ -28,14 +28,14 @@ namespace Jobs.BlockTasks
             ILog log, 
             ISlackNotificationsProducer slack,
             IConsole console, 
-            ITransactionService transactionService)
+            IBlockService blockService)
         {
             _ninjaBlockService = ninjaBlockService;
             _blockStatusesRepository = blockStatusesRepository;
             _log = log;
             _slack = slack;
             _console = console;
-            _transactionService = transactionService;
+            _blockService = blockService;
         }
 
         [QueueTrigger(QueueNames.ParseBlockTasks, notify: true)]
@@ -53,7 +53,7 @@ namespace Jobs.BlockTasks
 
                 _console.WriteLine($"{nameof(ParseBlock)} Block Height:{context.BlockHeight} Insert data Started");
 
-                await _transactionService.Insert(getBlock.Result);
+                await _blockService.Parse(getBlock.Result);
 
                 await _blockStatusesRepository.SetGrabbedStatus(context.BlockId, InputOutputsGrabbedStatus.Done);
                 

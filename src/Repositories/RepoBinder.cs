@@ -2,7 +2,6 @@
 using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Common.Log;
-using Core;
 using Core.AlertNotifications;
 using Core.BlockStatus;
 using Core.ParseBlockCommand;
