@@ -128,8 +128,8 @@ namespace Services.Block
             await Task.WhenAll(insertOutputs, insertInputs);
             
 
-            var setSpendedResult =  await _outputRepository.SetSpendedBulk(inputs);
-            await _inputRepository.SetSpendedProcessedBulk(setSpendedResult);
+            var setSpendedResult =  await _outputRepository.SetSpended(inputs);
+            await _inputRepository.SetSpended(setSpendedResult);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace Repositories.Transactions
             }
         }
 
-        public async Task SetSpendedProcessedBulk(ISetSpendableOperationResult operationResult)
+        public async Task SetSpended(ISetSpendableOperationResult operationResult)
         {
             if (operationResult.Ok.Any() || operationResult.NotFound.Any())
             {

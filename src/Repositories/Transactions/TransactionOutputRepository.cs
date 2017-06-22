@@ -55,7 +55,7 @@ namespace Repositories.Transactions
                 TransactionOutputMongoEntity.Filter.EqId(id), TransactionOutputMongoEntity.Update.SetSpended(input.TransactionId));
         }
 
-        public async Task<ISetSpendableOperationResult> SetSpendedBulk(IEnumerable<ITransactionInput> inputs)
+        public async Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs)
         {
             var spendOutputIds = inputs.Select(
                 input => TransactionOutputMongoEntity.GenerateId(input.InputTxIn.TransactionId, input.InputTxIn.Index));

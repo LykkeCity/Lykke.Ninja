@@ -29,6 +29,6 @@ namespace Core.Transaction
     public interface ITransactionInputRepository
     {
         Task Insert(IEnumerable<ITransactionInput> inputs);
-        Task SetSpendedProcessedBulk(ISetSpendableOperationResult operationResult);
+        Task SetSpended(ISetSpendableOperationResult operationResult);
     }
 }
