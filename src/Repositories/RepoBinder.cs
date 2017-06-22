@@ -35,7 +35,7 @@ namespace Repositories
 
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>();
             ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>();
-
+            ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

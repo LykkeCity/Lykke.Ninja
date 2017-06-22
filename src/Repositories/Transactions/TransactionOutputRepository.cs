@@ -23,24 +23,10 @@ namespace Repositories.Transactions
 
         public async Task Insert(IEnumerable<ITransactionOutput> outputs)
         {
-
-
-
-            await _collection.InsertManyAsync(outputs.Select(TransactionOutputMongoEntity.Create));
-            //try
-            //{
-            //    await _collection.InsertManyAsync(outputs.Select(TransactionOutputMongoEntity.Create));
-            //}
-            //catch (Exception e)
-            //{
-            //    var bl = outputs.First().BlockId;
-            //    var insert = outputs.Select(TransactionOutputMongoEntity.Create);
-
-            //    var current = _collection.AsQueryable().Where(p => p.BlockId == bl).ToList();
-            //}
-
-
-
+            if (outputs.Any())
+            {
+                await _collection.InsertManyAsync(outputs.Select(TransactionOutputMongoEntity.Create));
+            }
         }
     }
 
@@ -57,7 +43,7 @@ namespace Repositories.Transactions
 
         public string TransactionId { get; set; }
 
-        public uint OutputIndex { get; set; }
+        public uint Index { get; set; }
 
         public long BtcSatoshiAmount { get; set; }
 
@@ -72,10 +58,10 @@ namespace Repositories.Transactions
         {
             return new TransactionOutputMongoEntity
             {
-                Id = GenerateId(source.TransactionId, source.OutputIndex),
+                Id = GenerateId(source.TransactionId, source.Index),
                 BlockHeight = source.BlockHeight,
                 BlockId = source.BlockId,
-                OutputIndex = source.OutputIndex,
+                Index = source.Index,
                 TransactionId = source.TransactionId,
                 BtcSatoshiAmount = source.BtcSatoshiAmount,
                 DestinationAddress = source.DestinationAddress

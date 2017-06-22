@@ -7,7 +7,7 @@ namespace Core.Transaction
     {
         string TransactionId { get; }
 
-        uint OutputIndex { get; }
+        uint Index { get; }
 
         long BtcSatoshiAmount { get; }
 
