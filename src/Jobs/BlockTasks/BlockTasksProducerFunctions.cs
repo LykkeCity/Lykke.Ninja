@@ -38,32 +38,22 @@ namespace Jobs.BlockTasks
         {
             try
             {
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
-                await _commandProducer.ProduceParseBlockCommand(472712);
+                _console.WriteLine($"{nameof(ScanNewBlocks)} started");
 
+                var getLastParsedBlock = _blockStatusesRepository.GetLastQueuedBlock();
+                var getLastBlockInNija = _ninjaBlockService.GetTip();
 
-                //_console.WriteLine($"{nameof(ScanNewBlocks)} started");
+                await Task.WhenAll(getLastParsedBlock, getLastBlockInNija);
 
-                //var getLastParsedBlock = _blockStatusesRepository.GetLastQueuedBlock();
-                //var getLastBlockInNija = _ninjaBlockService.GetTip();
+                var lastParsedBlock = getLastParsedBlock.Result?.Height ?? -1;
 
-                //await Task.WhenAll(getLastParsedBlock, getLastBlockInNija);
-
-                //var lastParsedBlock = getLastParsedBlock.Result?.Height ?? -1;
-
-                //for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
-                //{
-                //    await _commandProducer.ProduceParseBlockCommand(blockHeight);
-                //}
+                for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
+                {
+                    await _commandProducer.ProduceParseBlockCommand(blockHeight);
+                }
             }
             catch (Exception e)
             {
-
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(ScanNewBlocks), null, e);
                 await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(ScanNewBlocks), e.Message);
                 throw;
