@@ -5,9 +5,11 @@ namespace Core.Transaction
 {
     public interface ITransactionOutput
     {
+        string Id { get; }
         string TransactionId { get; }
 
         uint Index { get; }
+        
 
         long BtcSatoshiAmount { get; }
 
@@ -16,6 +18,15 @@ namespace Core.Transaction
         int BlockHeight { get; }
 
         string DestinationAddress { get; }
+
+        IColoredOutputData ColoredData { get; }
+    }
+
+    public interface IColoredOutputData
+    {
+        string AssetId { get; }
+
+        long Quantity { get; }
     }
 
     public interface ISetSpendableOperationResult

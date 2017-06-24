@@ -49,7 +49,7 @@ namespace Repositories.Transactions
 
         public Task SetSpended(ITransactionInput input)
         {
-            var id = TransactionOutputMongoEntity.GenerateId(input.InputTxIn.TransactionId, input.InputTxIn.Index);
+            var id = TransactionOutputMongoEntity.GenerateId(input.TxIn.Id);
 
             return _collection.UpdateOneAsync(
                 TransactionOutputMongoEntity.Filter.EqId(id), TransactionOutputMongoEntity.Update.SetSpended(input.TransactionId));
@@ -58,13 +58,13 @@ namespace Repositories.Transactions
         public async Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs)
         {
             var spendOutputIds = inputs.Select(
-                input => TransactionOutputMongoEntity.GenerateId(input.InputTxIn.TransactionId, input.InputTxIn.Index));
+                input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
 
 
             var foundOutputs = await _collection.AsQueryable().Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             var inputsDictionary = inputs.ToDictionary(
-                p => TransactionOutputMongoEntity.GenerateId(p.InputTxIn.TransactionId, p.InputTxIn.Index));
+                p => TransactionOutputMongoEntity.GenerateId(p.TxIn.Id));
 
             if (foundOutputs.Any())
             {
@@ -92,7 +92,7 @@ namespace Repositories.Transactions
         }
     }
 
-    public class TransactionOutputMongoEntity
+    public class TransactionOutputMongoEntity: ITransactionOutput
     {
         public const string CollectionName = "transaction-outputs";
 
@@ -110,10 +110,13 @@ namespace Repositories.Transactions
         public long BtcSatoshiAmount { get; set; }
 
         public string DestinationAddress { get; set; }
+        IColoredOutputData ITransactionOutput.ColoredData => ColoredData;
 
-        public static string GenerateId(string transactionId, uint index)
+        public TransactionOutputColoredInfoMongoEntity ColoredData { get; set; }
+
+        public static string GenerateId(string id)
         {
-            return $"{transactionId}_{index}";
+            return id;
         }
         
         public TransactionOutputSpendInfoMongoEntity SpendInfo { get; set; }
@@ -122,14 +125,15 @@ namespace Repositories.Transactions
         {
             return new TransactionOutputMongoEntity
             {
-                Id = GenerateId(source.TransactionId, source.Index),
+                Id = GenerateId(source.Id),
                 BlockHeight = source.BlockHeight,
                 BlockId = source.BlockId,
                 Index = source.Index,
                 TransactionId = source.TransactionId,
                 BtcSatoshiAmount = source.BtcSatoshiAmount,
                 DestinationAddress = source.DestinationAddress,
-                SpendInfo = TransactionOutputSpendInfoMongoEntity.CreateNotSpended()
+                SpendInfo = TransactionOutputSpendInfoMongoEntity.CreateNotSpended(),
+                ColoredData = TransactionOutputColoredInfoMongoEntity.Create(source.ColoredData)
             };
         }
 
@@ -173,6 +177,26 @@ namespace Repositories.Transactions
                 IsSpended = false,
                 SpendedInTxId = null
             };
+        }
+    }
+
+    public class TransactionOutputColoredInfoMongoEntity:IColoredOutputData
+    {
+        public string AssetId { get; set; }
+        public long Quantity { get; set; }
+
+        public static TransactionOutputColoredInfoMongoEntity Create(IColoredOutputData source)
+        {
+            if (source != null)
+            {
+                return new TransactionOutputColoredInfoMongoEntity
+                {
+                    AssetId = source.AssetId,
+                    Quantity = source.Quantity
+                };
+            }
+
+            return null;
         }
     }
 }

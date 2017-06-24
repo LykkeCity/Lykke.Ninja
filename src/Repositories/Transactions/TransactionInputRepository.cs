@@ -37,7 +37,7 @@ namespace Repositories.Transactions
                 var bulkOps = new List<WriteModel<TransactionInputMongoEntity>>();
                 foreach (var input in operationResult.Ok)
                 {
-                    var id = TransactionOutputMongoEntity.GenerateId(input.TransactionId, input.Index);
+                    var id = TransactionOutputMongoEntity.GenerateId(input.Id);
 
                     var updateOneOp = new UpdateOneModel<TransactionInputMongoEntity>(
                         TransactionInputMongoEntity.Filter.EqId(id),
@@ -46,9 +46,9 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
-                foreach (var input in operationResult.Ok)
+                foreach (var input in operationResult.NotFound)
                 {
-                    var id = TransactionOutputMongoEntity.GenerateId(input.TransactionId, input.Index);
+                    var id = TransactionOutputMongoEntity.GenerateId(input.Id);
 
                     var updateOneOp = new UpdateOneModel<TransactionInputMongoEntity>(
                         TransactionInputMongoEntity.Filter.EqId(id),
@@ -62,7 +62,7 @@ namespace Repositories.Transactions
         }
     }
 
-    public class TransactionInputMongoEntity
+    public class TransactionInputMongoEntity: ITransactionInput
     {
         public const string CollectionName = "transaction-inputs";
 
@@ -76,26 +76,27 @@ namespace Repositories.Transactions
         public string TransactionId { get; set; }
 
         public uint Index { get; set; }
+        IInputTxIn ITransactionInput.TxIn => TxIn;
 
         public InputTxInMongoEntity TxIn { get; set; }
 
         public TransactionInputSpendProcessedInfoMongoEntity SpendProcessedInfo { get; set; }
 
-        public static string GenerateId(string transactionId, uint index)
+        public static string GenerateId(string id)
         {
-            return $"{transactionId}_{index}";
+            return id;
         }
 
         public static TransactionInputMongoEntity Create(ITransactionInput source)
         {
             return new TransactionInputMongoEntity
             {
-                Id = GenerateId(source.TransactionId, source.Index),
+                Id = GenerateId(source.Id),
                 BlockHeight = source.BlockHeight,
                 BlockId = source.BlockId,
                 Index = source.Index,
                 TransactionId = source.TransactionId,
-                TxIn = InputTxInMongoEntity.Create(source.InputTxIn),
+                TxIn = InputTxInMongoEntity.Create(source.TxIn),
                 SpendProcessedInfo = TransactionInputSpendProcessedInfoMongoEntity.CreateWaiting()
             };
         }
@@ -124,8 +125,9 @@ namespace Repositories.Transactions
         }
     }
 
-    public class InputTxInMongoEntity
+    public class InputTxInMongoEntity: IInputTxIn
     {
+        public string Id { get; set; }
         public string TransactionId { get; set; }
 
         public uint Index { get; set; }
@@ -135,7 +137,8 @@ namespace Repositories.Transactions
             return new InputTxInMongoEntity
             {
                 TransactionId = source.TransactionId,
-                Index = source.Index
+                Index = source.Index,
+                Id = source.Id
             };
         }
     }

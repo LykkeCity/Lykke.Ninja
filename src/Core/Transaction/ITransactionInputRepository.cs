@@ -7,6 +7,8 @@ namespace Core.Transaction
 {
     public interface ITransactionInput
     {
+        string Id { get; }
+
         string TransactionId { get; }
 
         string BlockId { get; }
@@ -15,11 +17,12 @@ namespace Core.Transaction
 
         uint Index { get; }
 
-        IInputTxIn InputTxIn { get; }
+        IInputTxIn TxIn { get; }
 
     }
     public interface IInputTxIn
     {
+        string Id { get; }
         string TransactionId { get; }
 
         uint Index { get; }

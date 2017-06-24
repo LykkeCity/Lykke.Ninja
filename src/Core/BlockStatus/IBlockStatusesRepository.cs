@@ -33,7 +33,8 @@ namespace Core.BlockStatus
     {
         Queued,
         Started,
-        Done
+        Done,
+        Fail,
     }
 
     public interface IBlockStatusesRepository

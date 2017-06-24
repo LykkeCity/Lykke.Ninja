@@ -46,8 +46,8 @@ namespace Jobs.BlockTasks
 
                 await Task.WhenAll(getLastParsedBlock, getLastBlockInNija);
 
-                //var lastParsedBlock = getLastParsedBlock.Result?.BlockHeight ?? -1;
-                var lastParsedBlock = getLastParsedBlock.Result?.BlockHeight ?? 472000;
+                var lastParsedBlock = getLastParsedBlock.Result?.BlockHeight ?? -1;
+
                 for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
                 {
                     await _commandProducer.ProduceParseBlockCommand(blockHeight);
