@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.BlockStatus;
@@ -35,22 +36,23 @@ namespace Services.PaseBlockCommand
             var exists = await _blockStatusesRepository.Exists(blockHeader.BlockId.ToString());
 
 
-            if (!exists)
-            {
-
-                await _blockStatusesRepository.Insert(BlockStatus.Create(blockHeader.BlockHeight,
-                    blockHeader.BlockId.ToString(),
-                    InputOutputsGrabbedStatus.Queued));
-
-                await _commandProducer.CreateParseBlockCommand(blockHeader.BlockId.ToString(), blockHeader.BlockHeight);
-                _console.WriteLine($"{nameof(ProduceParseBlockCommand)} Add to queue {blockHeight}");
-            }
-            else
+            if (exists)
             {
                 await _log.WriteWarningAsync(nameof(ParseBlockCommandsService),
                     nameof(ProduceParseBlockCommand),
-                    new {blockId = blockHeader.BlockId.ToString()}.ToJson(), "Attempt to add parse block command again");
+                    new {blockId = blockHeader.BlockId.ToString()}.ToJson(),
+                    "Attempt to add parse block command again");
             }
+            else
+            {
+                await _blockStatusesRepository.Insert(BlockStatus.Create(blockHeader.BlockHeight,
+                    blockHeader.BlockId.ToString(),
+                    InputOutputsGrabbedStatus.Queued,
+                    DateTime.UtcNow));
+            }
+
+            await _commandProducer.CreateParseBlockCommand(blockHeader.BlockId.ToString(), blockHeader.BlockHeight);
+            _console.WriteLine($"{nameof(ProduceParseBlockCommand)} Add to queue {blockHeight}");
 
         }
     }

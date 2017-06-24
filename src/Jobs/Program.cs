@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Runtime.Loader;
 using Autofac.Extensions.DependencyInjection;
 using Core.Settings;
 using Core.Settings.Validation;
 using Jobs.Binders;
 using Lykke.JobTriggers.Triggers;
+using System.Threading;
 
 namespace Jobs
 {
@@ -17,8 +19,19 @@ namespace Jobs
             var serviceProvider = new AutofacServiceProvider(appContainer);
 
             var triggerHost = new TriggerHost(serviceProvider);
+            
+            var end = new ManualResetEvent(false);
+
+            AssemblyLoadContext.Default.Unloading += ctx =>
+            {
+                Console.WriteLine("SIGTERM recieved");
+                triggerHost.Cancel();
+
+                end.WaitOne();
+            };
 
             triggerHost.Start().Wait();
+            end.Set();
         }
 
         private static BaseSettings GetSettings()

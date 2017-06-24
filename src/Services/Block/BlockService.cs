@@ -28,12 +28,12 @@ namespace Services.Block
         public string DestinationAddress { get; set; }
         public IColoredOutputData ColoredData { get; set; }
 
-        public static IEnumerable<TransactionOutput> Create(NBitcoin.Transaction transaction, BlockInformation blockInformation, Network network)
+        public static IEnumerable<TransactionOutput> Create(Transaction transaction, BlockInformation blockInformation, Network network)
         {
             return transaction.Outputs.AsIndexedOutputs().Select(output => Create(output, blockInformation, transaction, network));
         }
 
-        public static TransactionOutput Create(IndexedTxOut output, BlockInformation blockInformation, NBitcoin.Transaction transaction, Network network)
+        public static TransactionOutput Create(IndexedTxOut output, BlockInformation blockInformation, Transaction transaction, Network network)
         {
             return new TransactionOutput
             {
@@ -44,6 +44,17 @@ namespace Services.Block
                 TransactionId = transaction.GetHash().ToString(),
                 DestinationAddress = output.TxOut.ScriptPubKey.GetDestinationAddress(network)?.ToWif()
             };
+        }
+
+        public static void SetColoredToOutputs(IEnumerable<TransactionOutput> transactionOutputs,
+            IEnumerable<ColoredOutputData> coloredDatas)
+        {
+            var outputsDictionary = transactionOutputs.ToDictionary(p => p.Id);
+
+            foreach (var coloredOutputData in coloredDatas)
+            {
+                outputsDictionary[coloredOutputData.Id].ColoredData = coloredOutputData;
+            }
         }
     }
 
@@ -103,16 +114,17 @@ namespace Services.Block
         public IInputTxIn TxIn { get; set; }
 
         public static IEnumerable<TransactionInput> Create(
-            NBitcoin.Transaction transaction, 
-            BlockInformation blockInformation,
-            Network network)
+            Transaction transaction, 
+            BlockInformation blockInformation)
         {
             return transaction.Inputs.AsIndexedInputs()
                 .Where(input => !input.PrevOut.IsNull)
-                .Select(input => TransactionInput.Create(input, blockInformation, transaction, network));
+                .Select(input => Create(input, blockInformation, transaction));
         }
 
-        public static TransactionInput Create(IndexedTxIn indexedTxIn, BlockInformation blockInformation, NBitcoin.Transaction transaction, Network network)
+        private static TransactionInput Create(IndexedTxIn indexedTxIn, 
+            BlockInformation blockInformation, 
+            Transaction transaction)
         {
             
             return new TransactionInput
@@ -121,7 +133,7 @@ namespace Services.Block
                 BlockId = blockInformation.BlockId.ToString(),
                 TransactionId = transaction.GetHash().ToString(),
                 Index = indexedTxIn.Index,
-                TxIn = Block.InputTxIn.Create(indexedTxIn.PrevOut)
+                TxIn = InputTxIn.Create(indexedTxIn.PrevOut)
             };
         }
     }
@@ -167,10 +179,11 @@ namespace Services.Block
             _network = baseSettings.UsedNetwork();
         }
 
-        public async Task Parse(GetBlockResponse block, IEnumerable<GetTransactionResponse> coloredTransactions)
+        public async Task Parse(GetBlockResponse block, 
+            IEnumerable<GetTransactionResponse> coloredTransactions)
         {
             var inputs = block.Block.Transactions
-                .SelectMany(transaction => TransactionInput.Create(transaction, block.AdditionalInformation, _network))
+                .SelectMany(transaction => TransactionInput.Create(transaction, block.AdditionalInformation))
                 .ToList();
 
             var outputs = block.Block.Transactions
@@ -179,10 +192,10 @@ namespace Services.Block
 
             var coloredData = coloredTransactions.SelectMany(tx => ColoredOutputData.Create(tx, _network));
 
-            SetColoredToOutputs(outputs, coloredData);
+            TransactionOutput.SetColoredToOutputs(outputs, coloredData);
 
-            var insertInputs = _inputRepository.Insert(inputs);
-            var insertOutputs =  _outputRepository.Insert(outputs);
+            var insertInputs = _inputRepository.InsertIfNotExists(inputs);
+            var insertOutputs =  _outputRepository.InsertIfNotExists(outputs);
             await Task.WhenAll(insertOutputs, insertInputs);
             
             var setSpendedResult =  await _outputRepository.SetSpended(inputs);
@@ -190,26 +203,19 @@ namespace Services.Block
 
             if (setSpendedResult.NotFound.Any())
             {
+                var warnMessage = $"Failed to set spended outputs " +
+                                  $"for block {block.Block.GetHash()}. " +
+                                  $"Failed inputs count {setSpendedResult.NotFound.Count()}";
 
-                var warnMessage =
-                    $"Failed to set spended outputs for block {block.Block.GetHash()}. Failed inputs count {setSpendedResult.NotFound.Count()}";
+                await _notificationsProducer.SendNotification(nameof(BlockService), 
+                    warnMessage, 
+                    nameof(Parse));
 
-                await _notificationsProducer.SendNotification(nameof(BlockService), warnMessage, nameof(Parse));
-
-                await _log.WriteWarningAsync(nameof(BlockService), nameof(Parse), block.Block.GetHash().ToString(), warnMessage);
-            }
-        }
-
-        private void SetColoredToOutputs(IEnumerable<TransactionOutput> transactionOutputs,
-            IEnumerable<ColoredOutputData> coloredDatas)
-        {
-            var outputsDictionary = transactionOutputs.ToDictionary(p => p.Id);
-
-            foreach (var coloredOutputData in coloredDatas)
-            {
-                outputsDictionary[coloredOutputData.Id].ColoredData = coloredOutputData;
+                await _log.WriteWarningAsync(nameof(BlockService), 
+                    nameof(Parse), 
+                    block.Block.GetHash().ToString(), 
+                    warnMessage);
             }
         }
     }
 }
-;

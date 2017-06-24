@@ -1,30 +1,37 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Core.BlockStatus
 {
 
     public interface IBlockStatus
     {
-        int BlockHeight { get; }
+        int Height { get; }
 
         string BlockId { get; }
+
         InputOutputsGrabbedStatus InputOutputsGrabbedStatus { get; }
+        DateTime QueueddAt { get; }
     }
 
     public class BlockStatus : IBlockStatus
     {
-        public int BlockHeight { get; set; }
+        public int Height { get; set; }
         public string BlockId { get; set; }
         public InputOutputsGrabbedStatus InputOutputsGrabbedStatus { get; set; }
+        public DateTime QueueddAt { get; set; }
 
-        public static BlockStatus Create(int blockHeight, string blockId,
-            InputOutputsGrabbedStatus inputOutputsGrabbedStatus)
+        public static BlockStatus Create(int blockHeight,
+            string blockId,
+            InputOutputsGrabbedStatus inputOutputsGrabbedStatus, 
+            DateTime queuedAt)
         {
             return new BlockStatus
             {
-                BlockHeight = blockHeight,
+                Height = blockHeight,
                 BlockId = blockId,
-                InputOutputsGrabbedStatus = inputOutputsGrabbedStatus
+                InputOutputsGrabbedStatus = inputOutputsGrabbedStatus,
+                QueueddAt = queuedAt
             };
         }
     }

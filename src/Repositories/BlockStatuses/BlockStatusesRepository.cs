@@ -8,15 +8,6 @@ using MongoDB.Driver.Linq;
 
 namespace Repositories.BlockStatuses
 {
-
-    public class BlockStatusBuilder 
-    {
-        public static BlockStatus Create(BlockStatusMongoEntity source)
-        {
-            var inputOutputsGrabbedStatus = (InputOutputsGrabbedStatus)Enum.Parse(typeof(InputOutputsGrabbedStatus), source.InputOutputsGrabbedStatus);
-            return BlockStatus.Create(source.Height, source.BlockId, inputOutputsGrabbedStatus);
-        }
-    }
     public class BlockStatusesRepository: IBlockStatusesRepository
     {
         private readonly IMongoCollection<BlockStatusMongoEntity> _collection;
@@ -35,32 +26,17 @@ namespace Repositories.BlockStatuses
 
         public async Task<IBlockStatus> GetLastQueuedBlock()
         {
-            var result = await _collection.AsQueryable().OrderByDescending(p => p.Height).FirstOrDefaultAsync();
-
-            if (result != null)
-            {
-                return BlockStatusBuilder.Create(result);
-            }
-
-            return null;
+            return await _collection.AsQueryable().OrderByDescending(p => p.Height).FirstOrDefaultAsync();
         }
 
         public async Task<IBlockStatus> Get(string blockId)
         {
-            var result = await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
-
-            if (result != null)
-            {
-                return BlockStatusBuilder.Create(result);
-            }
-
-            return null;
+            return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
         }
 
         public Task Insert(IBlockStatus status)
         {
-            var mongoEntity = BlockStatusMongoEntity.Create(status.BlockId, status.BlockHeight,
-                status.InputOutputsGrabbedStatus);
+            var mongoEntity = BlockStatusMongoEntity.Create(status);
 
             return _collection.InsertOneAsync(mongoEntity);
         }
@@ -72,7 +48,7 @@ namespace Repositories.BlockStatuses
         }
     }
 
-    public class BlockStatusMongoEntity
+    public class BlockStatusMongoEntity:IBlockStatus
     {
         public const string CollectionName = "block-statuses";
         
@@ -81,8 +57,12 @@ namespace Repositories.BlockStatuses
         public string Id { get; set; }
 
         public int Height { get; set; }
-
+        
         public string BlockId { get; set; }
+
+        InputOutputsGrabbedStatus IBlockStatus.InputOutputsGrabbedStatus=> (InputOutputsGrabbedStatus)Enum.Parse(typeof(InputOutputsGrabbedStatus), InputOutputsGrabbedStatus);
+
+        public DateTime QueueddAt { get; set; }
 
         public string InputOutputsGrabbedStatus { get; set; }
 
@@ -91,14 +71,14 @@ namespace Repositories.BlockStatuses
             return blockId;
         }
 
-        public static BlockStatusMongoEntity Create(string blockId, int height, InputOutputsGrabbedStatus status)
+        public static BlockStatusMongoEntity Create(IBlockStatus source)
         {
             return new BlockStatusMongoEntity
             {
-                Id = GenerateId(blockId),
-                BlockId = blockId,
-                Height = height,
-                InputOutputsGrabbedStatus = status.ToString()
+                Id = GenerateId(source.BlockId),
+                BlockId = source.BlockId,
+                Height = source.Height,
+                InputOutputsGrabbedStatus = source.InputOutputsGrabbedStatus.ToString()
             };
         }
 
@@ -106,7 +86,7 @@ namespace Repositories.BlockStatuses
         {
             public static FilterDefinition<BlockStatusMongoEntity> EqBlockId(string id)
             {
-                return Builders<BlockStatusMongoEntity>.Filter.Eq(p => p.Id, BlockStatusMongoEntity.GenerateId(id));
+                return Builders<BlockStatusMongoEntity>.Filter.Eq(p => p.Id, GenerateId(id));
             }
         }
 

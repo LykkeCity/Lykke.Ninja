@@ -31,7 +31,7 @@ namespace Core.Transaction
 
     public interface ITransactionInputRepository
     {
-        Task Insert(IEnumerable<ITransactionInput> inputs);
+        Task InsertIfNotExists(IEnumerable<ITransactionInput> items);
         Task SetSpended(ISetSpendableOperationResult operationResult);
     }
 }

@@ -1,33 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Common;
+using Common.Log;
 using Core.Settings;
 using Core.Transaction;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace Repositories.Transactions
 {
     public class TransactionInputRepository: ITransactionInputRepository
     {
         private readonly IMongoCollection<TransactionInputMongoEntity> _collection;
+        private readonly ILog _log;
 
-        public TransactionInputRepository(BaseSettings baseSettings)
+        public TransactionInputRepository(BaseSettings baseSettings, 
+            ILog log)
         {
+            _log = log;
             var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
             var db = client.GetDatabase(baseSettings.NinjaData.DbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
         }
 
 
-        public async Task Insert(IEnumerable<ITransactionInput> inputs)
+        public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items)
         {
-            if (inputs.Any())
+            var allIds = items.Select(p => p.Id);
+            var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+
+            if (existed.Any())
             {
-                await _collection.InsertManyAsync(inputs.Select(TransactionInputMongoEntity.Create));
+                await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists), 
+                    existed.Take(5).ToJson(),
+                    "Attempt To insert existed");
             }
+
+            var itemsToInsert = items.Where(p => !existed.Contains(p.Id));
+
+            if (itemsToInsert.Any())
+            {
+                await _collection.InsertManyAsync(itemsToInsert.Select(TransactionInputMongoEntity.Create));
+            }
+            
         }
 
         public async Task SetSpended(ISetSpendableOperationResult operationResult)

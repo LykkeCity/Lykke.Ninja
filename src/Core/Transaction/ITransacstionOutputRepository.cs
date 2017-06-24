@@ -39,7 +39,7 @@ namespace Core.Transaction
 
     public interface ITransactionOutputRepository
     {
-        Task Insert(IEnumerable<ITransactionOutput> outputs);
+        Task InsertIfNotExists(IEnumerable<ITransactionOutput> items);
         Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs);
     }
 }

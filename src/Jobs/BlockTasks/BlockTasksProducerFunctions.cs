@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.AlertNotifications;
@@ -39,19 +38,28 @@ namespace Jobs.BlockTasks
         {
             try
             {
-                _console.WriteLine($"{nameof(ScanNewBlocks)} started");
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
+                await _commandProducer.ProduceParseBlockCommand(472712);
 
-                var getLastParsedBlock = _blockStatusesRepository.GetLastQueuedBlock();
-                var getLastBlockInNija = _ninjaBlockService.GetTip();
 
-                await Task.WhenAll(getLastParsedBlock, getLastBlockInNija);
+                //_console.WriteLine($"{nameof(ScanNewBlocks)} started");
 
-                var lastParsedBlock = getLastParsedBlock.Result?.BlockHeight ?? -1;
+                //var getLastParsedBlock = _blockStatusesRepository.GetLastQueuedBlock();
+                //var getLastBlockInNija = _ninjaBlockService.GetTip();
 
-                for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
-                {
-                    await _commandProducer.ProduceParseBlockCommand(blockHeight);
-                }
+                //await Task.WhenAll(getLastParsedBlock, getLastBlockInNija);
+
+                //var lastParsedBlock = getLastParsedBlock.Result?.Height ?? -1;
+
+                //for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
+                //{
+                //    await _commandProducer.ProduceParseBlockCommand(blockHeight);
+                //}
             }
             catch (Exception e)
             {

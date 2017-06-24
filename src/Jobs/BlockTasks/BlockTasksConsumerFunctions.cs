@@ -49,15 +49,6 @@ namespace Jobs.BlockTasks
         {
             try
             {
-
-                var t1 = await _ninjaTransactionService.Get(
-                    uint256.Parse("9b57a29b20047b21b284c36f217646d20da0ce5ffda538f28d3d4d5dc294b70c"));
-
-
-                var t2 = t1.SpentCoins.Select(p => p as IColoredCoin);
-
-                var t3= t2.First(p=>p!=null).Bearer.Outpoint;
-
                 _console.WriteLine($"{nameof(ParseBlock)} Block Height:{context.BlockHeight} Started");
 
                 var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId));
@@ -74,7 +65,7 @@ namespace Jobs.BlockTasks
                         .Select(p => p.GetHash()));
 
                 _console.WriteLine($"{nameof(ParseBlock)} Block Height:{context.BlockHeight} Insert data Started");
-
+                
                 await _blockService.Parse(getBlock.Result, coloredTransactions);
 
                 await _blockStatusesRepository.SetGrabbedStatus(context.BlockId, InputOutputsGrabbedStatus.Done);
