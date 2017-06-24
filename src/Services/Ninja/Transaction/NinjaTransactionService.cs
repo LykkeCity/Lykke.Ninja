@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.Ninja.Transaction;
@@ -28,7 +29,7 @@ namespace Services.Ninja.Transaction
         public async Task<IEnumerable<GetTransactionResponse>> Get(IEnumerable<uint256> txIds)
         {
             var tasksToAwait = new List<Task>();
-            var result = new List<GetTransactionResponse>();
+            var result = new ConcurrentBag<GetTransactionResponse>();
 
             foreach ( var txId  in txIds)
             {

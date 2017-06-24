@@ -55,7 +55,7 @@ namespace Repositories.Transactions
                     "Attempt To insert existed");
             }
 
-            var itemsToInsert = items.Where(p => !existed.Contains(p.Id));
+            var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
             if (itemsToInsert.Any())
             {
