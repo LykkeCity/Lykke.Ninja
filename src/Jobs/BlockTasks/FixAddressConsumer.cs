@@ -33,6 +33,9 @@ namespace Jobs.BlockTasks
             _baseSettings = baseSettings;
         }
 
+
+        #if DEBUG
+
         [QueueTrigger(QueueNames.AddressesToFix, notify:true)]
         public async Task Run(FixAddressCommandContext context)
         {
@@ -51,5 +54,7 @@ namespace Jobs.BlockTasks
 
             _console.WriteLine("FixAddressConsumer Run Stop");
         }
+
+        #endif
     }
 }

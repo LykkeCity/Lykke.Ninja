@@ -23,6 +23,8 @@ namespace Web.Controllers
             _baseSettings = baseSettings;
         }
 
+        #if DEBUG
+
         [HttpGet("fix/{address}")]
         public async Task<CommandResult> ProduceCommand(string address)
         {
@@ -38,5 +40,8 @@ namespace Web.Controllers
                 return CommandResultBuilder.Fail("Inner exception");
             }
         }
+        
+        #endif
+
     }
 }

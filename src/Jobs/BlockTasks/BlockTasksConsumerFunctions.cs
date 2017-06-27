@@ -44,7 +44,7 @@ namespace Jobs.BlockTasks
             _ninjaTransactionService = ninjaTransactionService;
         }
 
-        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 60 * 1000)]
+        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 10 * 1000)]
         public async Task ParseBlock(ParseBlockCommandContext context)
         {
             try

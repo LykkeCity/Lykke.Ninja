@@ -6,6 +6,7 @@ using Core.Settings.Validation;
 using Jobs.Binders;
 using Lykke.JobTriggers.Triggers;
 using System.Threading;
+using Microsoft.Extensions.Configuration;
 
 namespace Jobs
 {
@@ -13,39 +14,16 @@ namespace Jobs
     {
         static void Main(string[] args)
         {
-            var settings = GetSettings();
+            Console.Clear();
+            Console.Title = "Lykke Ninja job - Ver. " + Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion;
 
-            var appContainer = new AzureBinder().Bind(settings).Build();
-            var serviceProvider = new AutofacServiceProvider(appContainer);
+            var host = new AppHost();
 
-            var triggerHost = new TriggerHost(serviceProvider);
-            
-            var end = new ManualResetEvent(false);
+            Console.WriteLine("Lykke Ninja job is running");
+            Console.WriteLine("Utc time: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
 
-            AssemblyLoadContext.Default.Unloading += ctx =>
-            {
-                Console.WriteLine("SIGTERM recieved");
-                triggerHost.Cancel();
-
-                end.WaitOne();
-            };
-
-            triggerHost.Start().Wait();
-            end.Set();
+            host.Run();
         }
-
-        private static BaseSettings GetSettings()
-        {
-#if DEBUG
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings.json");
-#else
-            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration["SettingsUrl"]);
-            var settings = generalSettings?.BcnReports;
-#endif
-
-            GeneralSettingsValidator.Validate(settings);
-
-            return settings;
-        }
+        
     }
 }

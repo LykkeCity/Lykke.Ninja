@@ -38,7 +38,7 @@ namespace Jobs.BlockTasks
         }
 
 
-        [TimerTrigger("00:00:30")]
+        //[TimerTrigger("00:00:30")]
         public async Task ScanNewBlocks()
         {
             try

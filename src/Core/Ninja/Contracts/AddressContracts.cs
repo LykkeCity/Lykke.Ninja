@@ -13,10 +13,10 @@ namespace Core.Ninja.Contracts
         public string ContinuationToken { get; set; }
 
         [JsonProperty("operations")]
-        public AddressTransactionListItemContract[] Transactions { get; set; }
+        public AddressBalanceTransactionListItemContract[] Transactions { get; set; }
     }
 
-    public class AddressTransactionListItemContract
+    public class AddressBalanceTransactionListItemContract
     {
         [JsonProperty("transactionId")]
         public string TxId { get; set; }
@@ -48,16 +48,19 @@ namespace Core.Ninja.Contracts
 
     public class AddressSummaryContract
     {
-        [JsonProperty("confirmed")]
-        public AddressSummaryInnerContract Confirmed { get; set; }
-        [JsonProperty("immature")]
-        public AddressSummaryInnerContract Immature { get; set; }
         [JsonProperty("unconfirmed")]
-        public AddressSummaryInnerContract Unconfirmed { get; set; }
-        [JsonProperty("spendable")]
-        public AddressSummaryInnerContract Spendable { get; set; }
+        public AddressBalanceSummaryInnerContract Unconfirmed { get; set; }
 
-        public class AddressSummaryInnerContract
+        [JsonProperty("confirmed")]
+        public AddressBalanceSummaryInnerContract Confirmed { get; set; }
+
+        [JsonProperty("spendable")]
+        public AddressBalanceSummaryInnerContract Spendable { get; set; }
+
+        [JsonProperty("immature")]
+        public AddressBalanceSummaryInnerContract Immature { get; set; }
+
+        public class AddressBalanceSummaryInnerContract
         {
             [JsonProperty("transactionCount")]
             public long TotalTransactions { get; set; }

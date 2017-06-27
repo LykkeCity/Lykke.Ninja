@@ -78,9 +78,9 @@ namespace Repositories.Transactions
             }
         }
 
-        public Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status)
+        public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status)
         {
-            throw new System.NotImplementedException();
+            return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).ToListAsync();
         }
     }
 
@@ -128,6 +128,11 @@ namespace Repositories.Transactions
             public static FilterDefinition<TransactionInputMongoEntity> EqId(string id)
             {
                 return Builders<TransactionInputMongoEntity>.Filter.Eq(p => p.Id, id);
+            }
+
+            public static FilterDefinition<TransactionInputMongoEntity> EqStatus(SpendProcessedStatus status)
+            {
+                return Builders<TransactionInputMongoEntity>.Filter.Eq(p => p.SpendProcessedInfo.Status, status.ToString());
             }
         }
 

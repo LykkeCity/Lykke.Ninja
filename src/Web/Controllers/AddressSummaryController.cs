@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Core.Ninja.Block;
 using Core.Settings;
 using Core.Transaction;
@@ -11,13 +13,13 @@ using Web.Models;
 namespace Web.Controllers
 {
     [Route("balances")]
-    public class BalanceSummaryController : Controller
+    public class AddressSummaryController : Controller
     {
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly BaseSettings _baseSettings;
 
-        public BalanceSummaryController(INinjaBlockService ninjaBlockService, 
+        public AddressSummaryController(INinjaBlockService ninjaBlockService, 
             ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings)
         {
@@ -43,8 +45,23 @@ namespace Web.Controllers
                 _outputRepository.GetTransactionsCount(btcAddress, atBlockHeight);
             var getBtcAmount = _outputRepository.GetBtcAmount(btcAddress, atBlockHeight, colored);
             var getbtcReceived = _outputRepository.GetBtcReceived(btcAddress, atBlockHeight, colored);
-            var assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, atBlockHeight);
-            var assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, atBlockHeight);
+
+            Task<IDictionary<string,long>> assetsReceiveds;
+            Task<IDictionary<string, long>> assetsAmounts;
+
+
+            if (colored)
+            {
+                assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, atBlockHeight);
+                assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, atBlockHeight);
+            }
+            else
+            {
+
+                IDictionary<string, long> emptyResuly = new Dictionary<string, long>();
+                assetsReceiveds = Task.FromResult(emptyResuly);
+                assetsAmounts = Task.FromResult(emptyResuly);
+            }
 
             await Task.WhenAll(getTxCount, getBtcAmount, getbtcReceived, assetsReceiveds);
 

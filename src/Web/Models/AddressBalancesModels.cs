@@ -22,26 +22,26 @@ namespace Web.Models
             };
         }
 
-        private static AddressSummaryInnerContract CreateInnerEmpty()
+        private static AddressBalanceSummaryInnerContract CreateInnerEmpty()
         {
-            return new AddressSummaryInnerContract
+            return new AddressBalanceSummaryInnerContract
             {
 
-                Assets = Enumerable.Empty<AddressSummaryInnerContract.AddressAssetContract>().ToArray()
+                Assets = Enumerable.Empty<AddressBalanceSummaryInnerContract.AddressAssetContract>().ToArray()
             };
         }
-        private static AddressSummaryInnerContract CreateInner(long transactionCount, 
+        private static AddressBalanceSummaryInnerContract CreateInner(long transactionCount, 
             long btcAmount, 
             long btcReceived,
             IDictionary<string, long> assetsReceived,
             IDictionary<string, long> assetsAmounts)
         {
-            return new AddressSummaryInnerContract
+            return new AddressBalanceSummaryInnerContract
             {
                 Balance = btcAmount,
                 TotalTransactions = transactionCount,
                 Received = btcReceived,
-                Assets = assetsReceived.Select(p=> new AddressSummaryInnerContract.AddressAssetContract{AssetId = p.Key, Received = p.Value, Quantity = assetsAmounts[p.Key]}).ToArray()
+                Assets = assetsReceived.Select(p=> new AddressBalanceSummaryInnerContract.AddressAssetContract{AssetId = p.Key, Received = p.Value, Quantity = assetsAmounts[p.Key]}).ToArray()
             };
         }
     }

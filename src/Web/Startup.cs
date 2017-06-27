@@ -28,13 +28,13 @@ namespace Web
         public IConfigurationRoot Configuration { get; }
 
 
-        private static BaseSettings GetSettings()
+        private BaseSettings GetSettings()
         {
 #if DEBUG
             var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings.json");
 #else
             var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration["SettingsUrl"]);
-            var settings = generalSettings?.BcnReports;
+            var settings = generalSettings?.LykkeNinja;
 #endif
 
             GeneralSettingsValidator.Validate(settings);
