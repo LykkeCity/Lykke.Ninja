@@ -18,9 +18,8 @@ namespace Core.Ninja.Block
         Task<GetBlockResponse> GetBlock(int height);
         Task<GetBlockResponse> GetBlock(uint256 blockId);
 
-
-
         Task<INinjaBlockHeader> GetBlockHeader(int height);
         Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId);
+        Task<INinjaBlockHeader> GetBlockHeader(string blockFeature);
     }
 }

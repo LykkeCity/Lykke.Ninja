@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Core.Transaction
@@ -28,10 +26,17 @@ namespace Core.Transaction
         uint Index { get; }
     }
 
+    public enum SpendProcessedStatus
+    {
+        Waiting,
+        Ok,
+        NotFound
+    }
 
     public interface ITransactionInputRepository
     {
         Task InsertIfNotExists(IEnumerable<ITransactionInput> items);
         Task SetSpended(ISetSpendableOperationResult operationResult);
+        Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status);
     }
 }

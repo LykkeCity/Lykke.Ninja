@@ -15,6 +15,8 @@ namespace Core.Settings
 
         [Required]
         public MongoCredentials NinjaData { get; set; }
+
+        public int MaxParseBlockQueuedCommandCount { get; set; } = 100;
     }
 
     public class DbSettings

@@ -3,40 +3,44 @@ using System.Threading.Tasks;
 
 namespace Core.BlockStatus
 {
-
     public interface IBlockStatus
     {
         int Height { get; }
 
         string BlockId { get; }
 
-        InputOutputsGrabbedStatus InputOutputsGrabbedStatus { get; }
-        DateTime QueueddAt { get; }
+        BlockProcessingStatus ProcessingStatus { get; }
+        DateTime QueuedAt { get; }
+        DateTime StatusChangedAt { get; set; }
     }
 
     public class BlockStatus : IBlockStatus
     {
         public int Height { get; set; }
         public string BlockId { get; set; }
-        public InputOutputsGrabbedStatus InputOutputsGrabbedStatus { get; set; }
-        public DateTime QueueddAt { get; set; }
+        public BlockProcessingStatus ProcessingStatus { get; set; }
+        public DateTime QueuedAt { get; set; }
+        public DateTime StatusChangedAt { get; set; }
+
 
         public static BlockStatus Create(int blockHeight,
             string blockId,
-            InputOutputsGrabbedStatus inputOutputsGrabbedStatus, 
-            DateTime queuedAt)
+            BlockProcessingStatus blockProcessingStatus, 
+            DateTime queuedAt,
+            DateTime statusChangedAt)
         {
             return new BlockStatus
             {
                 Height = blockHeight,
                 BlockId = blockId,
-                InputOutputsGrabbedStatus = inputOutputsGrabbedStatus,
-                QueueddAt = queuedAt
+                ProcessingStatus = blockProcessingStatus,
+                QueuedAt = queuedAt,
+                StatusChangedAt = statusChangedAt
             };
         }
     }
 
-    public enum InputOutputsGrabbedStatus
+    public enum BlockProcessingStatus
     {
         Queued,
         Started,
@@ -50,6 +54,6 @@ namespace Core.BlockStatus
         Task<IBlockStatus> GetLastQueuedBlock();
         Task<IBlockStatus> Get(string blockId);
         Task Insert(IBlockStatus status);
-        Task SetGrabbedStatus(string blockId, InputOutputsGrabbedStatus status);
+        Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status);
     }
 }

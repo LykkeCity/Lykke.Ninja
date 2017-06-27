@@ -41,7 +41,7 @@ namespace Repositories.BlockStatuses
             return _collection.InsertOneAsync(mongoEntity);
         }
 
-        public async Task SetGrabbedStatus(string blockId, InputOutputsGrabbedStatus status)
+        public async Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status)
         {
             await _collection.UpdateOneAsync(BlockStatusMongoEntity.Filter.EqBlockId(blockId),
                 BlockStatusMongoEntity.Update.SetInputOutputsGrabbedStatus(status));
@@ -60,11 +60,12 @@ namespace Repositories.BlockStatuses
         
         public string BlockId { get; set; }
 
-        InputOutputsGrabbedStatus IBlockStatus.InputOutputsGrabbedStatus=> (InputOutputsGrabbedStatus)Enum.Parse(typeof(InputOutputsGrabbedStatus), InputOutputsGrabbedStatus);
+        BlockProcessingStatus IBlockStatus.ProcessingStatus => (BlockProcessingStatus)Enum.Parse(typeof(BlockProcessingStatus), ProcessingStatus);
 
-        public DateTime QueueddAt { get; set; }
+        public DateTime QueuedAt { get; set; }
+        public DateTime StatusChangedAt { get; set; }
 
-        public string InputOutputsGrabbedStatus { get; set; }
+        public string ProcessingStatus { get; set; }
 
         public static string GenerateId(string blockId)
         {
@@ -78,7 +79,9 @@ namespace Repositories.BlockStatuses
                 Id = GenerateId(source.BlockId),
                 BlockId = source.BlockId,
                 Height = source.Height,
-                InputOutputsGrabbedStatus = source.InputOutputsGrabbedStatus.ToString()
+                ProcessingStatus = source.ProcessingStatus.ToString(),
+                QueuedAt = source.QueuedAt,
+                StatusChangedAt = source.StatusChangedAt
             };
         }
 
@@ -92,9 +95,10 @@ namespace Repositories.BlockStatuses
 
         public static class Update
         {
-            public static UpdateDefinition<BlockStatusMongoEntity> SetInputOutputsGrabbedStatus(InputOutputsGrabbedStatus status)
+            public static UpdateDefinition<BlockStatusMongoEntity> SetInputOutputsGrabbedStatus(BlockProcessingStatus status)
             {
-                return Builders<BlockStatusMongoEntity>.Update.Set(p => p.InputOutputsGrabbedStatus, status.ToString());
+                return Builders<BlockStatusMongoEntity>.Update.Set(p => p.ProcessingStatus, status.ToString())
+                    .Set(p=>p.StatusChangedAt, DateTime.UtcNow);
             }
         }
     }

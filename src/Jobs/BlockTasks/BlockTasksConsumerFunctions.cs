@@ -44,7 +44,7 @@ namespace Jobs.BlockTasks
             _ninjaTransactionService = ninjaTransactionService;
         }
 
-        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true)]
+        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 60 * 1000)]
         public async Task ParseBlock(ParseBlockCommandContext context)
         {
             try
@@ -52,7 +52,7 @@ namespace Jobs.BlockTasks
                 _console.WriteLine($"{nameof(ParseBlock)} Block Height:{context.BlockHeight} Started");
 
                 var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId));
-                var setStartedStatus = _blockStatusesRepository.SetGrabbedStatus(context.BlockId, InputOutputsGrabbedStatus.Started);
+                var setStartedStatus = _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started);
 
                 await Task.WhenAll(getBlock, setStartedStatus);
 
@@ -68,7 +68,7 @@ namespace Jobs.BlockTasks
                 
                 await _blockService.Parse(getBlock.Result, coloredTransactions);
 
-                await _blockStatusesRepository.SetGrabbedStatus(context.BlockId, InputOutputsGrabbedStatus.Done);
+                await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
                 
                 _console.WriteLine($"{nameof(ParseBlock)} Block Height:{context.BlockHeight} Done");
             }
@@ -76,7 +76,7 @@ namespace Jobs.BlockTasks
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksConsumerFunctions), nameof(ParseBlock), context.ToJson(), e);
                 await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(ParseBlock), $"Error on {context.ToJson()}. Admin attention required");
-                await _blockStatusesRepository.SetGrabbedStatus(context.BlockId, InputOutputsGrabbedStatus.Fail);
+                await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Fail);
 
                 throw;
             }

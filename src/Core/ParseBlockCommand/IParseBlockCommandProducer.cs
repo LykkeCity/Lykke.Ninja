@@ -13,5 +13,6 @@ namespace Core.ParseBlockCommand
     public interface IParseBlockCommandProducer
     {
         Task CreateParseBlockCommand(string blockId, int blockHeight);
+        Task<int> GetQueuedCommandCount();
     }
 }

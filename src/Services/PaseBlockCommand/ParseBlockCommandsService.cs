@@ -42,18 +42,26 @@ namespace Services.PaseBlockCommand
                     nameof(ProduceParseBlockCommand),
                     new {blockId = blockHeader.BlockId.ToString()}.ToJson(),
                     "Attempt to add parse block command again");
-            }
+
+                await _blockStatusesRepository.ChangeProcessingStatus(blockHeader.BlockId.ToString(),
+                    BlockProcessingStatus.Queued);
+;            }
             else
             {
                 await _blockStatusesRepository.Insert(BlockStatus.Create(blockHeader.BlockHeight,
                     blockHeader.BlockId.ToString(),
-                    InputOutputsGrabbedStatus.Queued,
+                    BlockProcessingStatus.Queued,
+                    DateTime.UtcNow,
                     DateTime.UtcNow));
             }
 
             await _commandProducer.CreateParseBlockCommand(blockHeader.BlockId.ToString(), blockHeader.BlockHeight);
             _console.WriteLine($"{nameof(ProduceParseBlockCommand)} Add to queue {blockHeight}");
+        }
 
+        public Task<int> GetQueuedCommandCount()
+        {
+            return _commandProducer.GetQueuedCommandCount();
         }
     }
 }

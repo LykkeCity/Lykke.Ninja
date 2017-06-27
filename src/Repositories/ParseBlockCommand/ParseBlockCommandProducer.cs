@@ -23,7 +23,13 @@ namespace Repositories.ParseBlockCommand
                 BlockHeight = blockHeight
             };
 
+            
             await _queue.PutRawMessageAsync(msg.ToJson());
+        }
+
+        public async Task<int> GetQueuedCommandCount()
+        {
+            return await _queue.Count() ?? 0;
         }
     }
 }

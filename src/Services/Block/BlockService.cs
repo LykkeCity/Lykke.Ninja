@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using Core.AlertNotifications;
 using Core.Block;
@@ -12,6 +13,17 @@ using Services.Settings;
 
 namespace Services.Block
 {
+    #region ids
+
+    public static class TransactionInputOutputIdGenerator
+    {
+        public static string GenerateId(string transactionId, uint index)
+        {
+            return $"{transactionId}_{index}";
+        }
+    }
+
+    #endregion
 
     #region  TransactionOutput
 
@@ -57,9 +69,7 @@ namespace Services.Block
             }
         }
     }
-
-
-
+    
     public class ColoredOutputData: IColoredOutputData
     {
         public string Id => TransactionInputOutputIdGenerator.GenerateId(TransactionId, Index);
@@ -91,14 +101,6 @@ namespace Services.Block
     }
 
     #endregion
-
-    public static class TransactionInputOutputIdGenerator
-    {
-        public static string GenerateId(string transactionId, uint index)
-        {
-            return $"{transactionId}_{index}";
-        }
-    }
 
     #region TransactionInput
 
@@ -197,23 +199,30 @@ namespace Services.Block
             var insertInputs = _inputRepository.InsertIfNotExists(inputs);
             var insertOutputs =  _outputRepository.InsertIfNotExists(outputs);
             await Task.WhenAll(insertOutputs, insertInputs);
-            
-            var setSpendedResult =  await _outputRepository.SetSpended(inputs);
+
+            await ProcessInputsToSpendable(inputs);
+        }
+
+        public async Task ProcessInputsToSpendable(IEnumerable<ITransactionInput> inputs)
+        {
+            var setSpendedResult = await _outputRepository.SetSpended(inputs);
             await _inputRepository.SetSpended(setSpendedResult);
 
             if (setSpendedResult.NotFound.Any())
             {
-                var warnMessage = $"Failed to set spended outputs " +
-                                  $"for block {block.Block.GetHash()}. " +
+                var warnMessage = "Failed to set spended outputs " +
                                   $"Failed inputs count {setSpendedResult.NotFound.Count()}";
 
-                await _notificationsProducer.SendNotification(nameof(BlockService), 
-                    warnMessage, 
+                await _notificationsProducer.SendNotification(nameof(BlockService),
+                    warnMessage,
                     nameof(Parse));
 
-                await _log.WriteWarningAsync(nameof(BlockService), 
-                    nameof(Parse), 
-                    block.Block.GetHash().ToString(), 
+                await _log.WriteWarningAsync(nameof(BlockService),
+                    nameof(Parse),
+                    new
+                    {
+                        notFoundIds = setSpendedResult.NotFound.Take(5).ToArray()
+                    }.ToJson(),
                     warnMessage);
             }
         }

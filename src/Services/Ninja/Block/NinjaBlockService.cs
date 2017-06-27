@@ -49,15 +49,15 @@ namespace Services.Ninja.Block
 
         public Task<INinjaBlockHeader> GetBlockHeader(int height)
         {
-            return GetBlockHeaderInner(height.ToString());
+            return GetBlockHeader(height.ToString());
         }
 
         public Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId)
         {
-            return GetBlockHeaderInner(blockId.ToString());
+            return GetBlockHeader(blockId.ToString());
         }
 
-        public async Task<INinjaBlockHeader> GetBlockHeaderInner(string blockFeature)
+        public async Task<INinjaBlockHeader> GetBlockHeader(string blockFeature)
         {
             var result = await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: false));
 

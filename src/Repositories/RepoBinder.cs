@@ -51,6 +51,10 @@ namespace Repositories
 
             ioc.Register(p => new ParseBlockCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ParseBlockTasks)))
                 .As<IParseBlockCommandProducer>();
+
+            ioc.Register(p => new FixAddressCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.AddressesToFix)))
+                .As<IFixAddressCommandProducer>();
+            
         }
     }
 }

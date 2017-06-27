@@ -1,10 +1,15 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
+using Autofac.Extensions.DependencyInjection;
+using Core.Settings;
+using Core.Settings.Validation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.Swagger.Model;
+using Web.Binders;
 
 namespace Web
 {
@@ -22,7 +27,22 @@ namespace Web
 
         public IConfigurationRoot Configuration { get; }
 
-        public void ConfigureServices(IServiceCollection services)
+
+        private static BaseSettings GetSettings()
+        {
+#if DEBUG
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings.json");
+#else
+            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration["SettingsUrl"]);
+            var settings = generalSettings?.BcnReports;
+#endif
+
+            GeneralSettingsValidator.Validate(settings);
+
+            return settings;
+        }
+
+        public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
 
@@ -36,10 +56,20 @@ namespace Web
                 options.DescribeAllEnumsAsStrings();
             });
 
+            var settings = GetSettings();
+            var builder = new AzureBinder().Bind(settings);
+            builder.Populate(services);
+            
+
+            return new AutofacServiceProvider(builder.Build());
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
             app.UseSwagger();
             app.UseSwaggerUi("swagger/ui/index");
 

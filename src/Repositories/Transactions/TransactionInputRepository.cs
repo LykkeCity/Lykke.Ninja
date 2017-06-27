@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -77,6 +76,11 @@ namespace Repositories.Transactions
 
                 await _collection.BulkWriteAsync(bulkOps);
             }
+        }
+
+        public Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status)
+        {
+            throw new System.NotImplementedException();
         }
     }
 
@@ -159,13 +163,6 @@ namespace Repositories.Transactions
                 Id = source.Id
             };
         }
-    }
-
-    public enum SpendProcessedStatus
-    {
-        Waiting,
-        Ok,
-        NotFound
     }
 
     public class TransactionInputSpendProcessedInfoMongoEntity

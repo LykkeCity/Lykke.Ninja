@@ -26,9 +26,7 @@ namespace Services
                 TimeSpan.FromSeconds(5),
                 TimeSpan.FromSeconds(10),
                 TimeSpan.FromSeconds(30),
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(5),
-                TimeSpan.FromMinutes(10)
+                TimeSpan.FromMinutes(1)
             };
 
             var tryCount = shedule.Length - 1;

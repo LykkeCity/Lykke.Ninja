@@ -5,6 +5,8 @@ using Core.AlertNotifications;
 using Core.BlockStatus;
 using Core.Ninja.Block;
 using Core.ParseBlockCommand;
+using Core.Queue;
+using Core.Settings;
 using Lykke.JobTriggers.Triggers.Attributes;
 
 namespace Jobs.BlockTasks
@@ -17,13 +19,14 @@ namespace Jobs.BlockTasks
         private readonly ILog _log;
         private readonly ISlackNotificationsProducer _slack;
         private readonly IConsole _console;
+        private readonly BaseSettings _baseSettings;
 
         public BlockTasksProducerFunctions(INinjaBlockService ninjaBlockService, 
             IParseBlockCommandsService commandProducer, 
             IBlockStatusesRepository blockStatusesRepository,
             ILog log, 
             ISlackNotificationsProducer slack, 
-            IConsole console)
+            IConsole console, BaseSettings baseSettings)
         {
             _ninjaBlockService = ninjaBlockService;
             _commandProducer = commandProducer;
@@ -31,7 +34,9 @@ namespace Jobs.BlockTasks
             _log = log;
             _slack = slack;
             _console = console;
+            _baseSettings = baseSettings;
         }
+
 
         [TimerTrigger("00:00:30")]
         public async Task ScanNewBlocks()
@@ -47,9 +52,17 @@ namespace Jobs.BlockTasks
 
                 var lastParsedBlock = getLastParsedBlock.Result?.Height ?? -1;
 
+                var queuedCommandCount = await _commandProducer.GetQueuedCommandCount();
                 for (var blockHeight = lastParsedBlock + 1; blockHeight <= getLastBlockInNija.Result.BlockHeight; blockHeight++)
                 {
+                    if (queuedCommandCount >= _baseSettings.MaxParseBlockQueuedCommandCount)
+                    {
+                        break;
+                    }
+
                     await _commandProducer.ProduceParseBlockCommand(blockHeight);
+
+                    queuedCommandCount++;
                 }
             }
             catch (Exception e)
