@@ -1,11 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.Ninja.Block;
 using Core.Settings;
 using Core.Transaction;
 using Microsoft.AspNetCore.Mvc;
-using NBitcoin;
 using Services.Ninja;
 using Services.Settings;
 using Web.Models;
@@ -43,8 +41,8 @@ namespace Web.Controllers
 
             var getTxCount =
                 _outputRepository.GetTransactionsCount(btcAddress, atBlockHeight);
-            var getBtcAmount = _outputRepository.GetBtcAmount(btcAddress, atBlockHeight, colored);
-            var getbtcReceived = _outputRepository.GetBtcReceived(btcAddress, atBlockHeight, colored);
+            var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, atBlockHeight, colored);
+            var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, atBlockHeight, colored);
 
             Task<IDictionary<string,long>> assetsReceiveds;
             Task<IDictionary<string, long>> assetsAmounts;

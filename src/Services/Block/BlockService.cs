@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common;
@@ -17,7 +18,7 @@ namespace Services.Block
 
     public static class TransactionInputOutputIdGenerator
     {
-        public static string GenerateId(string transactionId, uint index)
+        public static string GenerateId(string transactionId, ulong index)
         {
             return $"{transactionId}_{index}";
         }
@@ -32,13 +33,14 @@ namespace Services.Block
         public string Id => TransactionInputOutputIdGenerator.GenerateId(TransactionId, Index);
 
         public string TransactionId { get; set; }
-        public uint Index { get; set; }
+        public ulong Index { get; set; }
         public string OutputHash { get; set; }
         public long BtcSatoshiAmount { get; set; }
         public string BlockId { get; set; }
         public int BlockHeight { get; set; }
         public string DestinationAddress { get; set; }
         public IColoredOutputData ColoredData { get; set; }
+        public ISpendTxInput SpendTxInput => throw new NotImplementedException();
 
         public static IEnumerable<TransactionOutput> Create(Transaction transaction, BlockInformation blockInformation, Network network)
         {

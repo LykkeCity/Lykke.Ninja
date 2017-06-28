@@ -13,14 +13,11 @@ namespace Core.Ninja.Contracts
         public string ContinuationToken { get; set; }
 
         [JsonProperty("operations")]
-        public AddressBalanceTransactionListItemContract[] Transactions { get; set; }
+        public AddressTransactionListItemContract[] Transactions { get; set; }
     }
 
-    public class AddressBalanceTransactionListItemContract
+    public class AddressTransactionListItemContract
     {
-        [JsonProperty("transactionId")]
-        public string TxId { get; set; }
-
         [JsonProperty("amount")]
         public double Amount { get; set; }
 
@@ -32,6 +29,9 @@ namespace Core.Ninja.Contracts
 
         [JsonProperty("blockId")]
         public string BlockId { get; set; }
+
+        [JsonProperty("transactionId")]
+        public string TxId { get; set; }
 
         [JsonProperty("receivedCoins")]
         public InOutContract[] Received { get; set; }
@@ -95,7 +95,7 @@ namespace Core.Ninja.Contracts
         public string TransactionId { get; set; }
 
         [JsonProperty("index")]
-        public int Index { get; set; }
+        public ulong Index { get; set; }
 
         [JsonProperty("value")]
         public double Value { get; set; }
@@ -103,10 +103,13 @@ namespace Core.Ninja.Contracts
         [JsonProperty("scriptPubKey")]
         public string ScriptPubKey { get; set; }
 
+        [JsonProperty("redeemScript")]
+        public string RedeemScript { get; set; }
+
         [JsonProperty("assetId")]
         public string AssetId { get; set; }
 
         [JsonProperty("quantity")]
-        public double Quantity { get; set; }
+        public double? Quantity { get; set; }
     }
 }

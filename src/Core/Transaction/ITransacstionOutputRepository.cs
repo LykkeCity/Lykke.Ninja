@@ -9,7 +9,7 @@ namespace Core.Transaction
         string Id { get; }
         string TransactionId { get; }
 
-        uint Index { get; }
+        ulong Index { get; }
         
 
         long BtcSatoshiAmount { get; }
@@ -21,6 +21,20 @@ namespace Core.Transaction
         string DestinationAddress { get; }
 
         IColoredOutputData ColoredData { get; }
+        ISpendTxInput SpendTxInput { get; }
+    }
+
+    public interface ISpendTxInput
+    {
+        string Id { get;  }
+
+        ulong Index { get;  }
+
+        string SpendedInTxId { get;  }
+
+        string BlockId { get;  }
+
+        int BlockHeight { get;  }
     }
 
     public interface IColoredOutputData
@@ -46,12 +60,15 @@ namespace Core.Transaction
         Task<long> GetTransactionsCount(BitcoinAddress address, int? at = null);
 
 
-        Task<long> GetBtcAmount(BitcoinAddress address, int? at = null, bool isColored = false);
+        Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
-        Task<long> GetBtcReceived(BitcoinAddress address, int? at = null, bool isColored = false);
+        Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
         Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
 
         Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
+
+        Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? at = null);
+        Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, int? at = null);
     }
 }

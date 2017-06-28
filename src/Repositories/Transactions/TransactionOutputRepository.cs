@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -86,7 +85,7 @@ namespace Repositories.Transactions
 
                     var updateOneOp = new UpdateOneModel<TransactionOutputMongoEntity>(
                         TransactionOutputMongoEntity.Filter.EqId(id), 
-                        TransactionOutputMongoEntity.Update.SetSpended(input.Id, input.TransactionId));
+                        TransactionOutputMongoEntity.Update.SetSpended(input));
 
                     bulkOps.Add(updateOneOp);
                 }
@@ -107,14 +106,14 @@ namespace Repositories.Transactions
 
             return await TransactionOutputMongoEntity.Filter.Expressions
                 .FilterBalances(_collection.AsQueryable(), address, at, unSpendOnly: false)
-                .Select(p => new[] {p.TransactionId, p.SpendInfo.SpendedInTxId})
+                .Select(p => new[] {p.TransactionId, p.SpendTxInput.SpendedInTxId})
                 .SelectMany(p=>p)
                 .Where(p => p!=null)
                 .Distinct()
                 .CountAsync();
         }
 
-        public async Task<long> GetBtcAmount(BitcoinAddress address, int? at = null, bool isColored = false)
+        public async Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false)
         {
             var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
                 address, at, unSpendOnly: true);
@@ -128,7 +127,7 @@ namespace Repositories.Transactions
                 .SumAsync(p => p.BtcSatoshiAmount);
         }
 
-        public async Task<long> GetBtcReceived(BitcoinAddress address, int? at, bool isColored = false)
+        public async Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at, bool isColored = false)
         {
             var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
                 address, at,
@@ -147,8 +146,7 @@ namespace Repositories.Transactions
             var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
                     address,
                     at,
-                    unSpendOnly: false)
-                .Where(p => p.ColoredData != null);
+                    unSpendOnly: false);
 
             var result = await query
                 .GroupBy(p => p.ColoredData.AssetId)
@@ -173,6 +171,42 @@ namespace Repositories.Transactions
 
             return result.ToDictionary(p => p.addr, p => p.sum);
         }
+
+        public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? at = null)
+        {
+            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
+                address,
+                at)
+                .Where(p => p.SpendTxInput.IsSpended)
+                .Where(p => p.BtcSatoshiAmount != 0);
+
+
+            return await query.ToListAsync();
+            //var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
+            //    address,
+            //    at)
+            //    .Where(p=>p.SpendTxInput.IsSpended);
+
+            //var lookupQuery = from left in query
+            //    join right in _collection.AsQueryable() on left.SpendTxInput.Id equals right.Id into joined
+            //    select joined;
+
+            //var t = (await query.ToListAsync()).Where(p => p.SpendTxInput.IsSpended);
+            //var t2 = await lookupQuery.ToListAsync();
+
+            //var tstr = t.Select(p => p.SpendTxInput.Id);
+            //var resstr = t2.SelectMany(p => p).Select(p => p.Id);
+            //return (await lookupQuery.ToListAsync()).SelectMany(p=>p).Where(p => p.BtcSatoshiAmount > 0);
+        }
+
+        public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, int? at = null)
+        {
+            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
+                address,
+                at).Where(p => p.BtcSatoshiAmount != 0);
+
+            return await query.ToListAsync();
+        }
     }
 
     public class TransactionOutputMongoEntity: ITransactionOutput
@@ -188,7 +222,7 @@ namespace Repositories.Transactions
 
         public string TransactionId { get; set; }
 
-        public uint Index { get; set; }
+        public ulong Index { get; set; }
 
         public long BtcSatoshiAmount { get; set; }
 
@@ -202,7 +236,9 @@ namespace Repositories.Transactions
             return id;
         }
         
-        public TransactionOutputSpendInfoMongoEntity SpendInfo { get; set; }
+        public SpendTxInputMongoEntity SpendTxInput { get; set; }
+
+        ISpendTxInput ITransactionOutput.SpendTxInput => SpendTxInput;
 
         public static TransactionOutputMongoEntity Create(ITransactionOutput source)
         {
@@ -215,7 +251,7 @@ namespace Repositories.Transactions
                 TransactionId = source.TransactionId,
                 BtcSatoshiAmount = source.BtcSatoshiAmount,
                 DestinationAddress = source.DestinationAddress,
-                SpendInfo = TransactionOutputSpendInfoMongoEntity.CreateNotSpended(),
+                SpendTxInput = SpendTxInputMongoEntity.CreateNotSpended(),
                 ColoredData = TransactionOutputColoredInfoMongoEntity.Create(source.ColoredData)
             };
         }
@@ -231,8 +267,7 @@ namespace Repositories.Transactions
             {
                 return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToWif());
             }
-
-
+            
             public static class Expressions
             {
                 public static IMongoQueryable<TransactionOutputMongoEntity> FilterBalances(IMongoQueryable<TransactionOutputMongoEntity>  source, 
@@ -253,7 +288,7 @@ namespace Repositories.Transactions
                     if (unSpendOnly)
                     {
 
-                        result = result.Where(p => !p.SpendInfo.IsSpended);
+                        result = result.Where(p => !p.SpendTxInput.IsSpended);
 
                     }
 
@@ -264,35 +299,44 @@ namespace Repositories.Transactions
 
         public static class Update
         {
-            public static UpdateDefinition<TransactionOutputMongoEntity> SetSpended(string id, string transactionId)
+            public static UpdateDefinition<TransactionOutputMongoEntity> SetSpended(ITransactionInput input)
             {
-                return Builders<TransactionOutputMongoEntity>.Update.Set(p => p.SpendInfo,
-                    TransactionOutputSpendInfoMongoEntity.CreateSpended(id, transactionId));
+                return Builders<TransactionOutputMongoEntity>.Update.Set(p => p.SpendTxInput,
+                    SpendTxInputMongoEntity.CreateSpended(input));
             }
         }
     }
 
-    public class TransactionOutputSpendInfoMongoEntity
+    public class SpendTxInputMongoEntity: ISpendTxInput
     {
         public string Id { get; set; }
+
+        public ulong Index { get; set; }
 
         public bool IsSpended { get; set; }
 
         public string SpendedInTxId { get; set; }
 
-        public static TransactionOutputSpendInfoMongoEntity CreateSpended(string id, string transactionId)
+        public string BlockId { get; set; }
+
+        public int BlockHeight { get; set; }
+
+        public static SpendTxInputMongoEntity CreateSpended(ITransactionInput input)
         {
-            return new TransactionOutputSpendInfoMongoEntity
+            return new SpendTxInputMongoEntity
             {
                 IsSpended = true,
-                SpendedInTxId = transactionId,
-                Id = id
+                SpendedInTxId = input.TransactionId,
+                Id = input.Id,
+                Index = input.Index,
+                BlockHeight = input.BlockHeight,
+                BlockId = input.BlockId
             };
         }
 
-        public static TransactionOutputSpendInfoMongoEntity CreateNotSpended()
+        public static SpendTxInputMongoEntity CreateNotSpended()
         {
-            return new TransactionOutputSpendInfoMongoEntity
+            return new SpendTxInputMongoEntity
             {
                 IsSpended = false,
                 SpendedInTxId = null

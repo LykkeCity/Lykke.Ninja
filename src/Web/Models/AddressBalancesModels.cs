@@ -26,7 +26,6 @@ namespace Web.Models
         {
             return new AddressBalanceSummaryInnerContract
             {
-
                 Assets = Enumerable.Empty<AddressBalanceSummaryInnerContract.AddressAssetContract>().ToArray()
             };
         }
