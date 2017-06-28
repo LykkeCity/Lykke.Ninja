@@ -172,38 +172,51 @@ namespace Repositories.Transactions
             return result.ToDictionary(p => p.addr, p => p.sum);
         }
 
-        public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? at = null)
+        public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, 
+            int? minBlockHeight = null, 
+            int? maxBlockHeight = null)
         {
             var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address,
-                at)
+                address)
                 .Where(p => p.SpendTxInput.IsSpended)
-                .Where(p => p.BtcSatoshiAmount != 0);
+                .Where(p => p.BtcSatoshiAmount != 0); // filtrate open office special outputs
 
+            if (minBlockHeight != null)
+            {
+                query = query.Where(p => p.SpendTxInput.BlockHeight >= minBlockHeight.Value);
+            }
+
+            if (maxBlockHeight != null)
+            {
+                query = query.Where(p => p.SpendTxInput.BlockHeight <= maxBlockHeight.Value);
+            }
 
             return await query.ToListAsync();
-            //var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-            //    address,
-            //    at)
-            //    .Where(p=>p.SpendTxInput.IsSpended);
-
-            //var lookupQuery = from left in query
-            //    join right in _collection.AsQueryable() on left.SpendTxInput.Id equals right.Id into joined
-            //    select joined;
-
-            //var t = (await query.ToListAsync()).Where(p => p.SpendTxInput.IsSpended);
-            //var t2 = await lookupQuery.ToListAsync();
-
-            //var tstr = t.Select(p => p.SpendTxInput.Id);
-            //var resstr = t2.SelectMany(p => p).Select(p => p.Id);
-            //return (await lookupQuery.ToListAsync()).SelectMany(p=>p).Where(p => p.BtcSatoshiAmount > 0);
         }
 
-        public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, int? at = null)
+        public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, 
+            bool unspentOnly = false,
+            int? minBlockHeight = null, 
+            int? maxBlockHeight = null)
         {
             var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address,
-                at).Where(p => p.BtcSatoshiAmount != 0);
+                address).Where(p => p.BtcSatoshiAmount != 0); // filtrate open office special outputs
+
+            if (minBlockHeight != null)
+            {
+                query = query.Where(p => p.BlockHeight >= minBlockHeight.Value);
+            }
+
+            if (maxBlockHeight != null)
+            {
+                query = query.Where(p => p.BlockHeight <= maxBlockHeight.Value);
+            }
+
+
+            if (unspentOnly)
+            {
+                query = query.Where(p => !p.SpendTxInput.IsSpended);
+            }
 
             return await query.ToListAsync();
         }
@@ -271,7 +284,7 @@ namespace Repositories.Transactions
             public static class Expressions
             {
                 public static IMongoQueryable<TransactionOutputMongoEntity> FilterBalances(IMongoQueryable<TransactionOutputMongoEntity>  source, 
-                    BitcoinAddress address, int? at, 
+                    BitcoinAddress address, int? at = null, 
                     bool unSpendOnly = false)
                 {
                     var stringAddress = address.ToWif();

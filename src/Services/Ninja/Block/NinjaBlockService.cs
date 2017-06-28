@@ -30,44 +30,57 @@ namespace Services.Ninja.Block
             _ninjaClient = ninjaClient;
         }
 
-        public async Task<INinjaBlockHeader> GetTip()
+        public async Task<INinjaBlockHeader> GetTip(bool withRetry = true)
         {
-            var result = await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse("tip"), headerOnly: true));
+            return await GetBlockHeader("tip", withRetry);
+        }
+
+        public Task<GetBlockResponse> GetBlock(int height, bool withRetry = true)
+        {
+            return GetBlockInner(height.ToString(), withRetry);
+        }
+
+        public Task<GetBlockResponse> GetBlock(uint256 blockId, bool withRetry = true)
+        {
+            return GetBlockInner(blockId.ToString(), withRetry);
+        }
+
+        public Task<INinjaBlockHeader> GetBlockHeader(int height, bool withRetry = true)
+        {
+            return GetBlockHeader(height.ToString(), withRetry);
+        }
+
+        public Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId, bool withRetry = true)
+        {
+            return GetBlockHeader(blockId.ToString(), withRetry);
+        }
+
+        public async Task<INinjaBlockHeader> GetBlockHeader(string blockFeature, bool withRetry = true)
+        {
+            GetBlockResponse result;
+
+            if (withRetry)
+            {
+                result = await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: true));
+            }
+            else
+            {
+                result = await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: true);
+            }
 
             return NinjaBlockHeader.Create(result.AdditionalInformation);
         }
 
-        public Task<GetBlockResponse> GetBlock(int height)
+
+        private async Task<GetBlockResponse> GetBlockInner(string blockFeature, bool withRetry = true)
         {
-            return GetBlockInner(height.ToString());
-        }
+            if (withRetry)
+            {
 
-        public Task<GetBlockResponse> GetBlock(uint256 blockId)
-        {
-            return GetBlockInner(blockId.ToString());
-        }
+                return await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: false));
+            }
 
-        public Task<INinjaBlockHeader> GetBlockHeader(int height)
-        {
-            return GetBlockHeader(height.ToString());
-        }
-
-        public Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId)
-        {
-            return GetBlockHeader(blockId.ToString());
-        }
-
-        public async Task<INinjaBlockHeader> GetBlockHeader(string blockFeature)
-        {
-            var result = await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: false));
-
-            return NinjaBlockHeader.Create(result.AdditionalInformation);
-        }
-
-
-        private async Task<GetBlockResponse> GetBlockInner(string blockFeature)
-        {
-            return await Retry.Try(async () => await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: false));
+            return await _ninjaClient.GetBlock(BlockFeature.Parse(blockFeature), headerOnly: false);
         }
     }
 }

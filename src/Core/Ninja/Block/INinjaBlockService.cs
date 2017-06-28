@@ -14,12 +14,12 @@ namespace Core.Ninja.Block
 
     public interface INinjaBlockService
     {
-        Task<INinjaBlockHeader> GetTip();
-        Task<GetBlockResponse> GetBlock(int height);
-        Task<GetBlockResponse> GetBlock(uint256 blockId);
+        Task<INinjaBlockHeader> GetTip(bool withRetry = true);
+        Task<GetBlockResponse> GetBlock(int height, bool withRetry = true);
+        Task<GetBlockResponse> GetBlock(uint256 blockId, bool withRetry = true);
 
-        Task<INinjaBlockHeader> GetBlockHeader(int height);
-        Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId);
-        Task<INinjaBlockHeader> GetBlockHeader(string blockFeature);
+        Task<INinjaBlockHeader> GetBlockHeader(int height, bool withRetry = true);
+        Task<INinjaBlockHeader> GetBlockHeader(uint256 blockId, bool withRetry = true);
+        Task<INinjaBlockHeader> GetBlockHeader(string blockFeature, bool withRetry = true);
     }
 }

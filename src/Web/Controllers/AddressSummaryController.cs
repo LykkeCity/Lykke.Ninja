@@ -39,14 +39,12 @@ namespace Web.Controllers
 
             var btcAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
 
-            var getTxCount =
-                _outputRepository.GetTransactionsCount(btcAddress, atBlockHeight);
+            var getTxCount = _outputRepository.GetTransactionsCount(btcAddress, atBlockHeight);
             var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, atBlockHeight, colored);
             var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, atBlockHeight, colored);
 
             Task<IDictionary<string,long>> assetsReceiveds;
             Task<IDictionary<string, long>> assetsAmounts;
-
 
             if (colored)
             {
@@ -55,7 +53,6 @@ namespace Web.Controllers
             }
             else
             {
-
                 IDictionary<string, long> emptyResuly = new Dictionary<string, long>();
                 assetsReceiveds = Task.FromResult(emptyResuly);
                 assetsAmounts = Task.FromResult(emptyResuly);

@@ -68,7 +68,8 @@ namespace Core.Transaction
 
         Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
 
-        Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? at = null);
-        Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, int? at = null);
+        Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? minBlockHeight = null, int? maxBlockHeight = null);
+
+        Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, bool unspendOnly, int? minBlockHeight = null, int? maxBlockHeight = null);
     }
 }
