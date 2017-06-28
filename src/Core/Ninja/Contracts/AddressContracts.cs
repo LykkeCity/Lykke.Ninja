@@ -14,6 +14,9 @@ namespace Core.Ninja.Contracts
 
         [JsonProperty("operations")]
         public AddressTransactionListItemContract[] Transactions { get; set; }
+
+        [JsonProperty("conflictedOperations")]
+        public object[] ConflictedOperations { get; set; }
     }
 
     public class AddressTransactionListItemContract

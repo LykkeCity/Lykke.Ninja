@@ -27,26 +27,26 @@ namespace Web.Controllers
         }
 
         [HttpGet("{address}")]
-        public async Task<AddressTransactionsViewModel> Get(string address, [FromQuery]string at = null)
+        public async Task<AddressTransactionsViewModel> Get(string address, [FromQuery]bool colored = false, [FromQuery]string at = null)
         {
             if (string.IsNullOrEmpty(at))
             {
-                return await GetTransactions(address);
+                return await GetTransactions(address, colored);
             }
 
             int parsedHeight;
 
             if (int.TryParse(at.Trim(), out parsedHeight))
             {
-                return await GetTransactions(address, parsedHeight);
+                return await GetTransactions(address, colored, parsedHeight);
             }
 
             var header = await _ninjaBlockService.GetBlockHeader(at);
 
-            return await GetTransactions(address, header.BlockHeight);
+            return await GetTransactions(address, colored, header.BlockHeight);
         }
 
-        private async Task<AddressTransactionsViewModel> GetTransactions(string address, int? blockHeight = null)
+        private async Task<AddressTransactionsViewModel> GetTransactions(string address, bool colored, int ? blockHeight = null)
         {
             var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
 
@@ -56,7 +56,7 @@ namespace Web.Controllers
 
             await Task.WhenAll(getNinjaTop, getSpended, getReceived);
 
-            return AddressTransactionsViewModel.Create(getNinjaTop.Result, _baseSettings.UsedNetwork(), getSpended.Result, getReceived.Result);
+            return AddressTransactionsViewModel.Create(getNinjaTop.Result, _baseSettings.UsedNetwork(), colored, getSpended.Result, getReceived.Result);
         }
     }
 }

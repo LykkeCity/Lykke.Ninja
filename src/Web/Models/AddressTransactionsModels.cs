@@ -12,22 +12,31 @@ namespace Web.Models
 {
     public class AddressTransactionsViewModel: AddressTransactionListContract
     {
-        public static AddressTransactionsViewModel Create(INinjaBlockHeader header, Network network, IEnumerable<ITransactionOutput> spended, IEnumerable<ITransactionOutput> received)
+        public static AddressTransactionsViewModel Create(INinjaBlockHeader header, 
+            Network network, 
+            bool isColored,
+            IEnumerable<ITransactionOutput> spended = null, 
+            IEnumerable<ITransactionOutput> received = null)
         {
             return new AddressTransactionsViewModel
             {
                 ContinuationToken = null,
-                Transactions = GetTxs(header, network, spended, received).ToArray()
+                Transactions = GetTxs(header, network, isColored, spended, received).ToArray(),
+                ConflictedOperations = Enumerable.Empty<object>().ToArray()
             };
         }
 
         private static IEnumerable<AddressTransactionListItemContract> GetTxs(INinjaBlockHeader header, 
             Network network, 
-            IEnumerable<ITransactionOutput> spended,
-            IEnumerable<ITransactionOutput> received)
+            bool isColored,
+            IEnumerable<ITransactionOutput> spended = null,
+            IEnumerable<ITransactionOutput> received = null)
         {
-            var mappedSpended = spended.Select(p => InOutViewModel.CreateSpend(p, network)).ToList();
-            var mappedReceived = received.Select(p => InOutViewModel.CreateReceived(p, network)).ToList();
+            spended = spended ?? Enumerable.Empty<ITransactionOutput>();
+            received = received ?? Enumerable.Empty<ITransactionOutput>();
+
+            var mappedSpended = spended.Select(p => InOutViewModel.CreateSpend(p, isColored, network)).ToList();
+            var mappedReceived = received.Select(p => InOutViewModel.CreateReceived(p, isColored, network)).ToList();
 
             var spendedLookup = mappedSpended.ToLookup(p => p.OperationTransactionId);
             var receivedLookup = mappedReceived.ToLookup(p => p.OperationTransactionId);
@@ -38,6 +47,7 @@ namespace Web.Models
             return txIds.Select(txId =>
                     AddressTransactionViewModel.Create(
                         header,
+                        isColored,
                         spendedLookup[txId], 
                         receivedLookup[txId]))
                .ToList()
@@ -57,37 +67,40 @@ namespace Web.Models
         [JsonIgnore]
         public int OperationBlockHeight { get; set; }
 
-        public static InOutViewModel CreateReceived(ITransactionOutput output, Network network)
+
+        [JsonIgnore]
+        public bool IsColored { get; set; }
+
+        public static InOutViewModel CreateReceived(ITransactionOutput output, bool isColored, Network network)
         {
-            return new InOutViewModel
-            {
-                Address = output.DestinationAddress,
-                AssetId = output.ColoredData?.AssetId,
-                TransactionId = output.TransactionId,
-                Index = output.Index,
-                Quantity = output.ColoredData?.Quantity,
-                Value = output.BtcSatoshiAmount,
-                ScriptPubKey = GetPubKey(output.DestinationAddress, network),
-                OperationBlockHeight = output.BlockHeight,
-                OperationBlockId = output.BlockId,
-                OperationTransactionId = output.TransactionId
-            };
+            return Create(output.TransactionId, output.BlockId, output.BlockHeight, output, isColored, network);
         }
 
-        public static InOutViewModel CreateSpend(ITransactionOutput output, Network network)
+        public static InOutViewModel CreateSpend(ITransactionOutput output, bool isColored, Network network)
+        {
+            return Create(output.SpendTxInput.SpendedInTxId, output.SpendTxInput.BlockId, output.SpendTxInput.BlockHeight, output, isColored, network);
+        }
+
+        private static InOutViewModel Create(string operationTransactionId, 
+            string operationBlockId, 
+            int operationBlockHeight, 
+            ITransactionOutput output, 
+            bool isColored, 
+            Network network)
         {
             return new InOutViewModel
             {
                 Address = output.DestinationAddress,
-                AssetId = output.ColoredData?.AssetId,
+                AssetId = isColored ? (output.ColoredData?.AssetId) : null,
+                Quantity = isColored ? (output.ColoredData?.Quantity) : null,
                 TransactionId = output.TransactionId,
                 Index = output.Index,
-                Quantity = output.ColoredData?.Quantity,
                 Value = output.BtcSatoshiAmount,
                 ScriptPubKey = GetPubKey(output.DestinationAddress, network),
-                OperationBlockHeight = output.SpendTxInput.BlockHeight,
-                OperationBlockId = output.SpendTxInput.BlockId,
-                OperationTransactionId = output.SpendTxInput.SpendedInTxId
+                OperationBlockHeight = operationBlockHeight,
+                OperationBlockId = operationBlockId,
+                OperationTransactionId = operationTransactionId,
+                IsColored = output.ColoredData != null
             };
         }
 
@@ -102,6 +115,7 @@ namespace Web.Models
     public class AddressTransactionViewModel: AddressTransactionListItemContract
     {
         public static AddressTransactionListItemContract Create(INinjaBlockHeader tipHeader,
+            bool isColored, 
             IEnumerable<InOutViewModel> spended,
             IEnumerable<InOutViewModel> received)
         {
@@ -112,9 +126,18 @@ namespace Web.Models
             var blockId = any.OperationBlockId;
             var blockHeight = any.OperationBlockHeight;
 
+            double amount;
+            if (isColored)
+            {
+                amount = received.Where(p => !p.IsColored).Sum(p => p.Value) - spended.Where(p => !p.IsColored).Sum(p => p.Value);
+            }
+            else
+            {
+                amount = received.Sum(p => p.Value) - spended.Sum(p => p.Value);
+            }
             return new AddressTransactionListItemContract
             {
-                Amount = received.Sum(p => p.Value) - spended.Sum(p => p.Value),
+                Amount = amount,
                 TxId = transactionId,
                 BlockId = blockId,
                 Height = blockHeight,
