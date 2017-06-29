@@ -4,6 +4,11 @@ namespace Core.Settings
 {
     public class BaseSettings
     {
+        public BaseSettings()
+        {
+            Proxy = new ProxySettings();
+        }
+
         [Required]
         public DbSettings Db { get; set; }
 
@@ -17,6 +22,8 @@ namespace Core.Settings
         public MongoCredentials NinjaData { get; set; }
 
         public int MaxParseBlockQueuedCommandCount { get; set; } = 100;
+
+        public ProxySettings Proxy { get; set; }
     }
 
     public class DbSettings
@@ -29,6 +36,11 @@ namespace Core.Settings
         public string LogsConnString { get; set; }
 
 
+    }
+
+    public class ProxySettings
+    {
+        public bool ProxyAllRequests { get; set; } = false;
     }
 
     public class MongoCredentials

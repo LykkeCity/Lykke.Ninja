@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using Autofac.Extensions.DependencyInjection;
 using Core.Settings;
 using Core.Settings.Validation;
@@ -10,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.Swagger.Model;
 using Web.Binders;
+using Web.Proxy;
 
 namespace Web
 {
@@ -66,14 +66,25 @@ namespace Web
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            app.UseSwagger();
-            app.UseSwaggerUi("swagger/ui/index");
 
-            app.UseMvc();
+            var settings = GetSettings();
+
+            if (!settings.Proxy.ProxyAllRequests)
+            {
+                if (env.IsDevelopment())
+                {
+                    app.UseDeveloperExceptionPage();
+                }
+                app.UseSwagger();
+                app.UseSwaggerUi("swagger/ui/index");
+
+
+
+                app.UseMvc();
+            }
+
+            var ninjaUrl = new Uri(settings.NinjaUrl);
+            app.RunProxy(new ProxyOptions { Host = ninjaUrl.Host, Scheme = ninjaUrl.Scheme });
         }
     }
 }
