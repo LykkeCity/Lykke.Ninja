@@ -9,15 +9,15 @@ using Repositories;
 using Repositories.Log;
 using Services;
 
-namespace Jobs.Binders
+namespace InitialPerser.Binders
 {
     public class AzureBinder
     {
         public ContainerBuilder Bind(BaseSettings settings)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsError", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsInfo", null));
+            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserError", null),
+                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserWarning", null),
+                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserInfo", null));
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
@@ -38,9 +38,9 @@ namespace Jobs.Binders
         private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
 #if DEBUG
-            log.WriteInfoAsync("Lykke.Ninja Jobs", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
+            log.WriteInfoAsync("Lykke.Ninja InitialParserFunctions", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
-            log.WriteInfoAsync("Lykke.Ninja Jobs", "App start", null, $"BaseSettings : private").Wait();
+            log.WriteInfoAsync("Lykke.Ninja InitialParserFunctions", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
             ioc.RegisterInstance(log);
@@ -48,7 +48,6 @@ namespace Jobs.Binders
 
             ioc.BindCommonServices(settings, log);
             ioc.BindRepositories(settings, log);
-            ioc.BindBackgroundJobs(settings, log);
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Core.BlockStatus
@@ -53,6 +54,7 @@ namespace Core.BlockStatus
         Task<bool> Exists(string blockId);
         Task<IBlockStatus> GetLastQueuedBlock();
         Task<IBlockStatus> Get(string blockId);
+        Task<IEnumerable<IBlockStatus>> GetAll();
         Task Insert(IBlockStatus status);
         Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status);
     }

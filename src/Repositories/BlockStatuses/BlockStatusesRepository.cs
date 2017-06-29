@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.BlockStatus;
 using Core.Settings;
@@ -32,6 +33,11 @@ namespace Repositories.BlockStatuses
         public async Task<IBlockStatus> Get(string blockId)
         {
             return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<IBlockStatus>> GetAll()
+        {
+            return await _collection.AsQueryable().ToListAsync();
         }
 
         public Task Insert(IBlockStatus status)

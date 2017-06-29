@@ -24,6 +24,8 @@ namespace Services
             ioc.RegisterType<NinjaTransactionService>().As<INinjaTransactionService>(); 
             ioc.RegisterType<ParseBlockCommandsService>().As<IParseBlockCommandsService>();
             ioc.RegisterType<BlockService>().As<IBlockService>();
+            ioc.RegisterType<ProcessParseBlockCommandFacade>().As<IProcessParseBlockCommandFacade>();
+            
         }
     }
 }
