@@ -30,7 +30,7 @@ namespace Jobs.BlockTasks
         {
             _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFound)} started");
 
-            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound);
+            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 50);
             if (notFoundInputs.Any())
             {
                 await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFound), notFoundInputs.Take(5).ToJson(),

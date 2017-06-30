@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.AlertNotifications;
@@ -38,7 +39,7 @@ namespace Jobs.BlockTasks
         }
 
 
-        //[TimerTrigger("00:00:30")]
+        [TimerTrigger("00:00:10")]
         public async Task ScanNewBlocks()
         {
             try
@@ -69,6 +70,27 @@ namespace Jobs.BlockTasks
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(ScanNewBlocks), null, e);
                 await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(ScanNewBlocks), e.Message);
+                throw;
+            }
+        }
+
+        [TimerTrigger("00:01:00")]
+        public async Task PutFailedToQueueAgain()
+        {
+            try
+            {
+                _console.WriteLine($"{nameof(PutFailedToQueueAgain)} started");
+                var failedBlocks = await _blockStatusesRepository.GetAll(BlockProcessingStatus.Fail, 50);
+
+                foreach (var blockStatus in failedBlocks.Where(p => p.StatusChangedAt > DateTime.UtcNow.AddMinutes(-10)))
+                {
+                    await _commandProducer.ProduceParseBlockCommand(blockStatus.Height);
+                }
+            }
+            catch (Exception e)
+            {
+                await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(PutFailedToQueueAgain), null, e);
+                await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(PutFailedToQueueAgain), e.Message);
                 throw;
             }
         }

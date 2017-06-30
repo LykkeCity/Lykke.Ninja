@@ -21,7 +21,7 @@ namespace Core.Settings
         [Required]
         public MongoCredentials NinjaData { get; set; }
 
-        public int MaxParseBlockQueuedCommandCount { get; set; } = 100;
+        public int MaxParseBlockQueuedCommandCount { get; set; } = 25;
 
         public ProxySettings Proxy { get; set; }
     }

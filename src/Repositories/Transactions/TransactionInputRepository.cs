@@ -78,9 +78,18 @@ namespace Repositories.Transactions
             }
         }
 
-        public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status)
+        public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, int? itemsToTake = null)
         {
-            return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).ToListAsync();
+            var query = _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status))
+                .Sort(new SortDefinitionBuilder<TransactionInputMongoEntity>().Ascending(p => p.BlockHeight));
+
+            if (itemsToTake != null)
+            {
+                query = query.Limit(itemsToTake);
+            }
+
+            return await query
+                .ToListAsync();
         }
     }
 

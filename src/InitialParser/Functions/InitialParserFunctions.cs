@@ -54,7 +54,7 @@ namespace InitialParser.Functions
 
             var blocksHeightsToParse = new List<int>();
 
-            var startFromBlock = 1;
+            var startFromBlock = 400000;
 
             for (int height = startFromBlock; height <= getTip.Result.BlockHeight; height++)
             {
@@ -67,7 +67,8 @@ namespace InitialParser.Functions
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            StartSetNound(cancellationTokenSource.Token);
+            StartSetNotFound(cancellationTokenSource.Token);
+
             var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;
             foreach (var height in blocksHeightsToParse)
@@ -78,7 +79,7 @@ namespace InitialParser.Functions
                 {
 
                     counter--;
-                    //_console.WriteLine($"{counter} ");
+                    _console.WriteLine($"{counter} ");
                     semaphore.Release();
                 }));
             }
@@ -118,7 +119,7 @@ namespace InitialParser.Functions
         }
 
 
-        private void StartSetNound(CancellationToken cancellationToken)
+        private void StartSetNotFound(CancellationToken cancellationToken)
         {
             new Thread(() =>
             {
@@ -127,7 +128,7 @@ namespace InitialParser.Functions
                     try
                     {
 
-                        SetNotFounded().Wait();
+                        SetNotFounded(50).Wait();
                     }
                     catch (Exception e)
                     {
@@ -140,11 +141,11 @@ namespace InitialParser.Functions
 
 
         }
-        private async Task SetNotFounded()
+        private async Task SetNotFounded(int? itemsToTake = null)
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(SetNotFounded)} started");
 
-            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound);
+            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: itemsToTake);
             if (notFoundInputs.Any())
             {
                 await _blockService.ProcessInputsToSpendable(notFoundInputs);

@@ -37,6 +37,6 @@ namespace Core.Transaction
     {
         Task InsertIfNotExists(IEnumerable<ITransactionInput> items);
         Task SetSpended(ISetSpendableOperationResult operationResult);
-        Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status);
+        Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, int? itemsToTake = null);
     }
 }
