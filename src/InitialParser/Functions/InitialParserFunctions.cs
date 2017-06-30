@@ -54,7 +54,7 @@ namespace InitialParser.Functions
 
             var blocksHeightsToParse = new List<int>();
 
-            var startFromBlock = 400000;
+            var startFromBlock = 1;
 
             for (int height = startFromBlock; height <= getTip.Result.BlockHeight; height++)
             {
