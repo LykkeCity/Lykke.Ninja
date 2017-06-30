@@ -67,8 +67,6 @@ namespace InitialParser.Functions
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            var end = new ManualResetEvent(false);
-
             StartSetNound(cancellationTokenSource.Token);
             var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;
@@ -126,7 +124,15 @@ namespace InitialParser.Functions
             {
                 do
                 {
-                    SetNotFounded().Wait();
+                    try
+                    {
+
+                        SetNotFounded().Wait();
+                    }
+                    catch (Exception e)
+                    {
+                        _console.WriteLine(e.ToString());
+                    }
 
                     Thread.Sleep(5000);
                 } while (!cancellationToken.IsCancellationRequested);

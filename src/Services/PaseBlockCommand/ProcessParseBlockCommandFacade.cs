@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using Core.Block;
 using Core.BlockStatus;
@@ -21,18 +22,20 @@ namespace Services.PaseBlockCommand
         private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly IBlockService _blockService;
         private readonly IConsole _console;
-
+        private readonly ILog _log;
+        
         public ProcessParseBlockCommandFacade(INinjaBlockService ninjaBlockService, 
             INinjaTransactionService ninjaTransactionService, 
             IBlockStatusesRepository blockStatusesRepository, 
             IBlockService blockService, 
-            IConsole console)
+            IConsole console, ILog log)
         {
             _ninjaBlockService = ninjaBlockService;
             _ninjaTransactionService = ninjaTransactionService;
             _blockStatusesRepository = blockStatusesRepository;
             _blockService = blockService;
             _console = console;
+            _log = log;
         }
 
         public async Task ProcessCommand(ParseBlockCommandContext context)
@@ -40,12 +43,19 @@ namespace Services.PaseBlockCommand
             try
             {
                 _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Started");
-
+                 
                 var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId));
                 var setStartedStatus = _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started);
+                var getStatus = _blockStatusesRepository.Get(context.BlockId);
+                await Task.WhenAll(getBlock, setStartedStatus, getStatus);
 
-                await Task.WhenAll(getBlock, setStartedStatus);
+                if (getStatus.Result?.ProcessingStatus == BlockProcessingStatus.Done)
+                {
+                    await _log.WriteWarningAsync(nameof(ProcessParseBlockCommandFacade), nameof(ProcessCommand),
+                        getStatus.Result.ToJson(), "Attempt to process already processed block");
 
+                    return;
+                }
                 _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Get Transactions started");
 
 
