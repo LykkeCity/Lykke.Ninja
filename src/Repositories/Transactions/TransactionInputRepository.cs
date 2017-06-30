@@ -8,6 +8,7 @@ using Core.Transaction;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using Repositories.Mongo;
 
 namespace Repositories.Transactions
 {
@@ -16,12 +17,12 @@ namespace Repositories.Transactions
         private readonly IMongoCollection<TransactionInputMongoEntity> _collection;
         private readonly ILog _log;
 
-        public TransactionInputRepository(BaseSettings baseSettings, 
+        public TransactionInputRepository(MongoSettings settings, 
             ILog log)
         {
             _log = log;
-            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
+            var client = new MongoClient(settings.ConnectionString);
+            var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
         }
 

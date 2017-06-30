@@ -11,7 +11,6 @@ using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using QBitNinja.Client;
 using Services.Ninja;
-using Services.Settings;
 
 namespace Jobs.BlockTasks
 {

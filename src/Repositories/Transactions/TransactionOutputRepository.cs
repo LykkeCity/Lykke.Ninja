@@ -10,6 +10,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NBitcoin;
+using Repositories.Mongo;
 
 namespace Repositories.Transactions
 {
@@ -37,11 +38,11 @@ namespace Repositories.Transactions
         private readonly IMongoCollection<TransactionOutputMongoEntity> _collection;
         private readonly ILog _log;
 
-        public TransactionOutputRepository(BaseSettings baseSettings, ILog log)
+        public TransactionOutputRepository(MongoSettings mongoSettings, ILog log)
         {
             _log = log;
-            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
+            var client = new MongoClient(mongoSettings.ConnectionString);
+            var db = client.GetDatabase(mongoSettings.DataDbName);
             _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
         }
 

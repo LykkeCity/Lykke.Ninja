@@ -10,7 +10,6 @@ using Core.Settings;
 using Core.Transaction;
 using NBitcoin;
 using QBitNinja.Client.Models;
-using Services.Settings;
 
 namespace Services.Block
 {

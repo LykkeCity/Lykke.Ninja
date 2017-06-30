@@ -6,6 +6,7 @@ using Core.Settings;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using Repositories.Mongo;
 
 namespace Repositories.BlockStatuses
 {
@@ -13,10 +14,10 @@ namespace Repositories.BlockStatuses
     {
         private readonly IMongoCollection<BlockStatusMongoEntity> _collection;
 
-        public BlockStatusesRepository(BaseSettings baseSettings)
+        public BlockStatusesRepository(MongoSettings settings)
         {
-            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
+            var client = new MongoClient(settings.ConnectionString);
+            var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<BlockStatusMongoEntity>(BlockStatusMongoEntity.CollectionName);
         }
 

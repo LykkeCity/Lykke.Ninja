@@ -12,6 +12,7 @@ using Core.Transaction;
 using Lykke.JobTriggers.Abstractions;
 using Repositories.AlertNotifications;
 using Repositories.BlockStatuses;
+using Repositories.Mongo;
 using Repositories.ParseBlockCommand;
 using Repositories.ServiceMonitoring;
 using Repositories.Transactions;
@@ -31,7 +32,11 @@ namespace Repositories
             ioc.RegisterInstance(new ServiceMonitoringRepository(new AzureTableStorage<MonitoringRecordEntity>(settings.Db.SharedConnString, "Monitoring", log)))
                 .As<IServiceMonitoringRepository>();
 
-
+            ioc.RegisterInstance(new MongoSettings
+            {
+                ConnectionString = settings.NinjaData.ConnectionString,
+                DataDbName = $"{settings.NinjaData.DbName}-{settings.UsedNetwork()}"
+            });
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>();
             ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>();
             ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>();

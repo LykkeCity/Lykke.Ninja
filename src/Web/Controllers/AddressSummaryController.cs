@@ -5,7 +5,6 @@ using Core.Settings;
 using Core.Transaction;
 using Microsoft.AspNetCore.Mvc;
 using Services.Ninja;
-using Services.Settings;
 using Web.Models;
 
 namespace Web.Controllers

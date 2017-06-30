@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Core.Settings;
 using NBitcoin;
 
-namespace Services.Settings
+namespace Core.Settings
 {
     public static class BaseSettingsHelper
     {

@@ -6,7 +6,6 @@ using Core.ParseBlockCommand;
 using Core.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Services.Ninja;
-using Services.Settings;
 using Web.Models;
 
 namespace Web.Controllers

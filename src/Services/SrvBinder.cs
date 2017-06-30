@@ -11,7 +11,6 @@ using Services.Block;
 using Services.Ninja.Block;
 using Services.Ninja.Transaction;
 using Services.PaseBlockCommand;
-using Services.Settings;
 
 namespace Services
 {
