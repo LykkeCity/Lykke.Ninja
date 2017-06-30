@@ -50,7 +50,7 @@ namespace InitialParser.Functions
 
             var blocksToExclude = getAllBlockStatuses.Result
                 .Where(p => p.ProcessingStatus == BlockProcessingStatus.Done)
-                .ToDictionary(p=>p.Height);
+                .ToDictionary(p => p.Height);
 
             var blocksHeightsToParse = new List<int>();
 
@@ -65,8 +65,12 @@ namespace InitialParser.Functions
             }
             var semaphore = new SemaphoreSlim(50);
 
-            var tasksToAwait = new List<Task>();
+            var cancellationTokenSource = new CancellationTokenSource();
 
+            var end = new ManualResetEvent(false);
+
+            StartSetNound(cancellationTokenSource.Token);
+            var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;
             foreach (var height in blocksHeightsToParse)
             {
@@ -83,6 +87,8 @@ namespace InitialParser.Functions
 
             await Task.WhenAll(tasksToAwait);
 
+            cancellationTokenSource.Cancel();
+
             await SetNotFounded();
         }
 
@@ -91,6 +97,9 @@ namespace InitialParser.Functions
             try
             {
                 var header = await _ninjaBlockService.GetBlockHeader(height);
+
+                await SetBlockStatus(header);
+
                 await _parseBlockCommandFacade.ProcessCommand(
                     new ParseBlockCommandContext { BlockHeight = header.BlockHeight, BlockId = header.BlockId.ToString() });
             }
@@ -100,6 +109,31 @@ namespace InitialParser.Functions
             }
         }
 
+        private async Task SetBlockStatus(INinjaBlockHeader header)
+        {
+            if (!await _blockStatusesRepository.Exists(header.BlockId.ToString()))
+            {
+                await _blockStatusesRepository.Insert(BlockStatus.Create(header.BlockHeight, header.BlockId.ToString(), BlockProcessingStatus.Queued,
+                    queuedAt: DateTime.UtcNow, statusChangedAt: DateTime.UtcNow));
+            }
+           
+        }
+
+
+        private void StartSetNound(CancellationToken cancellationToken)
+        {
+            new Thread(() =>
+            {
+                do
+                {
+                    SetNotFounded().Wait();
+
+                    Thread.Sleep(5000);
+                } while (!cancellationToken.IsCancellationRequested);
+            }).Start();
+
+
+        }
         private async Task SetNotFounded()
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(SetNotFounded)} started");

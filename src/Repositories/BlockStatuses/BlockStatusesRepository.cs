@@ -35,9 +35,15 @@ namespace Repositories.BlockStatuses
             return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<IBlockStatus>> GetAll()
+        public async Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status)
         {
-            return await _collection.AsQueryable().ToListAsync();
+            var query = _collection.AsQueryable();
+            if (status != null)
+            {
+                query = query.Where(p => p.ProcessingStatus == status.ToString());
+            }
+
+            return await query.ToListAsync();
         }
 
         public Task Insert(IBlockStatus status)
