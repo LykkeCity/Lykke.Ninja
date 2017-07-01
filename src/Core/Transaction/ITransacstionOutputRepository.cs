@@ -71,5 +71,7 @@ namespace Core.Transaction
         Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, int? minBlockHeight = null, int? maxBlockHeight = null);
 
         Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, bool unspendOnly, int? minBlockHeight = null, int? maxBlockHeight = null);
+
+        Task SetIndexes();
     }
 }

@@ -6,7 +6,6 @@ namespace Web.Models
 {
     public class AddressSummaryViewModel: AddressSummaryContract
     {
-
         public static AddressSummaryViewModel Create(long transactionCount, 
             long btcAmount, 
             long btcReceived,
@@ -40,7 +39,12 @@ namespace Web.Models
                 Balance = btcAmount,
                 TotalTransactions = transactionCount,
                 Received = btcReceived,
-                Assets = assetsReceived.Select(p=> new AddressBalanceSummaryInnerContract.AddressAssetContract{AssetId = p.Key, Received = p.Value, Quantity = assetsAmounts[p.Key]}).ToArray()
+                Assets = assetsReceived.Select(p => new AddressBalanceSummaryInnerContract.AddressAssetContract
+                {
+                    AssetId = p.Key,
+                    Received = p.Value,
+                    Quantity = assetsAmounts[p.Key]
+                }).ToArray()
             };
         }
     }

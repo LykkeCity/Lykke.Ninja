@@ -6,7 +6,7 @@ using Core.Block;
 using Core.Transaction;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Jobs.BlockTasks
+namespace Jobs.Input
 {
     public class InputFunctions
     {
@@ -30,7 +30,7 @@ namespace Jobs.BlockTasks
         {
             _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFound)} started");
 
-            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 50);
+            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 2000);
             if (notFoundInputs.Any())
             {
                 await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFound), notFoundInputs.Take(5).ToJson(),

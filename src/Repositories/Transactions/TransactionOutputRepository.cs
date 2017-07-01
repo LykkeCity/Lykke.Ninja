@@ -213,7 +213,7 @@ namespace Repositories.Transactions
 
             var query = _collection.AsQueryable()
                 .Where(output => output.DestinationAddress == stringAddress)
-                .Where(p=>p.SpendTxInput.IsSpended)
+                .Where(p => p.SpendTxInput.IsSpended)
                 .Where(p => p.BtcSatoshiAmount != 0);
 
             if (minBlockHeight != null)
@@ -257,6 +257,36 @@ namespace Repositories.Transactions
             }
 
             return await query.ToListAsync();
+        }
+
+        public async Task SetIndexes()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
+
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+
+            var transactionId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.TransactionId);
+            var inputTransactionId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.SpendedInTxId);
+
+            var assetId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+
+            var assetQuantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.Quantity);
+            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.BtcSatoshiAmount);
+
+            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+
+            var inputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            await _collection.Indexes.CreateOneAsync(address);
+            await _collection.Indexes.CreateOneAsync(isSpended);
+            await _collection.Indexes.CreateOneAsync(assetId);
+            await _collection.Indexes.CreateOneAsync(hasColoredData);
+            await _collection.Indexes.CreateOneAsync(transactionId);
+            await _collection.Indexes.CreateOneAsync(inputTransactionId);
+            await _collection.Indexes.CreateOneAsync(blockHeight);
+            await _collection.Indexes.CreateOneAsync(inputBlockHeight);
         }
     }
 

@@ -27,6 +27,7 @@ namespace Web.Controllers
         public async Task<ConsistencyCheckViewModel> ConsistencyCheck()
         {
             const int showLastItemsCount = 5;
+
             var getQueuedCount = _blockCommandProducer.GetQueuedCommandCount();
             var getLastQueuedBlock = _blockStatusesRepository.GetLastQueuedBlock();
 
@@ -41,6 +42,7 @@ namespace Web.Controllers
 
             var getWaitingInputs = _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: showLastItemsCount);
             var getWaitingInputsCount = _inputRepository.Count(SpendProcessedStatus.NotFound);
+
             await Task.WhenAll(getQueuedCount, 
                 getLastQueuedBlock, 
                 getFailedBlocks, 

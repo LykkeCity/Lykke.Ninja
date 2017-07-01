@@ -74,7 +74,7 @@ namespace Jobs.BlockTasks
             }
         }
 
-        [TimerTrigger("00:01:00")]
+        [TimerTrigger("00:00:30")]
         public async Task PutFailedToQueueAgain()
         {
             try
