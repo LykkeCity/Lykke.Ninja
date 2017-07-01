@@ -102,7 +102,8 @@ namespace Repositories.Transactions
             return SetSpendableOperationResult.Create(ok, notFoundInputs);
         }
 
-        public async Task<long> GetTransactionsCount(BitcoinAddress address, int? at)
+        public async Task<long> GetTransactionsCount(BitcoinAddress address, 
+            int? at)
         {
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable()
@@ -116,7 +117,7 @@ namespace Repositories.Transactions
             return await query
                 .Select(p => new[] {p.TransactionId, p.SpendTxInput.SpendedInTxId})
                 .SelectMany(p => p)
-                .Where(p => p!=null)
+                .Where(p => p!= null)
                 .Distinct()
                 .CountAsync();
         }
@@ -133,7 +134,7 @@ namespace Repositories.Transactions
                 query = query.Where(p => p.BlockHeight <= at);
             }
 
-            if (isColored)
+            if (isColored) // exclude btc with colored assets
             {
                 query = query.Where(p => !p.ColoredData.HasColoredData);
             }
@@ -179,7 +180,7 @@ namespace Repositories.Transactions
                 .Select(p => new {assetId = p.Key, sum = p.Sum(x => x.ColoredData.Quantity)})
                 .ToListAsync();
 
-            return result.Where(p=> p.assetId != null).ToDictionary(p => p.assetId, p => p.sum);
+            return result.ToDictionary(p => p.assetId, p => p.sum);
         }
 
         public async Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null)
@@ -212,6 +213,7 @@ namespace Repositories.Transactions
 
             var query = _collection.AsQueryable()
                 .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p=>p.SpendTxInput.IsSpended)
                 .Where(p => p.BtcSatoshiAmount != 0);
 
             if (minBlockHeight != null)
