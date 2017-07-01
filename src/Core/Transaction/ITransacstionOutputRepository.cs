@@ -11,7 +11,6 @@ namespace Core.Transaction
 
         ulong Index { get; }
         
-
         long BtcSatoshiAmount { get; }
 
         string BlockId { get; }
@@ -21,6 +20,7 @@ namespace Core.Transaction
         string DestinationAddress { get; }
 
         IColoredOutputData ColoredData { get; }
+
         ISpendTxInput SpendTxInput { get; }
     }
 

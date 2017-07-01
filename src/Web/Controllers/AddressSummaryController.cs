@@ -42,20 +42,8 @@ namespace Web.Controllers
             var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, atBlockHeight, colored);
             var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, atBlockHeight, colored);
 
-            Task<IDictionary<string,long>> assetsReceiveds;
-            Task<IDictionary<string, long>> assetsAmounts;
-
-            if (colored)
-            {
-                assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, atBlockHeight);
-                assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, atBlockHeight);
-            }
-            else
-            {
-                IDictionary<string, long> emptyResuly = new Dictionary<string, long>();
-                assetsReceiveds = Task.FromResult(emptyResuly);
-                assetsAmounts = Task.FromResult(emptyResuly);
-            }
+            var assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, atBlockHeight);
+            var assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, atBlockHeight);
 
             await Task.WhenAll(getTxCount, getBtcAmount, getbtcReceived, assetsReceiveds);
 

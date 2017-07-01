@@ -104,11 +104,18 @@ namespace Repositories.Transactions
 
         public async Task<long> GetTransactionsCount(BitcoinAddress address, int? at)
         {
+            var stringAddress = address.ToWif();
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress);
 
-            return await TransactionOutputMongoEntity.Filter.Expressions
-                .FilterBalances(_collection.AsQueryable(), address, at, unSpendOnly: false)
+            if (at != null)
+            {
+                query = query.Where(p => p.BlockHeight <= at);
+            }
+
+            return await query
                 .Select(p => new[] {p.TransactionId, p.SpendTxInput.SpendedInTxId})
-                .SelectMany(p=>p)
+                .SelectMany(p => p)
                 .Where(p => p!=null)
                 .Distinct()
                 .CountAsync();
@@ -116,12 +123,19 @@ namespace Repositories.Transactions
 
         public async Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address, at, unSpendOnly: true);
+            var stringAddress = address.ToWif();
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p => !p.SpendTxInput.IsSpended);
+
+            if (at != null)
+            {
+                query = query.Where(p => p.BlockHeight <= at);
+            }
 
             if (isColored)
             {
-                query = query.Where(p => p.ColoredData == null);
+                query = query.Where(p => !p.ColoredData.HasColoredData);
             }
 
             return await query
@@ -130,40 +144,57 @@ namespace Repositories.Transactions
 
         public async Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at, bool isColored = false)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address, at,
-                unSpendOnly: false);
+            var stringAddress = address.ToWif();
+            var query = _collection.AsQueryable();
+            query = query.Where(output => output.DestinationAddress == stringAddress);
+
+            if (at != null)
+            {
+                query = query.Where(p => p.BlockHeight <= at);
+            }
 
             if (isColored)
             {
-                query = query.Where(p => p.ColoredData == null);
+                query = query.Where(p => !p.ColoredData.HasColoredData);
             }
+
             return await query
                 .SumAsync(p => p.BtcSatoshiAmount);
         }
 
         public async Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                    address,
-                    at,
-                    unSpendOnly: false);
+            var stringAddress = address.ToWif();
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p => p.ColoredData.HasColoredData);
+
+            if (at != null)
+            {
+                query = query.Where(p => p.BlockHeight <= at);
+            }
 
             var result = await query
                 .GroupBy(p => p.ColoredData.AssetId)
-                .Select(p => new {addr = p.Key, sum = p.Sum(x => x.ColoredData.Quantity)})
+                .Select(p => new {assetId = p.Key, sum = p.Sum(x => x.ColoredData.Quantity)})
                 .ToListAsync();
 
-            return result.ToDictionary(p => p.addr, p => p.sum);
+            return result.Where(p=> p.assetId != null).ToDictionary(p => p.assetId, p => p.sum);
         }
 
         public async Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                    address,
-                    at,
-                    unSpendOnly: true)
-                .Where(p => p.ColoredData != null);
+            var stringAddress = address.ToWif();
+
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p => p.ColoredData.HasColoredData)
+                .Where(p => !p.SpendTxInput.IsSpended);
+
+            if (at != null)
+            {
+                query = query.Where(p => p.BlockHeight <= at);
+            }
 
             var result = await query
                 .GroupBy(p => p.ColoredData.AssetId)
@@ -177,10 +208,11 @@ namespace Repositories.Transactions
             int? minBlockHeight = null, 
             int? maxBlockHeight = null)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address)
-                .Where(p => p.SpendTxInput.IsSpended)
-                .Where(p => p.BtcSatoshiAmount != 0); // filtrate open office special outputs
+            var stringAddress = address.ToWif();
+
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p => p.BtcSatoshiAmount != 0);
 
             if (minBlockHeight != null)
             {
@@ -200,8 +232,11 @@ namespace Repositories.Transactions
             int? minBlockHeight = null, 
             int? maxBlockHeight = null)
         {
-            var query = TransactionOutputMongoEntity.Filter.Expressions.FilterBalances(_collection.AsQueryable(),
-                address).Where(p => p.BtcSatoshiAmount != 0); // filtrate open office special outputs
+            var stringAddress = address.ToWif();
+
+            var query = _collection.AsQueryable()
+                .Where(output => output.DestinationAddress == stringAddress)
+                .Where(p => p.BtcSatoshiAmount != 0);
 
             if (minBlockHeight != null)
             {
@@ -241,7 +276,8 @@ namespace Repositories.Transactions
         public long BtcSatoshiAmount { get; set; }
 
         public string DestinationAddress { get; set; }
-        IColoredOutputData ITransactionOutput.ColoredData => ColoredData;
+
+        IColoredOutputData ITransactionOutput.ColoredData => ColoredData.HasColoredData? ColoredData:null;
 
         public TransactionOutputColoredInfoMongoEntity ColoredData { get; set; }
 
@@ -280,34 +316,6 @@ namespace Repositories.Transactions
             public static FilterDefinition<TransactionOutputMongoEntity> EqAddress(BitcoinAddress address)
             {
                 return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToWif());
-            }
-            
-            public static class Expressions
-            {
-                public static IMongoQueryable<TransactionOutputMongoEntity> FilterBalances(IMongoQueryable<TransactionOutputMongoEntity>  source, 
-                    BitcoinAddress address, int? at = null, 
-                    bool unSpendOnly = false)
-                {
-                    var stringAddress = address.ToWif();
-
-                    var result = source.Where(output => output.DestinationAddress == stringAddress);
-                        
-                    if (at != null)
-                    {
-
-                        result = result.Where(p => p.BlockHeight <= at);
-
-                    }
-
-                    if (unSpendOnly)
-                    {
-
-                        result = result.Where(p => !p.SpendTxInput.IsSpended);
-
-                    }
-
-                    return result;
-                }
             }
         }
 
@@ -363,6 +371,8 @@ namespace Repositories.Transactions
         public string AssetId { get; set; }
         public long Quantity { get; set; }
 
+        public bool HasColoredData { get; set; }
+
         public static TransactionOutputColoredInfoMongoEntity Create(IColoredOutputData source)
         {
             if (source != null)
@@ -370,11 +380,15 @@ namespace Repositories.Transactions
                 return new TransactionOutputColoredInfoMongoEntity
                 {
                     AssetId = source.AssetId,
-                    Quantity = source.Quantity
+                    Quantity = source.Quantity,
+                    HasColoredData = true
                 };
             }
 
-            return null;
+            return new TransactionOutputColoredInfoMongoEntity
+            {
+                HasColoredData = false
+            };
         }
     }
 }
