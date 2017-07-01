@@ -54,7 +54,10 @@ namespace Core.BlockStatus
         Task<bool> Exists(string blockId);
         Task<IBlockStatus> GetLastQueuedBlock();
         Task<IBlockStatus> Get(string blockId);
-        Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status = null, int? itemsToTake = null);
+        Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status = null, 
+            int? itemsToTake = null);
+
+        Task<long> Count(BlockProcessingStatus? status);
         Task Insert(IBlockStatus status);
         Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status);
     }

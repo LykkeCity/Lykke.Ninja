@@ -92,6 +92,11 @@ namespace Repositories.Transactions
             return await query
                 .ToListAsync();
         }
+
+        public Task<long> Count(SpendProcessedStatus status)
+        {
+            return _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
+        }
     }
 
     public class TransactionInputMongoEntity: ITransactionInput

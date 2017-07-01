@@ -52,6 +52,17 @@ namespace Repositories.BlockStatuses
             return await query.OrderBy(p => p.Height).ToListAsync();
         }
 
+        public async Task<long> Count(BlockProcessingStatus? status)
+        {
+            var query = _collection.AsQueryable();
+            if (status != null)
+            {
+                query = query.Where(p => p.ProcessingStatus == status.ToString());
+            }
+
+            return await query.CountAsync();
+        }
+
         public Task Insert(IBlockStatus status)
         {
             var mongoEntity = BlockStatusMongoEntity.Create(status);

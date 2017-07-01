@@ -20,30 +20,35 @@ namespace Web.Models
 
         public bool ConsistencyOk => NotFoundInputsCount == 0 && FailedBlocksCount == 0;
 
+        public long FailedBlocksCount { get; set; }
+        public long QueuedBlocksCount { get; set; }
+        public long NotFoundInputsCount { get; set; }
+
         public int ParseBlockTasksQueuedCount { get; set; }
 
         public BlockStatusViewModel LastQueuedBlock { get; set; }
 
         public IEnumerable<BlockStatusViewModel> FailedBlocks { get; set; }
 
-        public int FailedBlocksCount => FailedBlocks.Count();
-
         public IEnumerable<BlockStatusViewModel> QueuedBlocks { get; set; }
 
-        public int WaitingInputsCount => WaitingInputs.Count();
+        public long WaitingInputsCount { get; set; }
 
         public IEnumerable<TransactionInputViewModel> WaitingInputs { get; set; }
 
-        public int NotFoundInputsCount => NotFoundInputs.Count();
 
         public IEnumerable<TransactionInputViewModel> NotFoundInputs { get; set; }
 
         public static ConsistencyCheckViewModel Create(int parseBlockTasksQueuedCount, 
             IBlockStatus lastQueuedBlock,
-            IEnumerable<ITransactionInput> waitingInputs, 
+            IEnumerable<ITransactionInput> waitingInputs,
+            long waitingInputsCount,
             IEnumerable<ITransactionInput> notFoundInputs,
+            long notFoundInputsCount,
             IEnumerable<IBlockStatus> failedBlocks,
-            IEnumerable<IBlockStatus> queuedBlocks)
+            long failedBlocksCount,
+            IEnumerable<IBlockStatus> queuedBlocks,
+            long queuedBlocksCount)
         {
             return new ConsistencyCheckViewModel
             {
@@ -52,7 +57,11 @@ namespace Web.Models
                 NotFoundInputs = notFoundInputs.Select(TransactionInputViewModel.Create),
                 WaitingInputs = waitingInputs.Select(TransactionInputViewModel.Create),
                 FailedBlocks = failedBlocks.Select(BlockStatusViewModel.Create),
-                QueuedBlocks = queuedBlocks.Select(BlockStatusViewModel.Create)
+                QueuedBlocks = queuedBlocks.Select(BlockStatusViewModel.Create),
+                FailedBlocksCount = failedBlocksCount,
+                QueuedBlocksCount = queuedBlocksCount,
+                NotFoundInputsCount = notFoundInputsCount,
+                WaitingInputsCount = waitingInputsCount
             };
         }
     }

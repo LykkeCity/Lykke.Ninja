@@ -26,7 +26,9 @@ namespace Web.Controllers
         }
 
         [HttpGet("{address}/summary")]
-        public async Task<AddressSummaryViewModel> Get(string address, [FromQuery]string at = null, [FromQuery]bool colored = false)
+        public async Task<AddressSummaryViewModel> Get(string address, 
+            [FromQuery]string at = null, 
+            [FromQuery]bool colored = false)
         {
             int? atBlockHeight = null;
             if (!string.IsNullOrEmpty(at))
@@ -36,18 +38,33 @@ namespace Web.Controllers
                 atBlockHeight = blockHeader?.BlockHeight;
             }
 
-            var btcAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
+            var btcAddress = BitcoinAddressHelper.GetBitcoinAddress(address, 
+                _baseSettings.UsedNetwork());
 
-            var getTxCount = _outputRepository.GetTransactionsCount(btcAddress, atBlockHeight);
-            var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, atBlockHeight, colored);
-            var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, atBlockHeight, colored);
+            var getTxCount = _outputRepository.GetTransactionsCount(btcAddress, 
+                atBlockHeight);
 
-            var assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, atBlockHeight);
-            var assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, atBlockHeight);
+            var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, 
+                atBlockHeight, 
+                colored);
+
+            var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, 
+                atBlockHeight, 
+                colored);
+
+            var assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, 
+                atBlockHeight);
+
+            var assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, 
+                atBlockHeight);
 
             await Task.WhenAll(getTxCount, getBtcAmount, getbtcReceived, assetsReceiveds);
 
-            return AddressSummaryViewModel.Create(getTxCount.Result, getBtcAmount.Result, getbtcReceived.Result, assetsReceiveds.Result, assetsAmounts.Result);
+            return AddressSummaryViewModel.Create(getTxCount.Result, 
+                getBtcAmount.Result, 
+                getbtcReceived.Result, 
+                assetsReceiveds.Result, 
+                assetsAmounts.Result);
         }
     }
 }
