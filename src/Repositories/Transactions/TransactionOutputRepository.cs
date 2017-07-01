@@ -287,6 +287,32 @@ namespace Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(inputTransactionId);
             await _collection.Indexes.CreateOneAsync(blockHeight);
             await _collection.Indexes.CreateOneAsync(inputBlockHeight);
+
+            var supportTxCount = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, transactionId);
+            await _collection.Indexes.CreateOneAsync(supportTxCount,
+                new CreateIndexOptions {Name = "supportTxCount", Background = true });
+
+
+            var supportTxCountByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, transactionId, blockHeight);
+            await _collection.Indexes.CreateOneAsync(supportTxCountByBlockIndex,
+                new CreateIndexOptions { Name = "supportTxCountByBlock", Background = true});
+
+            var supportBtcAmountSummaryIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData,  btcValue);
+            await _collection.Indexes.CreateOneAsync(supportBtcAmountSummaryIndex,
+                new CreateIndexOptions { Name = "supportBtcAmountSummaryIndex", Background = true });
+
+            var supportBtcAmountSummaryByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData,  blockHeight, btcValue);
+            await _collection.Indexes.CreateOneAsync(supportBtcAmountSummaryByBlockIndex,
+                new CreateIndexOptions { Name = "supportBtcAmountSummaryIndexByBlock", Background = true });
+
+            var supportBtcReceivedtSummaryIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData, isSpended, btcValue);
+            await _collection.Indexes.CreateOneAsync(supportBtcReceivedtSummaryIndex,
+                new CreateIndexOptions { Name = "supportBtcReceivedtSummaryIndex", Background = true });
+
+            var supportBtcReceivedSummaryByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData, isSpended, blockHeight, btcValue);
+            await _collection.Indexes.CreateOneAsync(supportBtcReceivedSummaryByBlockIndex,
+                new CreateIndexOptions { Name = "supportBtcReceivedSummaryByBlockIndex", Background = true });
+
         }
     }
 

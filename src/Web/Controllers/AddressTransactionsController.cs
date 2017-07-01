@@ -66,7 +66,7 @@ namespace Web.Controllers
         private async Task<AddressTransactionsViewModel> GetTransactions(string address, 
             bool colored, 
             bool unspendOnly, 
-            int ? minBlockHeight = null, 
+            int? minBlockHeight = null, 
             int? maxBlockHeight = null)
         {
             var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
@@ -89,6 +89,7 @@ namespace Web.Controllers
                 unspendOnly, 
                 minBlockHeight: minBlockHeight, 
                 maxBlockHeight: maxBlockHeight);
+
 
             await Task.WhenAll(getNinjaTop, 
                 getSpended, 

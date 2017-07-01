@@ -107,7 +107,7 @@ namespace Web.Models
         private static string GetPubKey(string address, Network network)
         {
             return address != null
-                ? BitcoinAddressHelper.GetBitcoinAddress(address, network).ScriptPubKey.ToHex()
+                ? new BitcoinPubKeyAddress(address, network).ScriptPubKey.ToHex()
                 : null;
         }
     }

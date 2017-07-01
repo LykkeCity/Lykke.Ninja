@@ -54,12 +54,11 @@ namespace Core.Transaction
     public interface ITransactionOutputRepository
     {
         Task InsertIfNotExists(IEnumerable<ITransactionOutput> items);
+
         Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs);
-
-
+        
         Task<long> GetTransactionsCount(BitcoinAddress address, int? at = null);
-
-
+        
         Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
         Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at = null, bool isColored = false);
@@ -73,5 +72,6 @@ namespace Core.Transaction
         Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, bool unspendOnly, int? minBlockHeight = null, int? maxBlockHeight = null);
 
         Task SetIndexes();
+
     }
 }
