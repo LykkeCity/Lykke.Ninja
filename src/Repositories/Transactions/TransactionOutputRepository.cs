@@ -64,7 +64,7 @@ namespace Repositories.Transactions
 
             if (itemsToInsert.Any())
             {
-                await _collection.InsertManyAsync(itemsToInsert.Select(TransactionOutputMongoEntity.Create));
+                await _collection.InsertManyAsync(itemsToInsert.Select(TransactionOutputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
             }
         }
 
