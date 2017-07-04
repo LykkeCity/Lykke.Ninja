@@ -52,6 +52,22 @@ namespace Repositories.BlockStatuses
             return await query.OrderBy(p => p.Height).ToListAsync();
         }
 
+        public async Task<IEnumerable<int>> GetHeights(BlockProcessingStatus? status = null, int? itemsToTake = null)
+        {
+            var query = _collection.AsQueryable();
+            if (status != null)
+            {
+                query = query.Where(p => p.ProcessingStatus == status.ToString());
+            }
+
+            if (itemsToTake != null)
+            {
+                query = query.Take(itemsToTake.Value);
+            }
+
+            return await query.OrderBy(p => p.Height).Select(p=>p.Height).ToListAsync();
+        }
+
         public async Task<long> Count(BlockProcessingStatus? status)
         {
             var query = _collection.AsQueryable();

@@ -24,7 +24,7 @@ namespace Jobs.BlockTasks
             _parseBlockCommandFacade = parseBlockCommandFacade;
         }
 
-        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 10 * 1000)]
+        //[QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 10 * 1000)]
         public async Task ParseBlock(ParseBlockCommandContext context)
         {
             try

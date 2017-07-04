@@ -43,14 +43,13 @@ namespace InitialParser.Functions
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
 
-            var getAllBlockStatuses = _blockStatusesRepository.GetAll();
+            var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done);
             var getTip = _ninjaBlockService.GetTip();
 
             await Task.WhenAll(getAllBlockStatuses, getTip);
 
             var blocksToExclude = getAllBlockStatuses.Result
-                .Where(p => p.ProcessingStatus == BlockProcessingStatus.Done)
-                .ToDictionary(p => p.Height);
+                .ToDictionary(p => p);
 
             var blocksHeightsToParse = new List<int>();
 
@@ -63,11 +62,11 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(50);
+            var semaphore = new SemaphoreSlim(100);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
-            StartSetNotFound(cancellationTokenSource.Token);
+            //StartSetNotFound(cancellationTokenSource.Token);
 
             var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;

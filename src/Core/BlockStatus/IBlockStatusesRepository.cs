@@ -57,6 +57,10 @@ namespace Core.BlockStatus
         Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status = null, 
             int? itemsToTake = null);
 
+
+        Task<IEnumerable<int>> GetHeights(BlockProcessingStatus? status = null,
+            int? itemsToTake = null);
+
         Task<long> Count(BlockProcessingStatus? status);
         Task Insert(IBlockStatus status);
         Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status);

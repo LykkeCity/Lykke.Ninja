@@ -49,13 +49,13 @@ namespace Services.PaseBlockCommand
                 var getStatus = _blockStatusesRepository.Get(context.BlockId);
                 await Task.WhenAll(getBlock, setStartedStatus, getStatus);
 
-                if (getStatus.Result?.ProcessingStatus == BlockProcessingStatus.Done)
-                {
-                    await _log.WriteWarningAsync(nameof(ProcessParseBlockCommandFacade), nameof(ProcessCommand),
-                        getStatus.Result.ToJson(), "Attempt to process already processed block");
+                //if (getStatus.Result?.ProcessingStatus == BlockProcessingStatus.Done)
+                //{
+                //    await _log.WriteWarningAsync(nameof(ProcessParseBlockCommandFacade), nameof(ProcessCommand),
+                //        getStatus.Result.ToJson(), "Attempt to process already processed block");
 
-                    return;
-                }
+                //    return;
+                //}
                 _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Get Transactions started");
 
 
