@@ -72,6 +72,6 @@ namespace Core.Transaction
         Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, bool unspendOnly, int? minBlockHeight = null, int? maxBlockHeight = null);
 
         Task SetIndexes();
-
+        Task InsertUniqueIndexes();
     }
 }

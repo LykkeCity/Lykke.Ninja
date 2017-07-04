@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Core.BlockStatus;
 using Core.Settings;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Repositories.Mongo;
@@ -91,14 +93,22 @@ namespace Repositories.BlockStatuses
             await _collection.UpdateOneAsync(BlockStatusMongoEntity.Filter.EqBlockId(blockId),
                 BlockStatusMongoEntity.Update.SetInputOutputsGrabbedStatus(status));
         }
+
+        public async Task InsertUniqueIndexes()
+        {
+            var idIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Id);
+
+            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
+        }
     }
 
     public class BlockStatusMongoEntity:IBlockStatus
     {
         public const string CollectionName = "block-statuses";
-        
 
-        [BsonId]
+        [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
+        public ObjectId _id { get; set; }
+        
         public string Id { get; set; }
 
         public int Height { get; set; }
