@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Core.Settings;
 using Core.Transaction;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Repositories.Mongo;
@@ -32,12 +35,12 @@ namespace Repositories.Transactions
             var allIds = items.Select(p => p.Id);
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
-            if (existed.Any())
-            {
-                await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists), 
-                    existed.Take(5).ToJson(),
-                    "Attempt To insert existed");
-            }
+            //if (existed.Any())
+            //{
+            //    await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists), 
+            //        existed.Take(5).ToJson(),
+            //        "Attempt To insert existed");
+            //}
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -97,13 +100,23 @@ namespace Repositories.Transactions
         {
             return _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
         }
+
+        public async Task InsertUniqueIndexes()
+        {
+            var idIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.Id);
+
+            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions{ Unique = true});
+        }
     }
 
     public class TransactionInputMongoEntity: ITransactionInput
     {
         public const string CollectionName = "transaction-inputs";
 
-        [BsonId]
+        [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
+        public ObjectId _id { get; set; }
+
+
         public string Id { get; set; }
 
         public string BlockId { get; set; }

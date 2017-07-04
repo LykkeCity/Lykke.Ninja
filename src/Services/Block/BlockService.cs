@@ -201,7 +201,7 @@ namespace Services.Block
             var insertOutputs =  _outputRepository.InsertIfNotExists(outputs);
             await Task.WhenAll(insertOutputs, insertInputs);
 
-            await ProcessInputsToSpendable(inputs);
+            //await ProcessInputsToSpendable(inputs);
         }
 
         public async Task ProcessInputsToSpendable(IEnumerable<ITransactionInput> inputs)

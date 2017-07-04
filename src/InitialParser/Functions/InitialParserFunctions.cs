@@ -21,6 +21,7 @@ namespace InitialParser.Functions
         private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly IBlockService _blockService;
         private readonly ITransactionInputRepository _inputRepository;
+        private readonly ITransactionOutputRepository _outputRepository;
         private readonly IProcessParseBlockCommandFacade _parseBlockCommandFacade;
 
         public InitialParserFunctions(IConsole console, 
@@ -28,7 +29,7 @@ namespace InitialParser.Functions
             INinjaBlockService ninjaBlockService, 
             IBlockStatusesRepository blockStatusesRepository, 
             IBlockService blockService,
-            ITransactionInputRepository inputRepository, IProcessParseBlockCommandFacade parseBlockCommandFacade)
+            ITransactionInputRepository inputRepository, IProcessParseBlockCommandFacade parseBlockCommandFacade, ITransactionOutputRepository outputRepository)
         {
             _console = console;
             _log = log;
@@ -37,11 +38,18 @@ namespace InitialParser.Functions
             _blockService = blockService;
             _inputRepository = inputRepository;
             _parseBlockCommandFacade = parseBlockCommandFacade;
+            _outputRepository = outputRepository;
         }
 
         public async Task Run()
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
+
+            var setInputUniqueIndexes = _inputRepository.InsertUniqueIndexes();
+            var setOutputUniqueIndexes = _outputRepository.InsertUniqueIndexes();
+            var setBlockUniqueIndexes = _blockStatusesRepository.InsertUniqueIndexes();
+
+            await Task.WhenAll(setInputUniqueIndexes, setOutputUniqueIndexes, setBlockUniqueIndexes);
 
             var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done);
             var getTip = _ninjaBlockService.GetTip();
@@ -62,7 +70,7 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(100);
+            var semaphore = new SemaphoreSlim(200);
 
             var cancellationTokenSource = new CancellationTokenSource();
 

@@ -6,7 +6,9 @@ using Common;
 using Common.Log;
 using Core.Settings;
 using Core.Transaction;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NBitcoin;
@@ -51,12 +53,12 @@ namespace Repositories.Transactions
             var allIds = items.Select(p => p.Id);
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
-            if (existed.Any())
-            {
-                await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists),
-                    existed.Take(5).ToJson(),
-                    "Attempt To insert existed");
-            }
+            //if (existed.Any())
+            //{
+            //    await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists),
+            //        existed.Take(5).ToJson(),
+            //        "Attempt To insert existed");
+            //}
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -261,6 +263,7 @@ namespace Repositories.Transactions
 
         public async Task SetIndexes()
         {
+            await InsertUniqueIndexes();
             var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
 
             var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
@@ -314,13 +317,22 @@ namespace Repositories.Transactions
             //    new CreateIndexOptions { Name = "supportBtcReceivedSummaryByBlockIndex", Background = true });
 
         }
+
+        public async Task InsertUniqueIndexes()
+        {
+            var idIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.Id);
+
+            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
+        }
     }
 
     public class TransactionOutputMongoEntity: ITransactionOutput
     {
         public const string CollectionName = "transaction-outputs";
 
-        [BsonId]
+        [BsonId(IdGenerator = typeof(ObjectIdGenerator))]
+        public ObjectId _id { get; set; }
+
         public string Id { get; set; }
         
         public string BlockId { get; set; }
