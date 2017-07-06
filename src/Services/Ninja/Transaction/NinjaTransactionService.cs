@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.Ninja.Transaction;
@@ -13,6 +14,7 @@ namespace Services.Ninja.Transaction
     {
         private readonly QBitNinjaClient _ninjaClient;
         private readonly ILog _log;
+        private static SemaphoreSlim _lock = new SemaphoreSlim(100);
 
         public NinjaTransactionService(QBitNinjaClient qBitNinja, ILog log)
         {
@@ -31,11 +33,14 @@ namespace Services.Ninja.Transaction
             var tasksToAwait = new List<Task>();
             var result = new ConcurrentBag<GetTransactionResponse>();
 
+
             foreach ( var txId  in txIds)
             {
+                await _lock.WaitAsync();
                 var tsk = Get(txId)
                     .ContinueWith(p =>
                     {
+                        _lock.Release();
                         result.Add(p.Result);
                     });
 
