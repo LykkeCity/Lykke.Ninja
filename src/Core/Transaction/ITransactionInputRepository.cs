@@ -41,6 +41,5 @@ namespace Core.Transaction
             int? itemsToTake = null);
         
         Task<long> Count(SpendProcessedStatus status);
-        Task SetInsertionIndexes();
     }
 }

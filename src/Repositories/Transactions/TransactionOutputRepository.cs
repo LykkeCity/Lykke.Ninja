@@ -35,10 +35,13 @@ namespace Repositories.Transactions
     }
 
 
-    public class TransactionOutputRepository: ITransactionOutputRepository
+    public class TransactionOutputRepository : ITransactionOutputRepository
     {
         private readonly IMongoCollection<TransactionOutputMongoEntity> _collection;
         private readonly ILog _log;
+
+        private readonly Lazy<Task> _ensureQueryIndexes;
+        private readonly Lazy<Task> _ensureInsertIndexes;
 
         public TransactionOutputRepository(MongoSettings mongoSettings, ILog log)
         {
@@ -46,12 +49,17 @@ namespace Repositories.Transactions
             var client = new MongoClient(mongoSettings.ConnectionString);
             var db = client.GetDatabase(mongoSettings.DataDbName);
             _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
+
+            _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
+            _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items)
         {
+            await EnsureInsertionIndexes();
+
             var allIds = items.Select(p => p.Id);
-            
+
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             //if (existed.Any())
@@ -71,6 +79,8 @@ namespace Repositories.Transactions
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items, int blockHeight)
         {
+            await EnsureInsertionIndexes();
+
             var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
@@ -82,13 +92,15 @@ namespace Repositories.Transactions
             catch (Exception e) // todo catch mongoDuplicate exception
             {
                 await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(InsertIfNotExists), blockHeight.ToString(), e.ToString());
-                
+
                 await InsertIfNotExists(items);
             }
         }
 
         private async Task Insert(IEnumerable<ITransactionOutput> items)
         {
+            await EnsureInsertionIndexes();
+
             if (items.Any())
             {
                 await _collection.InsertManyAsync(items.Select(TransactionOutputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
@@ -97,6 +109,9 @@ namespace Repositories.Transactions
 
         public async Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs)
         {
+            await EnsureInsertionIndexes();
+            await EnsureQueryIndexes();
+
             var spendOutputIds = inputs.Select(
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
 
@@ -114,7 +129,7 @@ namespace Repositories.Transactions
                     var input = inputsDictionary[id];
 
                     var updateOneOp = new UpdateOneModel<TransactionOutputMongoEntity>(
-                        TransactionOutputMongoEntity.Filter.EqId(id), 
+                        TransactionOutputMongoEntity.Filter.EqId(id),
                         TransactionOutputMongoEntity.Update.SetSpended(input));
 
                     bulkOps.Add(updateOneOp);
@@ -131,9 +146,10 @@ namespace Repositories.Transactions
             return SetSpendableOperationResult.Create(ok, notFoundInputs);
         }
 
-        public async Task<long> GetTransactionsCount(BitcoinAddress address, 
+        public async Task<long> GetTransactionsCount(BitcoinAddress address,
             int? at)
         {
+            await EnsureQueryIndexes();
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable()
                 .Where(output => output.DestinationAddress == stringAddress);
@@ -144,15 +160,17 @@ namespace Repositories.Transactions
             }
 
             return await query
-                .Select(p => new[] {p.TransactionId, p.SpendTxInput.SpendedInTxId})
+                .Select(p => new[] { p.TransactionId, p.SpendTxInput.SpendedInTxId })
                 .SelectMany(p => p)
-                .Where(p => p!= null)
+                .Where(p => p != null)
                 .Distinct()
                 .CountAsync();
         }
 
         public async Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable()
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -174,6 +192,8 @@ namespace Repositories.Transactions
 
         public async Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at, bool isColored = false)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable();
             query = query.Where(output => output.DestinationAddress == stringAddress);
@@ -194,6 +214,8 @@ namespace Repositories.Transactions
 
         public async Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable()
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -206,7 +228,7 @@ namespace Repositories.Transactions
 
             var result = await query
                 .GroupBy(p => p.ColoredData.AssetId)
-                .Select(p => new {assetId = p.Key, sum = p.Sum(x => x.ColoredData.Quantity)})
+                .Select(p => new { assetId = p.Key, sum = p.Sum(x => x.ColoredData.Quantity) })
                 .ToListAsync();
 
             return result.ToDictionary(p => p.assetId, p => p.sum);
@@ -214,6 +236,8 @@ namespace Repositories.Transactions
 
         public async Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
 
             var query = _collection.AsQueryable()
@@ -234,10 +258,12 @@ namespace Repositories.Transactions
             return result.ToDictionary(p => p.addr, p => p.sum);
         }
 
-        public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address, 
-            int? minBlockHeight = null, 
+        public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
+            int? minBlockHeight = null,
             int? maxBlockHeight = null)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
 
             var query = _collection.AsQueryable()
@@ -258,11 +284,13 @@ namespace Repositories.Transactions
             return await query.ToListAsync();
         }
 
-        public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address, 
+        public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address,
             bool unspentOnly = false,
-            int? minBlockHeight = null, 
+            int? minBlockHeight = null,
             int? maxBlockHeight = null)
         {
+            await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
 
             var query = _collection.AsQueryable()
@@ -288,71 +316,111 @@ namespace Repositories.Transactions
             return await query.ToListAsync();
         }
 
-        public async Task SetIndexes()
+        #region Indexes
+
+        private async Task EnsureInsertionIndexes()
         {
-            await SetInsertionIndexes();
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
-
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-
-            var transactionId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.TransactionId);
-            var inputTransactionId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.SpendedInTxId);
-
-            var assetId = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-
-            var assetQuantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.Quantity);
-            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.BtcSatoshiAmount);
-            
-
-            var inputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-
-            await _collection.Indexes.CreateOneAsync(address);
-            await _collection.Indexes.CreateOneAsync(isSpended);
-            await _collection.Indexes.CreateOneAsync(assetId);
-            await _collection.Indexes.CreateOneAsync(hasColoredData);
-            //await _collection.Indexes.CreateOneAsync(transactionId);
-            await _collection.Indexes.CreateOneAsync(inputTransactionId);
-            await _collection.Indexes.CreateOneAsync(inputBlockHeight);
-
-            var supportTxCount = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, transactionId);
-            await _collection.Indexes.CreateOneAsync(supportTxCount,
-                new CreateIndexOptions {Name = "supportTxCount", Background = true });
-
-
-            //var supportTxCountByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, transactionId, blockHeight);
-            //await _collection.Indexes.CreateOneAsync(supportTxCountByBlockIndex,
-            //    new CreateIndexOptions { Name = "supportTxCountByBlock", Background = true});
-
-            //var supportBtcAmountSummaryIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData,  btcValue);
-            //await _collection.Indexes.CreateOneAsync(supportBtcAmountSummaryIndex,
-            //    new CreateIndexOptions { Name = "supportBtcAmountSummaryIndex", Background = true });
-
-            //var supportBtcAmountSummaryByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData,  blockHeight, btcValue);
-            //await _collection.Indexes.CreateOneAsync(supportBtcAmountSummaryByBlockIndex,
-            //    new CreateIndexOptions { Name = "supportBtcAmountSummaryIndexByBlock", Background = true });
-
-            //var supportBtcReceivedtSummaryIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData, isSpended, btcValue);
-            //await _collection.Indexes.CreateOneAsync(supportBtcReceivedtSummaryIndex,
-            //    new CreateIndexOptions { Name = "supportBtcReceivedtSummaryIndex", Background = true });
-
-            //var supportBtcReceivedSummaryByBlockIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, hasColoredData, isSpended, blockHeight, btcValue);
-            //await _collection.Indexes.CreateOneAsync(supportBtcReceivedSummaryByBlockIndex,
-            //    new CreateIndexOptions { Name = "supportBtcReceivedSummaryByBlockIndex", Background = true });
-
+            await _ensureInsertIndexes.Value;
         }
 
-        public async Task SetInsertionIndexes()
+        private async Task EnsureQueryIndexes()
+        {
+            await _ensureQueryIndexes.Value;
+        }
+
+
+        private async Task SetInsertionIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Started");
+
+
+
+            var setIndexes = new[]
+            {
+                SetIdIndex(),
+                SetHeightIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Done");
+        }
+
+        private async Task SetQueryIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Started");
+
+            var setIndexes = new[]
+            {
+                SetHeightIndex(),
+                SetIdIndex(),
+                SetAddressIndex(),
+                SetHasColoredDataIndex(),
+                SetIsSpendedIndex(),
+                SetAssetIdIndex(),
+                SetSpendTxInputBlockHeight()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Done");
+        }
+
+        #region Single
+
+        private async Task SetHeightIndex()
+        {
+            var blockHeightIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = false });
+        }
+
+        private async Task SetIdIndex()
         {
             var idIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.Id);
-
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
-
-
-            var blockHeightIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(blockHeightIndex);
         }
+
+        private async Task SetAddressIndex()
+        {
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+        }
+
+
+        private async Task SetHasColoredDataIndex()
+        {
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+        }
+
+
+
+
+        private async Task SetIsSpendedIndex()
+        {
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+        }
+
+
+
+        private async Task SetAssetIdIndex()
+        {
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+        }
+
+
+
+        private async Task SetSpendTxInputBlockHeight()
+        {
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+        }
+
+        #endregion
+
+        #endregion
     }
 
     public class TransactionOutputMongoEntity: ITransactionOutput

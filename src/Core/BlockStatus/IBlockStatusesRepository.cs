@@ -64,7 +64,5 @@ namespace Core.BlockStatus
         Task<long> Count(BlockProcessingStatus? status);
         Task Insert(IBlockStatus status);
         Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status);
-
-        Task SetInsertionIndexes();
     }
 }

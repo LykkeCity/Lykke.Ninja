@@ -20,6 +20,9 @@ namespace Repositories.Transactions
         private readonly IMongoCollection<TransactionInputMongoEntity> _collection;
         private readonly ILog _log;
 
+        private readonly Lazy<Task> _ensureQueryIndexes;
+        private readonly Lazy<Task> _ensureInsertIndexes;
+
         public TransactionInputRepository(MongoSettings settings, 
             ILog log)
         {
@@ -27,20 +30,18 @@ namespace Repositories.Transactions
             var client = new MongoClient(settings.ConnectionString);
             var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
+
+            _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
+            _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
 
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items)
         {
+            await EnsureInsertionIndexes();
+
             var allIds = items.Select(p => p.Id);
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
-
-            //if (existed.Any())
-            //{
-            //    await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists), 
-            //        existed.Take(5).ToJson(),
-            //        "Attempt To insert existed");
-            //}
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -50,6 +51,8 @@ namespace Repositories.Transactions
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items, int blockHeight)
         {
+            await EnsureInsertionIndexes();
+
             var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
@@ -68,6 +71,8 @@ namespace Repositories.Transactions
 
         private async Task Insert(IEnumerable<ITransactionInput> items)
         {
+            await EnsureInsertionIndexes();
+
             if (items.Any())
             {
                 await _collection.InsertManyAsync(items.Select(TransactionInputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
@@ -107,6 +112,7 @@ namespace Repositories.Transactions
 
         public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, int? itemsToTake = null)
         {
+            await EnsureQueryIndexes();
             var query = _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status))
                 .Sort(new SortDefinitionBuilder<TransactionInputMongoEntity>().Ascending(p => p.BlockHeight));
 
@@ -115,24 +121,85 @@ namespace Repositories.Transactions
                 query = query.Limit(itemsToTake);
             }
 
-            return await query
-                .ToListAsync();
+            return await query.ToListAsync();
         }
 
-        public Task<long> Count(SpendProcessedStatus status)
+        public async Task<long> Count(SpendProcessedStatus status)
         {
-            return _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
+            await EnsureQueryIndexes();
+
+            return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
         }
 
-        public async Task SetInsertionIndexes()
+
+
+        #region  indexes
+
+        private async Task EnsureInsertionIndexes()
+        {
+            await _ensureInsertIndexes.Value;
+        }
+
+        private async Task EnsureQueryIndexes()
+        {
+            await _ensureQueryIndexes.Value;
+        }
+
+        private async Task SetInsertionIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetInsertionIndexes), null, "Started");
+            
+            var setIndexes = new[]
+            {
+                SetHeightIndex(),
+                SetIdIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetInsertionIndexes), null, "Done");
+        }
+
+
+        private async Task SetQueryIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetQueryIndexes), null, "Started");
+
+            var setIndexes = new[]
+            {
+                SetHeightIndex(),
+                SetStatusIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetQueryIndexes), null, "Done");
+        }
+
+        #region Single
+
+        private async Task SetHeightIndex()
+        {
+            var blockHeightIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = true });
+        }
+
+        private async Task SetIdIndex()
         {
             var idIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.Id);
-
-            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions{ Unique = true});
-
-            var blockHeightIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions {Background =  true});
+            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
         }
+
+        private async Task SetStatusIndex()
+        {
+            var statusIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.SpendProcessedInfo.Status);
+            await _collection.Indexes.CreateOneAsync(statusIndex, new CreateIndexOptions { Background = true });
+        }
+        
+        #endregion
+        #endregion
+
+
     }
 
     public class TransactionInputMongoEntity: ITransactionInput

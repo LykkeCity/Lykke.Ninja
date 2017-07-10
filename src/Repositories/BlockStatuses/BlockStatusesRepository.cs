@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Common.Log;
 using Core.BlockStatus;
 using Core.Settings;
 using MongoDB.Bson;
@@ -16,30 +17,42 @@ namespace Repositories.BlockStatuses
     {
         private readonly IMongoCollection<BlockStatusMongoEntity> _collection;
 
-        public BlockStatusesRepository(MongoSettings settings)
+        private readonly Lazy<Task> _ensureQueryIndexes;
+        private readonly Lazy<Task> _ensureInsertIndexes;
+
+        private readonly ILog _log;
+        public BlockStatusesRepository(MongoSettings settings, ILog log)
         {
+            _log = log;
             var client = new MongoClient(settings.ConnectionString);
             var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<BlockStatusMongoEntity>(BlockStatusMongoEntity.CollectionName);
+
+            _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
+            _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
 
         public async Task<bool> Exists(string blockId)
         {
+            await EnsureQueryIndexes();
             return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).CountAsync() > 0;
         }
 
         public async Task<IBlockStatus> GetLastQueuedBlock()
         {
+            await EnsureQueryIndexes();
             return await _collection.AsQueryable().OrderByDescending(p => p.Height).FirstOrDefaultAsync();
         }
 
         public async Task<IBlockStatus> Get(string blockId)
         {
+            await EnsureQueryIndexes();
             return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status, int? itemsToTake)
         {
+            await EnsureQueryIndexes();
             var query = _collection.AsQueryable();
             if (status != null)
             {
@@ -56,6 +69,7 @@ namespace Repositories.BlockStatuses
 
         public async Task<IEnumerable<int>> GetHeights(BlockProcessingStatus? status = null, int? itemsToTake = null)
         {
+            await EnsureQueryIndexes();
             var query = _collection.AsQueryable();
             if (status != null)
             {
@@ -67,7 +81,7 @@ namespace Repositories.BlockStatuses
                 query = query.Take(itemsToTake.Value);
             }
 
-            return await query.OrderBy(p => p.Height).Select(p=>p.Height).ToListAsync();
+            return await query.OrderByDescending(p => p.Height).Select(p=>p.Height).ToListAsync();
         }
 
         public async Task<long> Count(BlockProcessingStatus? status)
@@ -81,27 +95,85 @@ namespace Repositories.BlockStatuses
             return await query.CountAsync();
         }
 
-        public Task Insert(IBlockStatus status)
+        public async Task Insert(IBlockStatus status)
         {
+            await EnsureInsertionIndexes();
+
             var mongoEntity = BlockStatusMongoEntity.Create(status);
 
-            return _collection.InsertOneAsync(mongoEntity);
+            await _collection.InsertOneAsync(mongoEntity);
         }
 
         public async Task ChangeProcessingStatus(string blockId, BlockProcessingStatus status)
         {
+            await EnsureInsertionIndexes();
             await _collection.UpdateOneAsync(BlockStatusMongoEntity.Filter.EqBlockId(blockId),
                 BlockStatusMongoEntity.Update.SetInputOutputsGrabbedStatus(status));
         }
+        
+        #region Indexes
 
-        public async Task SetInsertionIndexes()
+        private async Task EnsureInsertionIndexes()
+        {
+            await _ensureInsertIndexes.Value;
+        }
+
+        private async Task EnsureQueryIndexes()
+        {
+            await _ensureQueryIndexes.Value;
+        }
+        
+
+        private async Task SetInsertionIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(BlockStatusesRepository), nameof(SetInsertionIndexes), null, "Started");
+
+            var setIndexes = new[]
+            {
+                SetIdIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(BlockStatusesRepository), nameof(SetInsertionIndexes), null, "Done");
+        }
+
+        private async Task SetQueryIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(BlockStatusesRepository), nameof(SetQueryIndexes), null, "Started");
+
+            var setIndexes = new[]
+            {
+                SetHeightIndex(),
+                SetStatusIndex(),
+                SetIdIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(BlockStatusesRepository), nameof(SetQueryIndexes), null, "Done");
+        }
+
+
+        private async Task SetHeightIndex()
+        {
+            var blockHeightIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Height);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = true });
+        }
+
+        private async Task SetIdIndex()
         {
             var idIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Id);
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
-
-            var heightIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Height);
-            await _collection.Indexes.CreateOneAsync(heightIndex, new CreateIndexOptions { Background = true}); // could be block forks so its not unique
         }
+
+        private async Task SetStatusIndex()
+        {
+            var statusIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.ProcessingStatus);
+            await _collection.Indexes.CreateOneAsync(statusIndex, new CreateIndexOptions { Background = true });
+        }
+
+        #endregion
     }
 
     public class BlockStatusMongoEntity:IBlockStatus

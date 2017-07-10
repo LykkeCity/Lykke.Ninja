@@ -37,9 +37,10 @@ namespace Repositories
                 ConnectionString = settings.NinjaData.ConnectionString,
                 DataDbName = $"{settings.NinjaData.DbName}-{settings.UsedNetwork()}"
             });
-            ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>();
-            ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>();
-            ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>();
+
+            ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>().SingleInstance();
+            ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>().SingleInstance();
+            ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>().SingleInstance();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)

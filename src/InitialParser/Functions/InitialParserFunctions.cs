@@ -45,16 +45,11 @@ namespace InitialParser.Functions
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
 
-            var inputIndexes = _inputRepository.SetInsertionIndexes();
-            var outputIndexes = _outputRepository.SetInsertionIndexes();
-            var blockIndexes = _blockStatusesRepository.SetInsertionIndexes();
-
-            await Task.WhenAll(inputIndexes, outputIndexes, blockIndexes);
-
             var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done);
             var getTip = _ninjaBlockService.GetTip();
 
             await Task.WhenAll(getAllBlockStatuses, getTip);
+
 
             var blocksToExclude = getAllBlockStatuses.Result
                 .ToDictionary(p => p);
@@ -122,32 +117,9 @@ namespace InitialParser.Functions
                 await _blockStatusesRepository.Insert(BlockStatus.Create(header.BlockHeight, header.BlockId.ToString(), BlockProcessingStatus.Queued,
                     queuedAt: DateTime.UtcNow, statusChangedAt: DateTime.UtcNow));
             }
-           
         }
 
-
-        private void StartSetNotFound(CancellationToken cancellationToken)
-        {
-            new Thread(() =>
-            {
-                do
-                {
-                    try
-                    {
-
-                        SetNotFounded(50).Wait();
-                    }
-                    catch (Exception e)
-                    {
-                        _console.WriteLine(e.ToString());
-                    }
-
-                    Thread.Sleep(5000);
-                } while (!cancellationToken.IsCancellationRequested);
-            }).Start();
-
-
-        }
+        
         private async Task SetNotFounded(int? itemsToTake = null)
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(SetNotFounded)} started");
