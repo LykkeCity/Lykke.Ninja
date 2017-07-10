@@ -181,7 +181,7 @@ namespace Repositories.Transactions
         private async Task SetHeightIndex()
         {
             var blockHeightIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = false });
         }
 
         private async Task SetIdIndex()
@@ -193,7 +193,7 @@ namespace Repositories.Transactions
         private async Task SetStatusIndex()
         {
             var statusIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.SpendProcessedInfo.Status);
-            await _collection.Indexes.CreateOneAsync(statusIndex, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(statusIndex, new CreateIndexOptions { Background = false });
         }
         
         #endregion

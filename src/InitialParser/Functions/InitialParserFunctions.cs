@@ -65,7 +65,7 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(50);
+            var semaphore = new SemaphoreSlim(1);
 
             var cancellationTokenSource = new CancellationTokenSource();
 

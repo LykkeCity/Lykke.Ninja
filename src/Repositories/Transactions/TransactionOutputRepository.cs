@@ -383,14 +383,14 @@ namespace Repositories.Transactions
         private async Task SetAddressIndex()
         {
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
         }
 
 
         private async Task SetHasColoredDataIndex()
         {
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
         }
 
 
@@ -399,7 +399,7 @@ namespace Repositories.Transactions
         private async Task SetIsSpendedIndex()
         {
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
         }
 
 
@@ -407,7 +407,7 @@ namespace Repositories.Transactions
         private async Task SetAssetIdIndex()
         {
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
         }
 
 
@@ -415,7 +415,7 @@ namespace Repositories.Transactions
         private async Task SetSpendTxInputBlockHeight()
         {
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = true });
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
         }
 
         #endregion
