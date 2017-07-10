@@ -18,13 +18,13 @@ namespace Jobs.Index
 
 
 
-        [TimerTrigger("23:59:59")]
-        public async Task SetIndexes()
-        {
-            _console.WriteLine($"{nameof(IndexFunctions)}.{nameof(SetIndexes)} Started");
+        //[TimerTrigger("23:59:59")]
+        //public async Task SetIndexes()
+        //{
+        //    _console.WriteLine($"{nameof(IndexFunctions)}.{nameof(SetIndexes)} Started");
 
             
-            await _outputRepository.SetIndexes();
-        }
+        //    await _outputRepository.SetIndexes();
+        //}
     }
 }

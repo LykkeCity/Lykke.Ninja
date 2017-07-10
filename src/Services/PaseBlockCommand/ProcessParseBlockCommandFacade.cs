@@ -68,7 +68,7 @@ namespace Services.PaseBlockCommand
 
                 await _blockService.Parse(getBlock.Result, coloredTransactions);
 
-                await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
+               // await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
 
                 _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Done");
             }

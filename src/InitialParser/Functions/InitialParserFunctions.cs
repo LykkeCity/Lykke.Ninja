@@ -45,11 +45,11 @@ namespace InitialParser.Functions
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
 
-            var setInputUniqueIndexes = _inputRepository.InsertUniqueIndexes();
-            var setOutputUniqueIndexes = _outputRepository.InsertUniqueIndexes();
-            var setBlockUniqueIndexes = _blockStatusesRepository.InsertUniqueIndexes();
+            var inputIndexes = _inputRepository.SetInsertionIndexes();
+            var outputIndexes = _outputRepository.SetInsertionIndexes();
+            var blockIndexes = _blockStatusesRepository.SetInsertionIndexes();
 
-            await Task.WhenAll(setInputUniqueIndexes, setOutputUniqueIndexes, setBlockUniqueIndexes);
+            await Task.WhenAll(inputIndexes, outputIndexes, blockIndexes);
 
             var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done);
             var getTip = _ninjaBlockService.GetTip();
@@ -61,7 +61,7 @@ namespace InitialParser.Functions
 
             var blocksHeightsToParse = new List<int>();
 
-            var startFromBlock = 1;
+            var startFromBlock = 460000;
 
             for (int height = startFromBlock; height <= getTip.Result.BlockHeight; height++)
             {
@@ -70,7 +70,7 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(200);
+            var semaphore = new SemaphoreSlim(50);
 
             var cancellationTokenSource = new CancellationTokenSource();
 

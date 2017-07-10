@@ -39,7 +39,7 @@ namespace Jobs.BlockTasks
         }
 
 
-        //[TimerTrigger("00:00:10")]
+        [TimerTrigger("00:00:10")]
         public async Task ScanNewBlocks()
         {
             try
@@ -74,7 +74,7 @@ namespace Jobs.BlockTasks
             }
         }
 
-        //[TimerTrigger("00:00:30")]
+        [TimerTrigger("00:00:30")]
         public async Task PutFailedToQueueAgain()
         {
             try

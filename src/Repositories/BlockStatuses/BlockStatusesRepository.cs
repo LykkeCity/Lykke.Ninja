@@ -94,11 +94,13 @@ namespace Repositories.BlockStatuses
                 BlockStatusMongoEntity.Update.SetInputOutputsGrabbedStatus(status));
         }
 
-        public async Task InsertUniqueIndexes()
+        public async Task SetInsertionIndexes()
         {
             var idIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Id);
-
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
+
+            var heightIndex = Builders<BlockStatusMongoEntity>.IndexKeys.Descending(p => p.Height);
+            await _collection.Indexes.CreateOneAsync(heightIndex, new CreateIndexOptions { Background = true}); // could be block forks so its not unique
         }
     }
 

@@ -44,11 +44,34 @@ namespace Repositories.Transactions
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
-            if (itemsToInsert.Any())
+            await Insert(itemsToInsert);
+
+        }
+
+        public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items, int blockHeight)
+        {
+            var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+
+            var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
+            try
             {
-                await _collection.InsertManyAsync(itemsToInsert.Select(TransactionInputMongoEntity.Create), new InsertManyOptions{IsOrdered = false});
+
+                await Insert(itemsToInsert);
             }
-            
+            catch (Exception e) // todo catch mongoDuplicate exception
+            {
+                await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(InsertIfNotExists), blockHeight.ToString(), e.ToString());
+
+                await InsertIfNotExists(items);
+            }
+        }
+
+        private async Task Insert(IEnumerable<ITransactionInput> items)
+        {
+            if (items.Any())
+            {
+                await _collection.InsertManyAsync(items.Select(TransactionInputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
+            }
         }
 
         public async Task SetSpended(ISetSpendableOperationResult operationResult)
@@ -101,11 +124,14 @@ namespace Repositories.Transactions
             return _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
         }
 
-        public async Task InsertUniqueIndexes()
+        public async Task SetInsertionIndexes()
         {
             var idIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.Id);
 
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions{ Unique = true});
+
+            var blockHeightIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions {Background =  true});
         }
     }
 

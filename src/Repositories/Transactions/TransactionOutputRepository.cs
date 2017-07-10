@@ -51,6 +51,7 @@ namespace Repositories.Transactions
         public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items)
         {
             var allIds = items.Select(p => p.Id);
+            
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             //if (existed.Any())
@@ -65,6 +66,32 @@ namespace Repositories.Transactions
             if (itemsToInsert.Any())
             {
                 await _collection.InsertManyAsync(itemsToInsert.Select(TransactionOutputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
+            }
+        }
+
+        public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items, int blockHeight)
+        {
+            var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+
+            var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
+            try
+            {
+
+                await Insert(itemsToInsert);
+            }
+            catch (Exception e) // todo catch mongoDuplicate exception
+            {
+                await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(InsertIfNotExists), blockHeight.ToString(), e.ToString());
+                
+                await InsertIfNotExists(items);
+            }
+        }
+
+        private async Task Insert(IEnumerable<ITransactionOutput> items)
+        {
+            if (items.Any())
+            {
+                await _collection.InsertManyAsync(items.Select(TransactionOutputMongoEntity.Create), new InsertManyOptions { IsOrdered = false });
             }
         }
 
@@ -263,7 +290,7 @@ namespace Repositories.Transactions
 
         public async Task SetIndexes()
         {
-            await InsertUniqueIndexes();
+            await SetInsertionIndexes();
             var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
 
             var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
@@ -277,8 +304,7 @@ namespace Repositories.Transactions
 
             var assetQuantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.Quantity);
             var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.BtcSatoshiAmount);
-
-            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            
 
             var inputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
 
@@ -286,9 +312,8 @@ namespace Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(isSpended);
             await _collection.Indexes.CreateOneAsync(assetId);
             await _collection.Indexes.CreateOneAsync(hasColoredData);
-            await _collection.Indexes.CreateOneAsync(transactionId);
+            //await _collection.Indexes.CreateOneAsync(transactionId);
             await _collection.Indexes.CreateOneAsync(inputTransactionId);
-            await _collection.Indexes.CreateOneAsync(blockHeight);
             await _collection.Indexes.CreateOneAsync(inputBlockHeight);
 
             var supportTxCount = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, transactionId);
@@ -318,11 +343,15 @@ namespace Repositories.Transactions
 
         }
 
-        public async Task InsertUniqueIndexes()
+        public async Task SetInsertionIndexes()
         {
             var idIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.Id);
 
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
+
+
+            var blockHeightIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex);
         }
     }
 

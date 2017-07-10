@@ -25,18 +25,18 @@ namespace Jobs.Input
         }
 
 
-        [TimerTrigger("00:00:30")]
-        public async Task SetNotFound()
-        {
-            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFound)} started");
+        //[TimerTrigger("00:00:30")]
+        //public async Task SetNotFound()
+        //{
+        //    _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFound)} started");
 
-            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 2000);
-            if (notFoundInputs.Any())
-            {
-                await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFound), notFoundInputs.Take(5).ToJson(),
-                    "Processing not found inputs");
-                await _blockService.ProcessInputsToSpendable(notFoundInputs);
-            }
-        }
+        //    var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 2000);
+        //    if (notFoundInputs.Any())
+        //    {
+        //        await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFound), notFoundInputs.Take(5).ToJson(),
+        //            "Processing not found inputs");
+        //        await _blockService.ProcessInputsToSpendable(notFoundInputs);
+        //    }
+        //}
     }
 }

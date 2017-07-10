@@ -35,12 +35,12 @@ namespace Core.Transaction
 
     public interface ITransactionInputRepository
     {
-        Task InsertIfNotExists(IEnumerable<ITransactionInput> items);
+        Task InsertIfNotExists(IEnumerable<ITransactionInput> items, int blockHeight);
         Task SetSpended(ISetSpendableOperationResult operationResult);
         Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, 
             int? itemsToTake = null);
         
         Task<long> Count(SpendProcessedStatus status);
-        Task InsertUniqueIndexes();
+        Task SetInsertionIndexes();
     }
 }

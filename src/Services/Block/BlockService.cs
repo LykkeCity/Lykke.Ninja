@@ -197,8 +197,8 @@ namespace Services.Block
 
             TransactionOutput.SetColoredToOutputs(outputs, coloredData);
 
-            var insertInputs = _inputRepository.InsertIfNotExists(inputs);
-            var insertOutputs =  _outputRepository.InsertIfNotExists(outputs);
+            var insertInputs = _inputRepository.InsertIfNotExists(inputs, block.AdditionalInformation.Height);
+            var insertOutputs =  _outputRepository.InsertIfNotExists(outputs, block.AdditionalInformation.Height);
             await Task.WhenAll(insertOutputs, insertInputs);
 
             //await ProcessInputsToSpendable(inputs);
