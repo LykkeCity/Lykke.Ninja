@@ -24,6 +24,8 @@ namespace Core.Settings
         public int MaxParseBlockQueuedCommandCount { get; set; } = 25;
 
         public ProxySettings Proxy { get; set; }
+
+        public InitialParserSettings InitialParser { get; set; }
     }
 
     public class DbSettings
@@ -36,6 +38,14 @@ namespace Core.Settings
         public string LogsConnString { get; set; }
 
 
+    }
+
+
+    public class InitialParserSettings
+    {
+        public int StartFromBlockHeight { get; set; }
+
+        public int SemaphoreThreadCount { get; set; }
     }
 
     public class ProxySettings

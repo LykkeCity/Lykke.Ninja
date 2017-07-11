@@ -10,6 +10,7 @@ using Core.Block;
 using Core.BlockStatus;
 using Core.Ninja.Block;
 using Core.ParseBlockCommand;
+using Core.Settings;
 using Core.Transaction;
 
 namespace InitialParser.Functions
@@ -24,13 +25,17 @@ namespace InitialParser.Functions
         private readonly ITransactionInputRepository _inputRepository;
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly IProcessParseBlockCommandFacade _parseBlockCommandFacade;
-
+        private readonly BaseSettings _baseSettings;
+        
         public InitialParserFunctions(IConsole console, 
             ILog log,
             INinjaBlockService ninjaBlockService, 
             IBlockStatusesRepository blockStatusesRepository, 
             IBlockService blockService,
-            ITransactionInputRepository inputRepository, IProcessParseBlockCommandFacade parseBlockCommandFacade, ITransactionOutputRepository outputRepository)
+            ITransactionInputRepository inputRepository, 
+            IProcessParseBlockCommandFacade parseBlockCommandFacade, 
+            ITransactionOutputRepository outputRepository,
+            BaseSettings baseSettings)
         {
             _console = console;
             _log = log;
@@ -40,6 +45,7 @@ namespace InitialParser.Functions
             _inputRepository = inputRepository;
             _parseBlockCommandFacade = parseBlockCommandFacade;
             _outputRepository = outputRepository;
+            _baseSettings = baseSettings;
         }
 
         public async Task Run()
@@ -68,7 +74,7 @@ namespace InitialParser.Functions
 
             var blocksHeightsToParse = new List<int>();
 
-            var startFromBlock = 1;
+            var startFromBlock = _baseSettings.InitialParser?.StartFromBlockHeight ?? 1;
 
             for (int height = startFromBlock; height <= ninjaGetTip.Result.BlockHeight; height++)
             {
@@ -77,7 +83,7 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(50);
+            var semaphore = new SemaphoreSlim(_baseSettings.InitialParser?.SemaphoreThreadCount??50);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
