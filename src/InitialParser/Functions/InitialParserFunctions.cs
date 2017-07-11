@@ -77,7 +77,7 @@ namespace InitialParser.Functions
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(1);
+            var semaphore = new SemaphoreSlim(50);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -85,6 +85,7 @@ namespace InitialParser.Functions
 
             var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;
+            var colorlock = new object();
             foreach (var height in blocksHeightsToParse)
             {
                 await semaphore.WaitAsync();
@@ -95,7 +96,13 @@ namespace InitialParser.Functions
 
                     st.Stop();
                     counter--;
-                    _console.WriteLine($"{counter} remaining. elapsed {st.Elapsed.TotalSeconds} sec");
+                    lock (colorlock)
+                    {
+                        int foregroundColor = (int)Console.ForegroundColor;
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        _console.WriteLine($"{counter} remaining. elapsed {st.Elapsed.TotalSeconds} sec");
+                        Console.ForegroundColor = (ConsoleColor) foregroundColor;
+                    }
                     semaphore.Release();
                 }));
             }
