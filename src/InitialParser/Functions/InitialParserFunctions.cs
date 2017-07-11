@@ -91,7 +91,6 @@ namespace InitialParser.Functions
 
             var tasksToAwait = new List<Task>();
             var counter = blocksHeightsToParse.Count;
-            var colorlock = new object();
             foreach (var height in blocksHeightsToParse)
             {
                 await semaphore.WaitAsync();
@@ -102,13 +101,10 @@ namespace InitialParser.Functions
 
                     st.Stop();
                     counter--;
-                    lock (colorlock)
-                    {
-                        int foregroundColor = (int)Console.ForegroundColor;
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        _console.WriteLine($"{counter} remaining. elapsed {st.Elapsed.TotalSeconds} sec");
-                        Console.ForegroundColor = (ConsoleColor) foregroundColor;
-                    }
+                    int foregroundColor = (int)Console.ForegroundColor;
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    _console.WriteLine($"{counter} remaining. elapsed {st.Elapsed.TotalSeconds} sec");
+                    Console.ForegroundColor = (ConsoleColor)foregroundColor;
                     semaphore.Release();
                 }));
             }
