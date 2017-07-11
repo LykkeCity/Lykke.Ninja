@@ -168,23 +168,28 @@ namespace Services.Block
         private readonly Network _network;
         private readonly ILog _log;
         private readonly ISlackNotificationsProducer _notificationsProducer;
+        private readonly IConsole _console;
 
         public BlockService(ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, 
             ITransactionInputRepository inputRepository, 
             ILog log, 
-            ISlackNotificationsProducer notificationsProducer)
+            ISlackNotificationsProducer notificationsProducer, 
+            IConsole console)
         {
             _outputRepository = outputRepository;
             _inputRepository = inputRepository;
             _log = log;
             _notificationsProducer = notificationsProducer;
+            _console = console;
             _network = baseSettings.UsedNetwork();
         }
 
-        public async Task Parse(GetBlockResponse block, 
+        public async Task InsertDataInDb(GetBlockResponse block, 
             IEnumerable<GetTransactionResponse> coloredTransactions)
         {
+            WriteConsole(block.AdditionalInformation.Height, "Mapping started");
+
             var inputs = block.Block.Transactions
                 .SelectMany(transaction => TransactionInput.Create(transaction, block.AdditionalInformation))
                 .ToList();
@@ -197,8 +202,11 @@ namespace Services.Block
 
             TransactionOutput.SetColoredToOutputs(outputs, coloredData);
 
+            WriteConsole(block.AdditionalInformation.Height, "Mapping done");
+
             var insertInputs = _inputRepository.InsertIfNotExists(inputs, block.AdditionalInformation.Height);
             var insertOutputs =  _outputRepository.InsertIfNotExists(outputs, block.AdditionalInformation.Height);
+
             await Task.WhenAll(insertOutputs, insertInputs);
 
             //await ProcessInputsToSpendable(inputs);
@@ -216,16 +224,21 @@ namespace Services.Block
 
                 await _notificationsProducer.SendNotification(nameof(BlockService),
                     warnMessage,
-                    nameof(Parse));
+                    nameof(InsertDataInDb));
 
                 await _log.WriteWarningAsync(nameof(BlockService),
-                    nameof(Parse),
+                    nameof(InsertDataInDb),
                     new
                     {
                         notFoundIds = setSpendedResult.NotFound.Take(5).ToArray()
                     }.ToJson(),
                     warnMessage);
             }
+        }
+
+        private void WriteConsole(int blockHeight, string message)
+        {
+            _console.WriteLine($"{nameof(InsertDataInDb)} Block Height:{blockHeight} {message}");
         }
     }
 }

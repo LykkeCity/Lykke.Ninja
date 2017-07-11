@@ -15,7 +15,7 @@ using NBitcoin.OpenAsset;
 
 namespace Services.PaseBlockCommand
 {
-    public class ProcessParseBlockCommandFacade: IProcessParseBlockCommandFacade
+    public class ProcessParseBlockCommandFacade : IProcessParseBlockCommandFacade
     {
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly INinjaTransactionService _ninjaTransactionService;
@@ -23,11 +23,11 @@ namespace Services.PaseBlockCommand
         private readonly IBlockService _blockService;
         private readonly IConsole _console;
         private readonly ILog _log;
-        
-        public ProcessParseBlockCommandFacade(INinjaBlockService ninjaBlockService, 
-            INinjaTransactionService ninjaTransactionService, 
-            IBlockStatusesRepository blockStatusesRepository, 
-            IBlockService blockService, 
+
+        public ProcessParseBlockCommandFacade(INinjaBlockService ninjaBlockService,
+            INinjaTransactionService ninjaTransactionService,
+            IBlockStatusesRepository blockStatusesRepository,
+            IBlockService blockService,
             IConsole console, ILog log)
         {
             _ninjaBlockService = ninjaBlockService;
@@ -42,35 +42,45 @@ namespace Services.PaseBlockCommand
         {
             try
             {
-                _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Started");
-                 
-                var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId));
-                var setStartedStatus = _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started);
-                var getStatus = _blockStatusesRepository.Get(context.BlockId);
-                await Task.WhenAll(getBlock, setStartedStatus, getStatus);
+                WriteConsole(context.BlockHeight, "Started");
 
-                //if (getStatus.Result?.ProcessingStatus == BlockProcessingStatus.Done)
-                //{
-                //    await _log.WriteWarningAsync(nameof(ProcessParseBlockCommandFacade), nameof(ProcessCommand),
-                //        getStatus.Result.ToJson(), "Attempt to process already processed block");
+                var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId))
+                    .ContinueWith(p =>
+                    {
+                        WriteConsole(context.BlockHeight, "get block done");
+                        return p.Result;
+                    });
 
-                //    return;
-                //}
-                _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Get Transactions started");
+                var setStartedStatus =
+                    _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started).ContinueWith(p =>
+                    {
+                        WriteConsole(context.BlockHeight, "ChangeProcessingStatus block done");
+                    });
 
+                await Task.WhenAll(getBlock, setStartedStatus);
+                
+                WriteConsole(context.BlockHeight, "Get Transactions started");
 
                 var coloredTransactions = await _ninjaTransactionService.Get(
                     getBlock.Result.Block.Transactions
                         .Where(p => p.HasValidColoredMarker())
                         .Select(p => p.GetHash()));
+                
+                WriteConsole(context.BlockHeight, "Get Transactions Done");
 
-                _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Insert data Started");
+                WriteConsole(context.BlockHeight, "InsertDataInDb started");
 
-                await _blockService.Parse(getBlock.Result, coloredTransactions);
+                await _blockService.InsertDataInDb(getBlock.Result, coloredTransactions);
+                
+                WriteConsole(context.BlockHeight, "InsertDataInDb Done");
+
+                WriteConsole(context.BlockHeight, "ChangeProcessingStatus started");
 
                 await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
 
-                _console.WriteLine($"{nameof(ProcessCommand)} Block Height:{context.BlockHeight} Done");
+                WriteConsole(context.BlockHeight, "ChangeProcessingStatus Done");
+
+                WriteConsole(context.BlockHeight, "Done");
             }
             catch (Exception e)
             {
@@ -78,6 +88,12 @@ namespace Services.PaseBlockCommand
 
                 throw;
             }
+        }
+
+        private void WriteConsole(int blockHeight, string message)
+        {
+            _console.WriteLine($"{nameof(ProcessParseBlockCommandFacade)}.{nameof(ProcessCommand)} Block Height:{blockHeight} {message}");
+
         }
     }
 }

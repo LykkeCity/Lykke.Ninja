@@ -7,7 +7,7 @@ namespace Core.Block
 {
     public interface IBlockService
     {
-        Task Parse(GetBlockResponse block, IEnumerable<GetTransactionResponse> coloredTransactions);
+        Task InsertDataInDb(GetBlockResponse block, IEnumerable<GetTransactionResponse> coloredTransactions);
         Task ProcessInputsToSpendable(IEnumerable<ITransactionInput> inputs);
     }
 }

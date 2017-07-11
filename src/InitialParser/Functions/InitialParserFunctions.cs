@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,11 +46,22 @@ namespace InitialParser.Functions
         {
             _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
 
-            var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done);
-            var getTip = _ninjaBlockService.GetTip();
+            var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done)
+                .ContinueWith(p =>
+                {
+                    _console.WriteLine($"getAllBlockStatuses done");
 
-            await Task.WhenAll(getAllBlockStatuses, getTip);
+                    return p.Result;
+                });
 
+            var ninjaGetTip = _ninjaBlockService.GetTip().ContinueWith(p =>
+            {
+                _console.WriteLine($"ninjaGetTip done");
+
+                return p.Result;
+            });
+
+            await Task.WhenAll(getAllBlockStatuses, ninjaGetTip);
 
             var blocksToExclude = getAllBlockStatuses.Result
                 .ToDictionary(p => p);
@@ -58,14 +70,14 @@ namespace InitialParser.Functions
 
             var startFromBlock = 1;
 
-            for (int height = startFromBlock; height <= getTip.Result.BlockHeight; height++)
+            for (int height = startFromBlock; height <= ninjaGetTip.Result.BlockHeight; height++)
             {
                 if (!blocksToExclude.ContainsKey(height))
                 {
                     blocksHeightsToParse.Add(height);
                 }
             }
-            var semaphore = new SemaphoreSlim(100);
+            var semaphore = new SemaphoreSlim(1);
 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -76,12 +88,14 @@ namespace InitialParser.Functions
             foreach (var height in blocksHeightsToParse)
             {
                 await semaphore.WaitAsync();
-
+                var st = new Stopwatch();
+                st.Start();
                 tasksToAwait.Add(ParseBlock(height).ContinueWith(p =>
                 {
 
+                    st.Stop();
                     counter--;
-                    _console.WriteLine($"{counter} ");
+                    _console.WriteLine($"{counter} remaining. elapsed {st.Elapsed.TotalSeconds} sec");
                     semaphore.Release();
                 }));
             }

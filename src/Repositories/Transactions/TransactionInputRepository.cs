@@ -19,14 +19,17 @@ namespace Repositories.Transactions
     {
         private readonly IMongoCollection<TransactionInputMongoEntity> _collection;
         private readonly ILog _log;
+        private readonly IConsole _console;
 
         private readonly Lazy<Task> _ensureQueryIndexes;
         private readonly Lazy<Task> _ensureInsertIndexes;
 
         public TransactionInputRepository(MongoSettings settings, 
-            ILog log)
+            ILog log, 
+            IConsole console)
         {
             _log = log;
+            _console = console;
             var client = new MongoClient(settings.ConnectionString);
             var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
@@ -35,31 +38,39 @@ namespace Repositories.Transactions
             _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
 
+        private void WriteConsole(int blockHeight, string message)
+        {
+            _console.WriteLine($"{nameof(TransactionInputRepository)} Block Height:{blockHeight} {message}");
+        }
+
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items)
         {
             await EnsureInsertionIndexes();
 
             var allIds = items.Select(p => p.Id);
+
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
             await Insert(itemsToInsert);
-
         }
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items, int blockHeight)
         {
             await EnsureInsertionIndexes();
 
+            WriteConsole(blockHeight, "Retrieving existed started");
             var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+            WriteConsole(blockHeight, "Retrieving existed done");
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
             try
             {
-
+                WriteConsole(blockHeight, "Insert started");
                 await Insert(itemsToInsert);
+                WriteConsole(blockHeight, "Insert done");
             }
             catch (Exception e) // todo catch mongoDuplicate exception
             {

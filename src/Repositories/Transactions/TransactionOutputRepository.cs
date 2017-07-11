@@ -39,13 +39,17 @@ namespace Repositories.Transactions
     {
         private readonly IMongoCollection<TransactionOutputMongoEntity> _collection;
         private readonly ILog _log;
+        private readonly IConsole _console;
 
         private readonly Lazy<Task> _ensureQueryIndexes;
         private readonly Lazy<Task> _ensureInsertIndexes;
 
-        public TransactionOutputRepository(MongoSettings mongoSettings, ILog log)
+        public TransactionOutputRepository(MongoSettings mongoSettings,
+            ILog log, 
+            IConsole console)
         {
             _log = log;
+            _console = console;
             var client = new MongoClient(mongoSettings.ConnectionString);
             var db = client.GetDatabase(mongoSettings.DataDbName);
             _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
@@ -53,6 +57,11 @@ namespace Repositories.Transactions
             _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
             _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
+        private void WriteConsole(int blockHeight, string message)
+        {
+            _console.WriteLine($"{nameof(TransactionOutputRepository)} Block Height:{blockHeight} {message}");
+        }
+
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items)
         {
@@ -81,13 +90,16 @@ namespace Repositories.Transactions
         {
             await EnsureInsertionIndexes();
 
+            WriteConsole(blockHeight, "Retrieving existed started");
             var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+            WriteConsole(blockHeight, "Retrieving existed done");
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
             try
             {
-
+                WriteConsole(blockHeight, "Insert started");
                 await Insert(itemsToInsert);
+                WriteConsole(blockHeight, "Insert done");
             }
             catch (Exception e) // todo catch mongoDuplicate exception
             {
