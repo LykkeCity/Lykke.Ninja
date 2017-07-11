@@ -46,6 +46,9 @@ namespace Core.Settings
         public int StartFromBlockHeight { get; set; }
 
         public int SemaphoreThreadCount { get; set; }
+
+        public bool SetOutputIdIndex { get; set; }
+        public bool SetInputIdIndex { get; set; }
     }
 
     public class ProxySettings

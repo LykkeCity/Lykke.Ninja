@@ -36,6 +36,7 @@ namespace Repositories
             {
                 ConnectionString = settings.NinjaData.ConnectionString,
                 DataDbName = $"{settings.NinjaData.DbName}-{settings.UsedNetwork()}"
+
             });
 
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>().SingleInstance();

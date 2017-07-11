@@ -24,12 +24,16 @@ namespace Repositories.Transactions
         private readonly Lazy<Task> _ensureQueryIndexes;
         private readonly Lazy<Task> _ensureInsertIndexes;
 
+        private readonly BaseSettings _baseSettings;
+
         public TransactionInputRepository(MongoSettings settings, 
             ILog log, 
-            IConsole console)
+            IConsole console, 
+            BaseSettings baseSettings)
         {
             _log = log;
             _console = console;
+            _baseSettings = baseSettings;
             var client = new MongoClient(settings.ConnectionString);
             var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
@@ -160,11 +164,16 @@ namespace Repositories.Transactions
         {
             await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetInsertionIndexes), null, "Started");
             
-            var setIndexes = new[]
+            var setIndexes = new List<Task>
             {
                 SetHeightIndex(),
-                SetIdIndex()
             };
+
+
+            if (_baseSettings.InitialParser?.SetInputIdIndex ?? true)
+            {
+                setIndexes.Add(SetIdIndex());
+            }
 
             await Task.WhenAll(setIndexes);
 
