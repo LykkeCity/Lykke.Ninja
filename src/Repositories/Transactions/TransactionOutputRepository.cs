@@ -41,8 +41,11 @@ namespace Repositories.Transactions
         private readonly ILog _log;
         private readonly IConsole _console;
 
-        private readonly Lazy<Task> _ensureQueryIndexes;
-        private readonly Lazy<Task> _ensureInsertIndexes;
+        private readonly Lazy<Task> _ensureQueryIndexesLocker;
+        private readonly Lazy<Task> _ensureInsertIndexesLocker;
+        private readonly Lazy<Task> _ensureUpdateIndexesLocker;
+
+        
         private readonly BaseSettings _baseSettings;
 
         public TransactionOutputRepository(MongoSettings mongoSettings,
@@ -53,13 +56,16 @@ namespace Repositories.Transactions
             _log = log;
             _console = console;
             _baseSettings = baseSettings;
+
             var client = new MongoClient(mongoSettings.ConnectionString);
             var db = client.GetDatabase(mongoSettings.DataDbName);
             _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
 
-            _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
-            _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
+            _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);
+            _ensureInsertIndexesLocker = new Lazy<Task>(SetInsertionIndexes);
+            _ensureUpdateIndexesLocker = new Lazy<Task>(SetUpdateIndexes);
         }
+
         private void WriteConsole(int blockHeight, string message)
         {
             _console.WriteLine($"{nameof(TransactionOutputRepository)} Block Height:{blockHeight} {message}");
@@ -73,13 +79,6 @@ namespace Repositories.Transactions
             var allIds = items.Select(p => p.Id);
 
             var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
-
-            //if (existed.Any())
-            //{
-            //    await _log.WriteWarningAsync(nameof(TransactionInputRepository), nameof(InsertIfNotExists),
-            //        existed.Take(5).ToJson(),
-            //        "Attempt To insert existed");
-            //}
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -124,8 +123,7 @@ namespace Repositories.Transactions
 
         public async Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs)
         {
-            await EnsureInsertionIndexes();
-            await EnsureQueryIndexes();
+            await EnsureUpdateIndexes();
 
             var spendOutputIds = inputs.Select(
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
@@ -150,7 +148,7 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
-                await _collection.BulkWriteAsync(bulkOps);
+                await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions{ IsOrdered = false });
             }
 
 
@@ -335,12 +333,17 @@ namespace Repositories.Transactions
 
         private async Task EnsureInsertionIndexes()
         {
-            await _ensureInsertIndexes.Value;
+            await _ensureInsertIndexesLocker.Value;
         }
 
         private async Task EnsureQueryIndexes()
         {
-            await _ensureQueryIndexes.Value;
+            await _ensureQueryIndexesLocker.Value;
+        }
+
+        private async Task EnsureUpdateIndexes()
+        {
+            await _ensureUpdateIndexesLocker.Value;
         }
 
 
@@ -363,6 +366,21 @@ namespace Repositories.Transactions
             await Task.WhenAll(setIndexes);
 
             await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Done");
+        }
+
+        private async Task SetUpdateIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Started");
+
+
+            var setIndexes = new List<Task>
+            {
+                SetIdIndex()
+            };
+            
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Done");
         }
 
         private async Task SetQueryIndexes()

@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jobs", "Jobs\Jobs.csproj", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParser", "InitialParser\InitialParser.csproj", "{022755D6-A4BA-4A17-8D84-7741865D03D4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitialParser.SetSpendable", "InitialParser.SetSpendable\InitialParser.SetSpendable.csproj", "{15A5972C-E509-48F8-B4E6-2E9173459F77}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{022755D6-A4BA-4A17-8D84-7741865D03D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{022755D6-A4BA-4A17-8D84-7741865D03D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{022755D6-A4BA-4A17-8D84-7741865D03D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15A5972C-E509-48F8-B4E6-2E9173459F77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15A5972C-E509-48F8-B4E6-2E9173459F77}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15A5972C-E509-48F8-B4E6-2E9173459F77}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15A5972C-E509-48F8-B4E6-2E9173459F77}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

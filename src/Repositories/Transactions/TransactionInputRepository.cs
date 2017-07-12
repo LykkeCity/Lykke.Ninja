@@ -21,8 +21,9 @@ namespace Repositories.Transactions
         private readonly ILog _log;
         private readonly IConsole _console;
 
-        private readonly Lazy<Task> _ensureQueryIndexes;
-        private readonly Lazy<Task> _ensureInsertIndexes;
+        private readonly Lazy<Task> _ensureQueryIndexesLocker;
+        private readonly Lazy<Task> _ensureInsertIndexesLocker;
+        private readonly Lazy<Task> _ensureUpdateIndexesLocker;
 
         private readonly BaseSettings _baseSettings;
 
@@ -38,8 +39,9 @@ namespace Repositories.Transactions
             var db = client.GetDatabase(settings.DataDbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
 
-            _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
-            _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
+            _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);
+            _ensureInsertIndexesLocker = new Lazy<Task>(SetInsertionIndexes);
+            _ensureUpdateIndexesLocker = new Lazy<Task>(SetUpdateIndexes);
         }
 
         private void WriteConsole(int blockHeight, string message)
@@ -121,7 +123,7 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
-                await _collection.BulkWriteAsync(bulkOps);
+                await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions { IsOrdered = false });
             }
         }
 
@@ -145,20 +147,26 @@ namespace Repositories.Transactions
 
             return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
         }
-
-
+        
 
         #region  indexes
 
         private async Task EnsureInsertionIndexes()
         {
-            await _ensureInsertIndexes.Value;
+            await _ensureInsertIndexesLocker.Value;
         }
 
         private async Task EnsureQueryIndexes()
         {
-            await _ensureQueryIndexes.Value;
+            await _ensureQueryIndexesLocker.Value;
         }
+
+
+        private async Task EnsureUpdateIndexes()
+        {
+            await _ensureUpdateIndexesLocker.Value;
+        }
+
 
         private async Task SetInsertionIndexes()
         {
@@ -180,6 +188,19 @@ namespace Repositories.Transactions
             await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetInsertionIndexes), null, "Done");
         }
 
+        private async Task SetUpdateIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetUpdateIndexes), null, "Started");
+
+            var setIndexes = new List<Task>
+            {
+                SetIdIndex(),
+            };
+            
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionInputRepository), nameof(SetUpdateIndexes), null, "Done");
+        }
 
         private async Task SetQueryIndexes()
         {
@@ -218,8 +239,6 @@ namespace Repositories.Transactions
         
         #endregion
         #endregion
-
-
     }
 
     public class TransactionInputMongoEntity: ITransactionInput
