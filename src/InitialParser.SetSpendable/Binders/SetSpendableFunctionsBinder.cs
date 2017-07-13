@@ -1,18 +1,18 @@
 ﻿using Autofac;
 using Common.Log;
 using Core.Settings;
-using InitialParser.Functions;
+using InitialParser.SetSpendable.Functions;
 
-namespace InitialParser.Binders
+namespace InitialParser.SetSpendable.Binders
 {
-    public static class InitialParserFunctionsBinder
+    public static class SetSpendableFunctionsBinder
     {
         public static void BindParserFunctions(this ContainerBuilder ioc,
             BaseSettings settings,
             ILog log)
         {
 
-            ioc.RegisterType<GrabNinjaDataFunctions>().AsSelf();
+            ioc.RegisterType<SetSpendableFunctions>().AsSelf();
         }
     }
 }

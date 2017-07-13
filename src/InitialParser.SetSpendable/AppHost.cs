@@ -2,11 +2,11 @@
 using Autofac.Extensions.DependencyInjection;
 using Core.Settings;
 using Core.Settings.Validation;
-using InitialParser.Functions;
-using InitialPerser.Binders;
+using InitialParser.SetSpendable.Binders;
+using InitialParser.SetSpendable.Functions;
 using Microsoft.Extensions.Configuration;
 
-namespace InitialParser
+namespace InitialParser.SetSpendable
 {
     public class AppHost
     {
@@ -30,7 +30,7 @@ namespace InitialParser
                 var appContainer = new AzureBinder().Bind(settings).Build();
                 var serviceProvider = new AutofacServiceProvider(appContainer);
 
-                ((GrabNinjaDataFunctions) serviceProvider.GetService(typeof(GrabNinjaDataFunctions))).Run().Wait();
+                ((SetSpendableFunctions)serviceProvider.GetService(typeof(SetSpendableFunctions))).Run().Wait();
             }
         }
 

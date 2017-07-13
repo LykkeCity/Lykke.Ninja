@@ -15,7 +15,7 @@ using Core.Transaction;
 
 namespace InitialParser.Functions
 {
-    public class InitialParserFunctions
+    public class GrabNinjaDataFunctions
     {
         private readonly ILog _log;
         private readonly IConsole _console;
@@ -27,7 +27,7 @@ namespace InitialParser.Functions
         private readonly IProcessParseBlockCommandFacade _parseBlockCommandFacade;
         private readonly BaseSettings _baseSettings;
         
-        public InitialParserFunctions(IConsole console, 
+        public GrabNinjaDataFunctions(IConsole console, 
             ILog log,
             INinjaBlockService ninjaBlockService, 
             IBlockStatusesRepository blockStatusesRepository, 
@@ -50,7 +50,7 @@ namespace InitialParser.Functions
 
         public async Task Run()
         {
-            _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(Run)} started");
+            _console.WriteLine($"{nameof(GrabNinjaDataFunctions)}.{nameof(Run)} started");
 
             var getAllBlockStatuses = _blockStatusesRepository.GetHeights(BlockProcessingStatus.Done)
                 .ContinueWith(p =>
@@ -129,7 +129,7 @@ namespace InitialParser.Functions
             }
             catch (Exception e)
             {
-                await _log.WriteErrorAsync(nameof(InitialParserFunctions), nameof(ParseBlock), height.ToString(), e);
+                await _log.WriteErrorAsync(nameof(GrabNinjaDataFunctions), nameof(ParseBlock), height.ToString(), e);
             }
         }
 
@@ -145,7 +145,7 @@ namespace InitialParser.Functions
         
         private async Task SetNotFounded(int? itemsToTake = null)
         {
-            _console.WriteLine($"{nameof(InitialParserFunctions)}.{nameof(SetNotFounded)} started");
+            _console.WriteLine($"{nameof(GrabNinjaDataFunctions)}.{nameof(SetNotFounded)} started");
 
             var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: itemsToTake);
             if (notFoundInputs.Any())

@@ -9,15 +9,15 @@ using Repositories;
 using Repositories.Log;
 using Services;
 
-namespace InitialPerser.Binders
+namespace InitialParser.SetSpendable.Binders
 {
     public class AzureBinder
     {
         public ContainerBuilder Bind(BaseSettings settings)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserError", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserInfo", null));
+            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserSetSpendableError", null),
+                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserSetSpendableWarning", null),
+                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserSetSpendableInfo", null));
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
@@ -38,9 +38,9 @@ namespace InitialPerser.Binders
         private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
 #if DEBUG
-            log.WriteInfoAsync("Lykke.Ninja GrabNinjaDataFunctions", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
+            log.WriteInfoAsync("Lykke.Ninja InitialParserSetSpendableFunctions", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
-            log.WriteInfoAsync("Lykke.Ninja GrabNinjaDataFunctions", "App start", null, $"BaseSettings : private").Wait();
+            log.WriteInfoAsync("Lykke.Ninja InitialParserSetSpendableFunctions", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
             ioc.RegisterInstance(log);

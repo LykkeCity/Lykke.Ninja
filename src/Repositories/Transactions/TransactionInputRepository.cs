@@ -98,6 +98,7 @@ namespace Repositories.Transactions
 
         public async Task SetSpended(ISetSpendableOperationResult operationResult)
         {
+            await EnsureUpdateIndexes();
             if (operationResult.Ok.Any() || operationResult.NotFound.Any())
             {
                 var bulkOps = new List<WriteModel<TransactionInputMongoEntity>>();
@@ -130,6 +131,7 @@ namespace Repositories.Transactions
         public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, int? itemsToTake = null)
         {
             await EnsureQueryIndexes();
+            
             var query = _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status))
                 .Sort(new SortDefinitionBuilder<TransactionInputMongoEntity>().Ascending(p => p.BlockHeight));
 
@@ -138,7 +140,12 @@ namespace Repositories.Transactions
                 query = query.Limit(itemsToTake);
             }
 
-            return await query.ToListAsync();
+
+            _console.WriteLine($"{nameof(Get)} Started");
+            var result = await query.ToListAsync();
+            _console.WriteLine($"{nameof(Get)} Done");
+
+            return result;
         }
 
         public async Task<long> Count(SpendProcessedStatus status)
@@ -148,6 +155,13 @@ namespace Repositories.Transactions
             return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).CountAsync();
         }
         
+
+        public async Task<IEnumerable<ITransactionInput>> Get(SpendProcessedStatus status, int itemsToTake = 5000)
+        {
+            await EnsureQueryIndexes();
+            return await _collection.Find(TransactionInputMongoEntity.Filter.EqStatus(status)).Limit(itemsToTake).ToListAsync();
+        }
+
 
         #region  indexes
 
