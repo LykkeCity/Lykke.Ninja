@@ -49,8 +49,16 @@ namespace Core.Settings
 
         public bool SetOutputIdIndex { get; set; }
         public bool SetInputIdIndex { get; set; }
+
+        public SetSpendableSettings SetSpendable { get; set; }
     }
 
+    public class SetSpendableSettings
+    {
+        public int ThreadsCount { get; set; }
+
+        public int BatchSize { get; set; }
+    }
     public class ProxySettings
     {
         public bool ProxyAllRequests { get; set; } = false;

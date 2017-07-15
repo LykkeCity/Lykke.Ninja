@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Core.Block;
@@ -18,12 +17,8 @@ namespace InitialParser.SetSpendable.Functions
     {
         private readonly ILog _log;
         private readonly IConsole _console;
-        private readonly INinjaBlockService _ninjaBlockService;
-        private readonly IBlockStatusesRepository _blockStatusesRepository;
-        private readonly IBlockService _blockService;
         private readonly ITransactionInputRepository _inputRepository;
         private readonly ITransactionOutputRepository _outputRepository;
-        private readonly IProcessParseBlockCommandFacade _parseBlockCommandFacade;
         private readonly BaseSettings _baseSettings;
         
         public SetSpendableFunctions(IConsole console, 
@@ -38,42 +33,42 @@ namespace InitialParser.SetSpendable.Functions
         {
             _console = console;
             _log = log;
-            _ninjaBlockService = ninjaBlockService;
-            _blockStatusesRepository = blockStatusesRepository;
-            _blockService = blockService;
             _inputRepository = inputRepository;
-            _parseBlockCommandFacade = parseBlockCommandFacade;
             _outputRepository = outputRepository;
             _baseSettings = baseSettings;
         }
 
         public async Task Run()
         {
-            var needToStop = false;
-
-            var itemsToTake = 50000;
+            var threadsCount = _baseSettings.InitialParser?.SetSpendable?.ThreadsCount ?? 5;
+            var itemsToTake = _baseSettings.InitialParser?.SetSpendable?.BatchSize ?? 50000;
             var total = await _inputRepository.Count(SpendProcessedStatus.Waiting);
             var counter = total;
 
+            var needToStop = false;
             while (!needToStop)
             {
-
-                var items = await _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake);
-                if (items.Any())
+                var batch = new List<Task>();
+                var items = new ConcurrentBag<ITransactionInput>();
+                for (int i = 0; i < threadsCount; i++)
                 {
-
-                    var setSpendedResult = await _outputRepository.SetSpended(items);
-
-                    await _inputRepository.SetSpended(setSpendedResult);
+                    var tsk = _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake)
+                        .ContinueWith(async p =>
+                        {
+                            var opResult = await _outputRepository.SetSpended(p.Result);
+                            await _inputRepository.SetSpended(opResult);
+                        });
+                    batch.Add(tsk);
                 }
-                else
+
+                if (!items.Any())
                 {
                     needToStop = true;
                 }
-                counter -= itemsToTake;
 
+                counter -= items.Count;
 
-                int foregroundColor = (int)Console.ForegroundColor;
+                var foregroundColor = (int)Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Green;
                 _console.WriteLine($"{counter} remaining");
                 Console.ForegroundColor = (ConsoleColor)foregroundColor;

@@ -112,8 +112,6 @@ namespace InitialParser.Functions
             await Task.WhenAll(tasksToAwait);
 
             cancellationTokenSource.Cancel();
-
-            await SetNotFounded();
         }
 
         private async Task ParseBlock(int height)
@@ -139,18 +137,6 @@ namespace InitialParser.Functions
             {
                 await _blockStatusesRepository.Insert(BlockStatus.Create(header.BlockHeight, header.BlockId.ToString(), BlockProcessingStatus.Queued,
                     queuedAt: DateTime.UtcNow, statusChangedAt: DateTime.UtcNow));
-            }
-        }
-
-        
-        private async Task SetNotFounded(int? itemsToTake = null)
-        {
-            _console.WriteLine($"{nameof(GrabNinjaDataFunctions)}.{nameof(SetNotFounded)} started");
-
-            var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: itemsToTake);
-            if (notFoundInputs.Any())
-            {
-                await _blockService.ProcessInputsToSpendable(notFoundInputs);
             }
         }
     }
