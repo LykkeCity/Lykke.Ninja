@@ -71,6 +71,10 @@ namespace Repositories.Transactions
             _console.WriteLine($"{nameof(TransactionOutputRepository)} Block Height:{blockHeight} {message}");
         }
 
+        private void WriteConsole(string message)
+        {
+            _console.WriteLine($"{nameof(TransactionOutputRepository)}  {message}");
+        }
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionOutput> items)
         {
@@ -127,8 +131,7 @@ namespace Repositories.Transactions
 
             var spendOutputIds = inputs.Select(
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
-
-
+            
             var foundOutputs = await _collection.AsQueryable().Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             var inputsDictionary = inputs.ToDictionary(
@@ -148,13 +151,16 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
+                WriteConsole("Update started");
                 await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions{ IsOrdered = false });
+                WriteConsole("Update done");
             }
 
 
-            var ok = foundOutputs.Select(id => inputsDictionary[id]).ToList();
+            var ok = foundOutputs.Select(id => inputsDictionary[id]);
+            var foundOutputsDic = foundOutputs.ToDictionary(p => p); // improve contains efficiency
 
-            var notFoundInputs = spendOutputIds.Where(id => !foundOutputs.Contains(id)).Select(id => inputsDictionary[id]).ToList();
+            var notFoundInputs = spendOutputIds.Where(id => !foundOutputsDic.ContainsKey(id)).Select(id => inputsDictionary[id]).ToList();
 
             return SetSpendableOperationResult.Create(ok, notFoundInputs);
         }

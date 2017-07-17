@@ -49,6 +49,10 @@ namespace Repositories.Transactions
             _console.WriteLine($"{nameof(TransactionInputRepository)} Block Height:{blockHeight} {message}");
         }
 
+        private void WriteConsole(string message)
+        {
+            _console.WriteLine($"{nameof(TransactionInputRepository)}  {message}");
+        }
 
         public async Task InsertIfNotExists(IEnumerable<ITransactionInput> items)
         {
@@ -98,7 +102,7 @@ namespace Repositories.Transactions
 
         public async Task SetSpended(ISetSpendableOperationResult operationResult)
         {
-            await EnsureUpdateIndexes();
+            await EnsureUpdateIndexes();;
             if (operationResult.Ok.Any() || operationResult.NotFound.Any())
             {
                 var bulkOps = new List<WriteModel<TransactionInputMongoEntity>>();
@@ -124,7 +128,9 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
+                WriteConsole("Update started");
                 await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions { IsOrdered = false });
+                WriteConsole("Update done");
             }
         }
 
