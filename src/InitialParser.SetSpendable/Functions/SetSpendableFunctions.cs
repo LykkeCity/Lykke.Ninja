@@ -52,7 +52,7 @@ namespace InitialParser.SetSpendable.Functions
                 var items = new ConcurrentBag<ITransactionInput>();
                 for (int i = 0; i < threadsCount; i++)
                 {
-                    var tsk = _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake)
+                    var tsk = _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake, itemsToSkip: i* itemsToTake)
                         .ContinueWith(async p =>
                         {
                             var opResult = await _outputRepository.SetSpended(p.Result);
