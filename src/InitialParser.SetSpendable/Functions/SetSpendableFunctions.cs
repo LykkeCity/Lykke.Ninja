@@ -57,9 +57,15 @@ namespace InitialParser.SetSpendable.Functions
                         {
                             var opResult = await _outputRepository.SetSpended(p.Result);
                             await _inputRepository.SetSpended(opResult);
+                            foreach (var elem in p.Result)
+                            {
+                                items.Add(elem);
+                            }
                         });
-                    batch.Add(tsk);
+                    batch.Add(tsk.Unwrap());
                 }
+
+                await Task.WhenAll(batch);
 
                 if (!items.Any())
                 {
