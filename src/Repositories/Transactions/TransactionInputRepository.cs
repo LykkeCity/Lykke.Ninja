@@ -102,10 +102,11 @@ namespace Repositories.Transactions
 
         public async Task SetSpended(ISetSpendableOperationResult operationResult)
         {
-            await EnsureUpdateIndexes();;
-            if (operationResult.Ok.Any() || operationResult.NotFound.Any())
+            await EnsureUpdateIndexes();
+            if (operationResult.Ok.Any())
             {
                 var bulkOps = new List<WriteModel<TransactionInputMongoEntity>>();
+
                 foreach (var input in operationResult.Ok)
                 {
                     var id = TransactionOutputMongoEntity.GenerateId(input.Id);
@@ -116,6 +117,15 @@ namespace Repositories.Transactions
 
                     bulkOps.Add(updateOneOp);
                 }
+                
+                WriteConsole($"Update Ok started {bulkOps.Count}");
+                await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions { IsOrdered = false });
+                WriteConsole($"Update Ok done {bulkOps.Count}");
+            }
+            
+            if (operationResult.NotFound.Any())
+            {
+                var bulkOps = new List<WriteModel<TransactionInputMongoEntity>>();
 
                 foreach (var input in operationResult.NotFound)
                 {
@@ -128,9 +138,9 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
-                WriteConsole("Update started");
+                WriteConsole($"Update NotFound started {bulkOps.Count}");
                 await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions { IsOrdered = false });
-                WriteConsole("Update done");
+                WriteConsole($"Update NotFound done {bulkOps.Count}");
             }
         }
 

@@ -132,7 +132,9 @@ namespace Repositories.Transactions
             var spendOutputIds = inputs.Select(
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
             
+            WriteConsole("Get existed spend outputs started");
             var foundOutputs = await _collection.AsQueryable().Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            WriteConsole("Get existed spend outputs done");
 
             var inputsDictionary = inputs.ToDictionary(
                 p => TransactionOutputMongoEntity.GenerateId(p.TxIn.Id));
@@ -151,18 +153,20 @@ namespace Repositories.Transactions
                     bulkOps.Add(updateOneOp);
                 }
 
-                WriteConsole("Update started");
+                WriteConsole("Update spended started");
                 await _collection.BulkWriteAsync(bulkOps, new BulkWriteOptions{ IsOrdered = false });
-                WriteConsole("Update done");
+                WriteConsole("Update spended done");
             }
 
 
             var ok = foundOutputs.Select(id => inputsDictionary[id]);
             var foundOutputsDic = foundOutputs.ToDictionary(p => p); // improve contains efficiency
-
             var notFoundInputs = spendOutputIds.Where(id => !foundOutputsDic.ContainsKey(id)).Select(id => inputsDictionary[id]).ToList();
+            var result = SetSpendableOperationResult.Create(ok, notFoundInputs);
 
-            return SetSpendableOperationResult.Create(ok, notFoundInputs);
+            WriteConsole($"Summary: Ok: {result.Ok.Count()}. NotFound: {result.NotFound.Count()}");
+
+            return result;
         }
 
         public async Task<long> GetTransactionsCount(BitcoinAddress address,
