@@ -255,14 +255,16 @@ namespace Repositories.Transactions
 
         private async Task SetStatusIndex()
         {
-            var statusIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.SpendProcessedInfo.Status);
+            var statusIndex = Builders<TransactionInputMongoEntity>.IndexKeys.Descending(p => p.Status);
             await _collection.Indexes.CreateOneAsync(statusIndex, new CreateIndexOptions { Background = false });
         }
         
         #endregion
+
         #endregion
     }
 
+    [BsonIgnoreExtraElements]
     public class TransactionInputMongoEntity: ITransactionInput
     {
         public const string CollectionName = "transaction-inputs";
@@ -280,12 +282,13 @@ namespace Repositories.Transactions
         public string TransactionId { get; set; }
 
         public uint Index { get; set; }
+
+        [BsonElement("stt")]
+        public int Status { get; set; }
         IInputTxIn ITransactionInput.TxIn => TxIn;
 
         public InputTxInMongoEntity TxIn { get; set; }
-
-        public TransactionInputSpendProcessedInfoMongoEntity SpendProcessedInfo { get; set; }
-
+        
         public static string GenerateId(string id)
         {
             return id;
@@ -301,7 +304,7 @@ namespace Repositories.Transactions
                 Index = source.Index,
                 TransactionId = source.TransactionId,
                 TxIn = InputTxInMongoEntity.Create(source.TxIn),
-                SpendProcessedInfo = TransactionInputSpendProcessedInfoMongoEntity.CreateWaiting()
+                Status = (int)SpendProcessedStatus.Waiting
             };
         }
 
@@ -314,7 +317,7 @@ namespace Repositories.Transactions
 
             public static FilterDefinition<TransactionInputMongoEntity> EqStatus(SpendProcessedStatus status)
             {
-                return Builders<TransactionInputMongoEntity>.Filter.Eq(p => p.SpendProcessedInfo.Status, status.ToString());
+                return Builders<TransactionInputMongoEntity>.Filter.Eq(p => p.Status, (int) status);
             }
         }
 
@@ -322,14 +325,14 @@ namespace Repositories.Transactions
         {
             public static UpdateDefinition<TransactionInputMongoEntity> SetSpendedProcessed()
             {
-                return Builders<TransactionInputMongoEntity>.Update.Set(p => p.SpendProcessedInfo,
-                    TransactionInputSpendProcessedInfoMongoEntity.CreateOk());
+                return Builders<TransactionInputMongoEntity>.Update.Set(p => p.Status,
+                    (int)SpendProcessedStatus.Ok);
             }
 
             public static UpdateDefinition<TransactionInputMongoEntity> SetSpendedNotFound()
             {
-                return Builders<TransactionInputMongoEntity>.Update.Set(p => p.SpendProcessedInfo,
-                    TransactionInputSpendProcessedInfoMongoEntity.CreateNotFound());
+                return Builders<TransactionInputMongoEntity>.Update.Set(p => p.Status,
+                    (int)SpendProcessedStatus.NotFound);
             }
         }
     }
@@ -348,37 +351,6 @@ namespace Repositories.Transactions
                 TransactionId = source.TransactionId,
                 Index = source.Index,
                 Id = source.Id
-            };
-        }
-    }
-
-    public class TransactionInputSpendProcessedInfoMongoEntity
-    {
-        public string Status { get; set; }
-
-        public static TransactionInputSpendProcessedInfoMongoEntity CreateOk()
-        {
-            return new TransactionInputSpendProcessedInfoMongoEntity
-            {
-                Status = SpendProcessedStatus.Ok.ToString()
-            };
-        }
-
-
-        public static TransactionInputSpendProcessedInfoMongoEntity CreateNotFound()
-        {
-            return new TransactionInputSpendProcessedInfoMongoEntity
-            {
-                Status = SpendProcessedStatus.NotFound.ToString()
-            };
-        }
-
-
-        public static TransactionInputSpendProcessedInfoMongoEntity CreateWaiting()
-        {
-            return new TransactionInputSpendProcessedInfoMongoEntity
-            {
-                Status = SpendProcessedStatus.Waiting.ToString()
             };
         }
     }
