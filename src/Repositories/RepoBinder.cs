@@ -35,8 +35,7 @@ namespace Repositories
             ioc.RegisterInstance(new MongoSettings
             {
                 ConnectionString = settings.NinjaData.ConnectionString,
-                DataDbName = $"{settings.NinjaData.DbName}-{settings.UsedNetwork()}"
-
+                DataDbName = settings.NinjaData.DbName
             });
 
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>().SingleInstance();
