@@ -5,6 +5,7 @@ using Core.Settings.Validation;
 using InitialParser.SetSpendable.Binders;
 using InitialParser.SetSpendable.Functions;
 using Microsoft.Extensions.Configuration;
+using Services;
 
 namespace InitialParser.SetSpendable
 {
@@ -30,7 +31,8 @@ namespace InitialParser.SetSpendable
                 var appContainer = new AzureBinder().Bind(settings).Build();
                 var serviceProvider = new AutofacServiceProvider(appContainer);
 
-                ((SetSpendableFunctions)serviceProvider.GetService(typeof(SetSpendableFunctions))).Run().Wait();
+                var service = ((SetSpendableFunctions) serviceProvider.GetService(typeof(SetSpendableFunctions)));
+                Retry.Try(() => service.Run()).Wait();
             }
         }
 
