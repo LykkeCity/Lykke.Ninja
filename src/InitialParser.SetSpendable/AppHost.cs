@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Autofac.Extensions.DependencyInjection;
+using Common.Log;
 using Core.Settings;
 using Core.Settings.Validation;
 using InitialParser.SetSpendable.Binders;
@@ -32,7 +33,7 @@ namespace InitialParser.SetSpendable
                 var serviceProvider = new AutofacServiceProvider(appContainer);
 
                 var service = ((SetSpendableFunctions) serviceProvider.GetService(typeof(SetSpendableFunctions)));
-                Retry.Try(() => service.Run()).Wait();
+                Retry.Try(() => service.Run(), logger: ((ILog)serviceProvider.GetService(typeof(ILog)))).Wait();
             }
         }
 
