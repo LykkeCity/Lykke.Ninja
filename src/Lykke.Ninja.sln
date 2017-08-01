@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParser", "InitialPar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParser.SetSpendable", "InitialParser.SetSpendable\InitialParser.SetSpendable.csproj", "{15A5972C-E509-48F8-B4E6-2E9173459F77}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitialParse.CheckNotFound", "InitialParse.CheckNotFound\InitialParse.CheckNotFound.csproj", "{B13A0197-C8CD-4334-B422-CD7B84995CE8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParse.CheckNotFound", "InitialParse.CheckNotFound\InitialParse.CheckNotFound.csproj", "{B13A0197-C8CD-4334-B422-CD7B84995CE8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
