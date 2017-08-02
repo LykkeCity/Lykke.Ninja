@@ -25,18 +25,30 @@ namespace Jobs.Input
         }
 
 
-        //[TimerTrigger("00:00:30")]
-        //public async Task SetNotFound()
-        //{
-        //    _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFound)} started");
+        [TimerTrigger("00:10:00")]
+        public async Task SetNotFoundSpendable()
+        {
+            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFoundSpendable)} started");
 
-        //    var notFoundInputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 2000);
-        //    if (notFoundInputs.Any())
-        //    {
-        //        await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFound), notFoundInputs.Take(5).ToJson(),
-        //            "Processing not found inputs");
-        //        await _blockService.ProcessInputsToSpendable(notFoundInputs);
-        //    }
-        //}
+            var inputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 50000);
+            if (inputs.Any())
+            {
+                await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFoundSpendable), inputs.Take(5).ToJson(),
+                    "Processing not found inputs");
+                await _blockService.ProcessInputsToSpend(inputs);
+            }
+        }
+
+        [TimerTrigger("01:00:00")]
+        public async Task SetWaitingToSpend()
+        {
+            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetWaitingToSpend)} started");
+
+            var inputs = await _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: 50000);
+            if (inputs.Any())
+            {
+                await _blockService.ProcessInputsToSpend(inputs);
+            }
+        }
     }
 }

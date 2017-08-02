@@ -209,10 +209,10 @@ namespace Services.Block
 
             await Task.WhenAll(insertOutputs, insertInputs);
 
-            //await ProcessInputsToSpendable(inputs);
+            //await ProcessInputsToSpend(inputs);
         }
 
-        public async Task ProcessInputsToSpendable(IEnumerable<ITransactionInput> inputs)
+        public async Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)
         {
             var setSpendedResult = await _outputRepository.SetSpended(inputs);
             await _inputRepository.SetSpended(setSpendedResult);

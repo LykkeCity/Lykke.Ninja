@@ -1,5 +1,4 @@
 ﻿using System;
-using InitialParser.SetSpendable;
 
 namespace InitialParse.CheckNotFound
 {

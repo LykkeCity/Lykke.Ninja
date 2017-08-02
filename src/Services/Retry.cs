@@ -70,6 +70,7 @@ namespace Services
                 try
                 {
                     await action();
+                    return;
                 }
                 catch (Exception ex)
                 {

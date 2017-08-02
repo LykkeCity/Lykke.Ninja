@@ -8,6 +8,6 @@ namespace Core.Block
     public interface IBlockService
     {
         Task InsertDataInDb(GetBlockResponse block, IEnumerable<GetTransactionResponse> coloredTransactions);
-        Task ProcessInputsToSpendable(IEnumerable<ITransactionInput> inputs);
+        Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs);
     }
 }
