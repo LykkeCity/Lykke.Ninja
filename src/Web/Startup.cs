@@ -29,13 +29,12 @@ namespace Web
         public IConfigurationRoot Configuration { get; }
 
 
-        private BaseSettings GetSettings()
+        private GeneralSettings GetSettings()
         {
 #if DEBUG
-            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<BaseSettings>("../../settings.json");
+            var settings = GeneralSettingsReader.ReadGeneralSettingsLocal<GeneralSettings>("../../settings.json");
 #else
-            var generalSettings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration["SettingsUrl"]);
-            var settings = generalSettings?.LykkeNinja;
+            var settings = GeneralSettingsReader.ReadGeneralSettings<GeneralSettings>(Configuration["SettingsUrl"]);
 #endif
 
             GeneralSettingsValidator.Validate(settings);
@@ -74,7 +73,7 @@ namespace Web
 
             var settings = GetSettings();
 
-            if (!settings.Proxy.ProxyAllRequests)
+            if (!settings.LykkeNinja.Proxy.ProxyAllRequests)
             {
                 if (env.IsDevelopment())
                 {
@@ -88,7 +87,7 @@ namespace Web
                 app.UseMvc();
             }
 
-            var ninjaUrl = new Uri(settings.NinjaUrl);
+            var ninjaUrl = new Uri(settings.LykkeNinja.NinjaUrl);
             app.RunProxy(new ProxyOptions { Host = ninjaUrl.Host, Scheme = ninjaUrl.Scheme });
         }
     }

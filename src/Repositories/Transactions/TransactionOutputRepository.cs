@@ -404,7 +404,7 @@ namespace Repositories.Transactions
                 SetAddressIndex(),
                 SetHasColoredDataIndex(),
                 SetIsSpendedIndex(),
-                SetAssetIdIndex(),
+                //SetAssetIdIndex(),
                 SetSpendTxInputBlockHeight()
             };
 

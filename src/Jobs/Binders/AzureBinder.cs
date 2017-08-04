@@ -13,11 +13,11 @@ namespace Jobs.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(BaseSettings settings)
+        public ContainerBuilder Bind(GeneralSettings settings)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsError", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaJobsInfo", null));
+            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaJobsError", null),
+                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaJobsWarning", null),
+                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaJobsInfo", null));
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
@@ -35,7 +35,7 @@ namespace Jobs.Binders
             return ioc;
         }
 
-        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private void InitContainer(ContainerBuilder ioc, GeneralSettings settings, ILog log)
         {
 #if DEBUG
             log.WriteInfoAsync("Lykke.Ninja Jobs", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
@@ -44,11 +44,11 @@ namespace Jobs.Binders
 #endif
 
             ioc.RegisterInstance(log);
-            ioc.RegisterInstance(settings);
+            ioc.RegisterInstance(settings.LykkeNinja);
 
-            ioc.BindCommonServices(settings, log);
-            ioc.BindRepositories(settings, log);
-            ioc.BindBackgroundJobs(settings, log);
+            ioc.BindCommonServices(settings.LykkeNinja, log);
+            ioc.BindRepositories(settings.LykkeNinja, log);
+            ioc.BindBackgroundJobs(settings.LykkeNinja, log);
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        

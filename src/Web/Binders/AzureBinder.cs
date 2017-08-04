@@ -13,11 +13,11 @@ namespace Web.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(BaseSettings settings)
+        public ContainerBuilder Bind(GeneralSettings generalSettings)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaWebError", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaWebWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaWebInfo", null));
+            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebError", null),
+                                            new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebWarning", null),
+                                            new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebInfo", null));
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
@@ -27,13 +27,14 @@ namespace Web.Binders
             ioc.RegisterInstance(consoleWriter).As<IConsole>();
 
             
-            InitContainer(ioc, settings, log);
+            InitContainer(ioc, generalSettings, log);
 
             return ioc;
         }
 
-        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private void InitContainer(ContainerBuilder ioc, GeneralSettings generalSettings, ILog log)
         {
+            var settings = generalSettings.LykkeNinja;
 #if DEBUG
             log.WriteInfoAsync("Lykke.Ninja Web", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else

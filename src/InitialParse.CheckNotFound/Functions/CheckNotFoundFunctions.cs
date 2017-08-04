@@ -59,6 +59,8 @@ namespace InitialParse.CheckNotFound.Functions
             var txs = await _ninjaTransactionService.Get(txIds.Select(uint256.Parse));
 
             var heights = txs.Select(p => p.Block.Height).Distinct().OrderBy(p=>p);
+
+            var t = string.Join(" ", heights.Select(p => p.ToString()));
             var total = heights.Count();
             foreach (var height in heights)
             {
