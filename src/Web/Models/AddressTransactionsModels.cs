@@ -34,9 +34,9 @@ namespace Web.Models
         {
             spended = spended ?? Enumerable.Empty<ITransactionOutput>();
             received = received ?? Enumerable.Empty<ITransactionOutput>();
-
-            var mappedSpended = spended.Select(p => InOutViewModel.CreateSpend(p, isColored, network)).ToList();
-            var mappedReceived = received.Select(p => InOutViewModel.CreateReceived(p, isColored, network)).ToList();
+            var scriptPubKeyDictionary = new Dictionary<string, string>();
+            var mappedSpended = spended.Select(p => InOutViewModel.CreateSpend(p, isColored, network, scriptPubKeyDictionary)).ToList();
+            var mappedReceived = received.Select(p => InOutViewModel.CreateReceived(p, isColored, network, scriptPubKeyDictionary)).ToList();
 
             var spendedLookup = mappedSpended.ToLookup(p => p.OperationTransactionId);
             var receivedLookup = mappedReceived.ToLookup(p => p.OperationTransactionId);
@@ -71,14 +71,14 @@ namespace Web.Models
         [JsonIgnore]
         public bool IsColored { get; set; }
 
-        public static InOutViewModel CreateReceived(ITransactionOutput output, bool isColored, Network network)
+        public static InOutViewModel CreateReceived(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
         {
-            return Create(output.TransactionId, output.BlockId, output.BlockHeight, output, isColored, network);
+            return Create(output.TransactionId, output.BlockId, output.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
         }
 
-        public static InOutViewModel CreateSpend(ITransactionOutput output, bool isColored, Network network)
+        public static InOutViewModel CreateSpend(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
         {
-            return Create(output.SpendTxInput.SpendedInTxId, output.SpendTxInput.BlockId, output.SpendTxInput.BlockHeight, output, isColored, network);
+            return Create(output.SpendTxInput.SpendedInTxId, output.SpendTxInput.BlockId, output.SpendTxInput.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
         }
 
         private static InOutViewModel Create(string operationTransactionId, 
@@ -86,7 +86,8 @@ namespace Web.Models
             int operationBlockHeight, 
             ITransactionOutput output, 
             bool isColored, 
-            Network network)
+            Network network, 
+            IDictionary<string, string> scriptPubKeyDictionary)
         {
             return new InOutViewModel
             {
@@ -96,7 +97,7 @@ namespace Web.Models
                 TransactionId = output.TransactionId,
                 Index = output.Index,
                 Value = output.BtcSatoshiAmount,
-                ScriptPubKey = GetPubKey(output.DestinationAddress, network),
+                ScriptPubKey = GetPubKeyCached(output.DestinationAddress, network, scriptPubKeyDictionary),
                 OperationBlockHeight = operationBlockHeight,
                 OperationBlockId = operationBlockId,
                 OperationTransactionId = operationTransactionId,
@@ -104,11 +105,54 @@ namespace Web.Models
             };
         }
 
+        private static string GetPubKeyCached(string address, 
+            Network network, 
+            IDictionary<string, string> scriptPubKeyDictionary)
+        {
+            if (string.IsNullOrEmpty(address))
+            {
+                return null;
+            }
+
+            if (scriptPubKeyDictionary.ContainsKey(address))
+            {
+                return scriptPubKeyDictionary[address];
+            }
+
+            var pubKey = GetPubKey(address, network);
+
+            scriptPubKeyDictionary[address] = pubKey;
+
+            return pubKey;
+        }
+
         private static string GetPubKey(string address, Network network)
         {
-            return address != null
-                ? new BitcoinPubKeyAddress(address, network).ScriptPubKey.ToHex()
-                : null;
+            try
+            {
+                var b58 = Network.CreateFromBase58Data(address, network);
+                switch (b58.Type)
+                {
+                    case Base58Type.SCRIPT_ADDRESS:
+                    case Base58Type.PUBKEY_ADDRESS:
+                    case Base58Type.WITNESS_P2WPKH:
+                    case Base58Type.WITNESS_P2WSH:
+                        return ((BitcoinAddress)b58).ScriptPubKey.ToHex();
+                    case Base58Type.SECRET_KEY:
+                        return ((BitcoinSecret)b58).ScriptPubKey.ToHex();
+                    case Base58Type.COLORED_ADDRESS:
+                        return ((BitcoinColoredAddress)b58).ScriptPubKey.ToHex();
+                    default:
+                        return null;
+
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
         }
     }
 

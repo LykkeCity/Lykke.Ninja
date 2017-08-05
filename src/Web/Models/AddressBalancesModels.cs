@@ -38,12 +38,12 @@ namespace Web.Models
             {
                 Balance = btcAmount,
                 TotalTransactions = transactionCount,
-                Received = btcReceived,
+               Received = btcReceived,
                 Assets = assetsReceived.Select(p => new AddressBalanceSummaryInnerContract.AddressAssetContract
                 {
                     AssetId = p.Key,
                     Received = p.Value,
-                    Quantity = assetsAmounts[p.Key]
+                    Quantity = assetsAmounts.ContainsKey(p.Key) ? assetsAmounts[p.Key] : 0
                 }).ToArray()
             };
         }
