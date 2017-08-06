@@ -4,12 +4,12 @@ using Autofac.Features.ResolveAnything;
 using AzureStorage.Tables;
 using Common;
 using Common.Log;
-using Core.Settings;
-using Repositories;
-using Repositories.Log;
-using Services;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Repositories;
+using Lykke.Ninja.Repositories.Log;
+using Lykke.Ninja.Services;
 
-namespace Web.Binders
+namespace Lykke.Ninja.Web.Binders
 {
     public class AzureBinder
     {
@@ -36,9 +36,9 @@ namespace Web.Binders
         {
             var settings = generalSettings.LykkeNinja;
 #if DEBUG
-            log.WriteInfoAsync("Lykke.Ninja Web", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
+            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.Web", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
-            log.WriteInfoAsync("Lykke.Ninja Web", "App start", null, $"BaseSettings : private").Wait();
+            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.Web", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
             ioc.RegisterInstance(log);

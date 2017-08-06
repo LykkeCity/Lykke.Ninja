@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using NBitcoin;
 using QBitNinja.Client.Models;
 
-namespace Core.Ninja.Transaction
+namespace Lykke.Ninja.Core.Ninja.Transaction
 {
     public interface INinjaTransactionService
     {

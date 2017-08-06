@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Core.Ninja.Block;
-using Core.Ninja.Contracts;
-using Core.Transaction;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.Ninja.Contracts;
+using Lykke.Ninja.Core.Transaction;
 using NBitcoin;
 using Newtonsoft.Json;
-using Services.Ninja;
+using Lykke.Ninja.Services.Ninja;
 
-namespace Web.Models
+namespace Lykke.Ninja.Web.Models
 {
     public class AddressTransactionsViewModel: AddressTransactionListContract
     {

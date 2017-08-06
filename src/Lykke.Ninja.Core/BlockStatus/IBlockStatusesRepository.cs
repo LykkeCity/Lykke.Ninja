@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Core.BlockStatus
+namespace Lykke.Ninja.Core.BlockStatus
 {
     public interface IBlockStatus
     {

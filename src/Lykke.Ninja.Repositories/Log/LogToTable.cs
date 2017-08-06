@@ -4,7 +4,7 @@ using AzureStorage;
 using Common.Log;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Repositories.Log
+namespace Lykke.Ninja.Repositories.Log
 {
 
     public class LogEntity : TableEntity

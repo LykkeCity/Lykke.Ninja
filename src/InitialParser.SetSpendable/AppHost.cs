@@ -1,12 +1,12 @@
 ﻿using System.IO;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
-using Core.Settings;
-using Core.Settings.Validation;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Settings.Validation;
 using InitialParser.SetSpendable.Binders;
 using InitialParser.SetSpendable.Functions;
 using Microsoft.Extensions.Configuration;
-using Services;
+using Lykke.Ninja.Services;
 
 namespace InitialParser.SetSpendable
 {

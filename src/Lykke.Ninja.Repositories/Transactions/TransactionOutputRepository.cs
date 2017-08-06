@@ -4,17 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Core.Settings;
-using Core.Transaction;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NBitcoin;
-using Repositories.Mongo;
+using Lykke.Ninja.Repositories.Mongo;
 
-namespace Repositories.Transactions
+namespace Lykke.Ninja.Repositories.Transactions
 {
 
     public class SetSpendableOperationResult: ISetSpendableOperationResult

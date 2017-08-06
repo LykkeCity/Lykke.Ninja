@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Common.Log;
-using Core.ParseBlockCommand;
-using Core.Queue;
-using Core.Settings;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Queue;
+using Lykke.Ninja.Core.Settings;
 using Lykke.JobTriggers.Triggers.Attributes;
 using NBitcoin;
 using QBitNinja.Client;
-using Services.Ninja;
+using Lykke.Ninja.Services.Ninja;
 
-namespace Jobs.BlockTasks
+namespace Lykke.Ninja.Jobs.BlockTasks
 {
     public class FixAddressConsumer
     {

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Microsoft.AspNetCore.Hosting;
 
-namespace Web
+namespace Lykke.Ninja.Web
 {
     public class Program
     {

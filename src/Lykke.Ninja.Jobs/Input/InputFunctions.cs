@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Core.Block;
-using Core.Transaction;
+using Lykke.Ninja.Core.Block;
+using Lykke.Ninja.Core.Transaction;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Jobs.Input
+namespace Lykke.Ninja.Jobs.Input
 {
     public class InputFunctions
     {

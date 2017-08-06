@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using NBitcoin;
 
-namespace Core.Transaction
+namespace Lykke.Ninja.Core.Transaction
 {
     public interface ITransactionOutput
     {

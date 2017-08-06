@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Common.Log;
 
-namespace Repositories.Log
+namespace Lykke.Ninja.Repositories.Log
 {
     public class LogToTableAndConsole : ILog
     {

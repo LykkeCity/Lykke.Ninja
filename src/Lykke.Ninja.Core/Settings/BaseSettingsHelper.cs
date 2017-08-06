@@ -1,7 +1,7 @@
 ﻿using System;
 using NBitcoin;
 
-namespace Core.Settings
+namespace Lykke.Ninja.Core.Settings
 {
     public static class BaseSettingsHelper
     {

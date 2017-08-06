@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Core.ServiceMonitoring
+namespace Lykke.Ninja.Core.ServiceMonitoring
 {
 
     public interface IMonitoringRecord

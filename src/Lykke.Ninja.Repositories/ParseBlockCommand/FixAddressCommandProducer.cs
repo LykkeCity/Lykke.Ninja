@@ -2,10 +2,10 @@
 using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
-using Core.ParseBlockCommand;
+using Lykke.Ninja.Core.ParseBlockCommand;
 using NBitcoin;
 
-namespace Repositories.ParseBlockCommand
+namespace Lykke.Ninja.Repositories.ParseBlockCommand
 {
     public class FixAddressCommandProducer: IFixAddressCommandProducer
     {

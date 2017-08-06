@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace Web.Proxy
+namespace Lykke.Ninja.Web.Proxy
 {
     //based on https://github.com/aspnet/Proxy/
     public class ProxyMiddleware

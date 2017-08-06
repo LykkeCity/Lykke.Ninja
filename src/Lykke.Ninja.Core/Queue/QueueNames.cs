@@ -1,4 +1,4 @@
-﻿namespace Core.Queue
+﻿namespace Lykke.Ninja.Core.Queue
 {
     public static class QueueNames
     {

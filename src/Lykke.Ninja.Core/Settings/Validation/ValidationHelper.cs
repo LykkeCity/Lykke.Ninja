@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace Core.Settings.Validation
+namespace Lykke.Ninja.Core.Settings.Validation
 {
     public static class ValidationHelper
     {

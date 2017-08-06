@@ -1,6 +1,6 @@
 using System.Net.Http;
 
-namespace Web.Proxy
+namespace Lykke.Ninja.Web.Proxy
 {
     //based on https://github.com/aspnet/Proxy/
     public class ProxyOptions

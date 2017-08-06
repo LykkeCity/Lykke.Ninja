@@ -5,13 +5,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
-using Core.AlertNotifications;
-using Core.Block;
-using Core.BlockStatus;
-using Core.Ninja.Block;
-using Core.ParseBlockCommand;
-using Core.Settings;
-using Core.Transaction;
+using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.Block;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
 
 namespace InitialParser.Functions
 {

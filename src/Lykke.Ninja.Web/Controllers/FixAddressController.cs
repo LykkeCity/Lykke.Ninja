@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Core.ParseBlockCommand;
-using Core.Settings;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Settings;
 using Microsoft.AspNetCore.Mvc;
-using Services.Ninja;
-using Web.Models;
+using Lykke.Ninja.Services.Ninja;
+using Lykke.Ninja.Web.Models;
 
-namespace Web.Controllers
+namespace Lykke.Ninja.Web.Controllers
 {
     [Route("addresses")]
     public class FixAddressController:Controller

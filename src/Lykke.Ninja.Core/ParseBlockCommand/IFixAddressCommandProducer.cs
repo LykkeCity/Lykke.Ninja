@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NBitcoin;
 
-namespace Core.ParseBlockCommand
+namespace Lykke.Ninja.Core.ParseBlockCommand
 {
     public class FixAddressCommandContext
     {

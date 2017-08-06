@@ -2,12 +2,12 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Core.AlertNotifications;
-using Core.ParseBlockCommand;
-using Core.Queue;
+using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Queue;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Jobs.BlockTasks
+namespace Lykke.Ninja.Jobs.BlockTasks
 {
     public class BlockTasksConsumerFunctions
     {

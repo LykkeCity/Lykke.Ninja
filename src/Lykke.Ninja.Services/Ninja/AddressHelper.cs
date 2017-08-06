@@ -1,7 +1,7 @@
 ﻿using System;
 using NBitcoin;
 
-namespace Services.Ninja
+namespace Lykke.Ninja.Services.Ninja
 {
     public class BitcoinAddressHelper
     {

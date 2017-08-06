@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Core.Settings
+namespace Lykke.Ninja.Core.Settings
 {
     public class GeneralSettings
     {

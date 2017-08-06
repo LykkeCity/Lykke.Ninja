@@ -5,13 +5,13 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using Autofac.Extensions.DependencyInjection;
-using Core.Settings;
-using Core.Settings.Validation;
-using Jobs.Binders;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Settings.Validation;
+using Lykke.Ninja.Jobs.Binders;
 using Lykke.JobTriggers.Triggers;
 using Microsoft.Extensions.Configuration;
 
-namespace Jobs
+namespace Lykke.Ninja.Jobs
 {
     public class AppHost
     {

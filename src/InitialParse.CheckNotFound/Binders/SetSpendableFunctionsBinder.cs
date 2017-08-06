@@ -1,6 +1,6 @@
 ﻿using Autofac;
 using Common.Log;
-using Core.Settings;
+using Lykke.Ninja.Core.Settings;
 using InitialParse.CheckNotFound.Functions;
 
 namespace InitialParse.CheckNotFound.Binders

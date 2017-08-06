@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Core.BlockStatus;
-using Core.Ninja.Block;
-using Core.ParseBlockCommand;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.ParseBlockCommand;
 
-namespace Services.PaseBlockCommand
+namespace Lykke.Ninja.Services.PaseBlockCommand
 {
     public class ParseBlockCommandsService: IParseBlockCommandsService
     {

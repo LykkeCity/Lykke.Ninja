@@ -4,10 +4,10 @@ using Autofac.Features.ResolveAnything;
 using AzureStorage.Tables;
 using Common;
 using Common.Log;
-using Core.Settings;
-using Repositories;
-using Repositories.Log;
-using Services;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Repositories;
+using Lykke.Ninja.Repositories.Log;
+using Lykke.Ninja.Services;
 
 namespace InitialParser.SetSpendable.Binders
 {

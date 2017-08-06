@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
-using Core.ParseBlockCommand;
+using Lykke.Ninja.Core.ParseBlockCommand;
 
-namespace Repositories.ParseBlockCommand
+namespace Lykke.Ninja.Repositories.ParseBlockCommand
 {
     public class ParseBlockCommandProducer: IParseBlockCommandProducer
     {

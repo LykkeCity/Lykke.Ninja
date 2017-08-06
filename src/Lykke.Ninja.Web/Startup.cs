@@ -1,7 +1,7 @@
 ﻿using System;
 using Autofac.Extensions.DependencyInjection;
-using Core.Settings;
-using Core.Settings.Validation;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Settings.Validation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -9,10 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.Swagger.Model;
-using Web.Binders;
-using Web.Proxy;
+using Lykke.Ninja.Web.Binders;
+using Lykke.Ninja.Web.Proxy;
 
-namespace Web
+namespace Lykke.Ninja.Web
 {
     public class Startup
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Core.Transaction
+namespace Lykke.Ninja.Core.Transaction
 {
     public interface ITransactionInput
     {

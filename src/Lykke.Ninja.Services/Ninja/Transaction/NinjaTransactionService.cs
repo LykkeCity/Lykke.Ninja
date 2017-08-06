@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
-using Core.Ninja.Transaction;
+using Lykke.Ninja.Core.Ninja.Transaction;
 using NBitcoin;
 using QBitNinja.Client;
 using QBitNinja.Client.Models;
 
-namespace Services.Ninja.Transaction
+namespace Lykke.Ninja.Services.Ninja.Transaction
 {
     public class NinjaTransactionService: INinjaTransactionService
     {

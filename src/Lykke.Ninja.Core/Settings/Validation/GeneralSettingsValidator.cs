@@ -1,7 +1,7 @@
 ﻿using System;
 using Common.Log;
 
-namespace Core.Settings.Validation
+namespace Lykke.Ninja.Core.Settings.Validation
 {
     public static class GeneralSettingsValidator
     {

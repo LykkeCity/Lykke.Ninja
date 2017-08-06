@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Core.AlertNotifications
+namespace Lykke.Ninja.Core.AlertNotifications
 {
     public class SlackNotificationRequestMsg
     {

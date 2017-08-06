@@ -2,7 +2,7 @@
 using NBitcoin;
 using QBitNinja.Client.Models;
 
-namespace Core.Ninja.Block
+namespace Lykke.Ninja.Core.Ninja.Block
 {
     public interface INinjaBlockHeader
     {

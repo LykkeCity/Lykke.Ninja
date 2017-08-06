@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using Autofac.Extensions.DependencyInjection;
-using Core.Settings;
-using Core.Settings.Validation;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Settings.Validation;
 using InitialParser.Functions;
 using InitialPerser.Binders;
 using Microsoft.Extensions.Configuration;

@@ -2,7 +2,7 @@ using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 
-namespace Web.Proxy
+namespace Lykke.Ninja.Web.Proxy
 {
     //based on https://github.com/aspnet/Proxy/
     public static class ProxyExtension

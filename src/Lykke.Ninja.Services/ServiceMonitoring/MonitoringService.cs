@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AzureStorage;
-using Core.ServiceMonitoring;
+using Lykke.Ninja.Core.ServiceMonitoring;
 using Lykke.MonitoringServiceApiCaller;
 using Lykke.MonitoringServiceApiCaller.Models;
 using Microsoft.WindowsAzure.Storage.Table;
-using IMonitoringService = Core.ServiceMonitoring.IMonitoringService;
+using IMonitoringService = Lykke.Ninja.Core.ServiceMonitoring.IMonitoringService;
 
-namespace Repositories.ServiceMonitoring
+namespace Lykke.Ninja.Repositories.ServiceMonitoring
 {
 
     public class MonitoringService : IMonitoringService

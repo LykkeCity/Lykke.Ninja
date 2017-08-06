@@ -1,10 +1,10 @@
 ﻿using System.Threading.Tasks;
-using Core.Ninja.Block;
+using Lykke.Ninja.Core.Ninja.Block;
 using NBitcoin;
 using QBitNinja.Client;
 using QBitNinja.Client.Models;
 
-namespace Services.Ninja.Block
+namespace Lykke.Ninja.Services.Ninja.Block
 {
     public class NinjaBlockHeader : INinjaBlockHeader
     {

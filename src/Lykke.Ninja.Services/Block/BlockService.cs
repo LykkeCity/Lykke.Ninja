@@ -4,14 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Core.AlertNotifications;
-using Core.Block;
-using Core.Settings;
-using Core.Transaction;
+using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.Block;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
 using NBitcoin;
 using QBitNinja.Client.Models;
 
-namespace Services.Block
+namespace Lykke.Ninja.Services.Block
 {
     #region ids
 

@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
 using Common.Log;
-using Core.Transaction;
+using Lykke.Ninja.Core.Transaction;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Jobs.Index
+namespace Lykke.Ninja.Jobs.Index
 {
     public class IndexFunctions
     {

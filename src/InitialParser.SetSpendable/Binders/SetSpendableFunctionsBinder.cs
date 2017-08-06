@@ -1,6 +1,6 @@
 ﻿using Autofac;
 using Common.Log;
-using Core.Settings;
+using Lykke.Ninja.Core.Settings;
 using InitialParser.SetSpendable.Functions;
 
 namespace InitialParser.SetSpendable.Binders

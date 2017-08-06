@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Core.Ninja.Contracts;
+using Lykke.Ninja.Core.Ninja.Contracts;
 
-namespace Web.Models
+namespace Lykke.Ninja.Web.Models
 {
     public class AddressSummaryViewModel: AddressSummaryContract
     {

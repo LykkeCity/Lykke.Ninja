@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Core.Ninja.Block;
-using Core.Settings;
-using Core.Transaction;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
 using Microsoft.AspNetCore.Mvc;
-using Services.Ninja;
-using Web.Models;
+using Lykke.Ninja.Services.Ninja;
+using Lykke.Ninja.Web.Models;
 
-namespace Web.Controllers
+namespace Lykke.Ninja.Web.Controllers
 {
     [Route("balances")]
     public class AddressSummaryController : Controller

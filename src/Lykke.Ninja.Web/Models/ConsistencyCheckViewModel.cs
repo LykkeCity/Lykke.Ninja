@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Core.BlockStatus;
-using Core.Transaction;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Transaction;
 
-namespace Web.Models
+namespace Lykke.Ninja.Web.Models
 {
     public class ConsistencyCheckViewModel
     {

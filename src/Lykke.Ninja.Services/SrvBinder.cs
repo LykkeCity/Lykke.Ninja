@@ -2,14 +2,14 @@
 using AzureStorage.Queue;
 using Common;
 using Common.Log;
-using Core.AlertNotifications;
-using Core.Block;
-using Core.Ninja.Block;
-using Core.Ninja.Transaction;
-using Core.ParseBlockCommand;
-using Core.Queue;
-using Core.Settings;
-using Core.Transaction;
+using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.Block;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.Ninja.Transaction;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Queue;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
 using Lykke.AzureQueueIntegration.Publisher;
 using Lykke.JobTriggers.Abstractions;
 using Lykke.MonitoringServiceApiCaller;
@@ -17,15 +17,15 @@ using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
 using Microsoft.Extensions.PlatformAbstractions;
 using QBitNinja.Client;
-using Repositories.ServiceMonitoring;
-using Services.AlertNotifications;
-using Services.Block;
-using Services.Ninja.Block;
-using Services.Ninja.Transaction;
-using Services.PaseBlockCommand;
-using IMonitoringService = Core.ServiceMonitoring.IMonitoringService;
+using Lykke.Ninja.Repositories.ServiceMonitoring;
+using Lykke.Ninja.Services.AlertNotifications;
+using Lykke.Ninja.Services.Block;
+using Lykke.Ninja.Services.Ninja.Block;
+using Lykke.Ninja.Services.Ninja.Transaction;
+using Lykke.Ninja.Services.PaseBlockCommand;
+using IMonitoringService = Lykke.Ninja.Core.ServiceMonitoring.IMonitoringService;
 
-namespace Services
+namespace Lykke.Ninja.Services
 {
     public static class SrvBinder
     {

@@ -1,4 +1,4 @@
-﻿namespace Repositories.Mongo
+﻿namespace Lykke.Ninja.Repositories.Mongo
 {
     public class MongoSettings
     {

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Common.Log;
 
-namespace Services
+namespace Lykke.Ninja.Services
 {
     public static class Retry
     {

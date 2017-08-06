@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Core.ParseBlockCommand
+namespace Lykke.Ninja.Core.ParseBlockCommand
 {
     public interface IProcessParseBlockCommandFacade
     {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Core.ServiceMonitoring;
+using Lykke.Ninja.Core.ServiceMonitoring;
 using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Jobs.Monitoring
+namespace Lykke.Ninja.Jobs.Monitoring
 {
     public class MonitoringFunctions
     {

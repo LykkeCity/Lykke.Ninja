@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Core.Transaction;
+using Lykke.Ninja.Core.Transaction;
 using QBitNinja.Client.Models;
 
-namespace Core.Block
+namespace Lykke.Ninja.Core.Block
 {
     public interface IBlockService
     {

@@ -1,11 +1,11 @@
 ﻿using System.Threading.Tasks;
-using Core.BlockStatus;
-using Core.ParseBlockCommand;
-using Core.Transaction;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Transaction;
 using Microsoft.AspNetCore.Mvc;
-using Web.Models;
+using Lykke.Ninja.Web.Models;
 
-namespace Web.Controllers
+namespace Lykke.Ninja.Web.Controllers
 {
     [Route("health")]
     public class HealthController:Controller

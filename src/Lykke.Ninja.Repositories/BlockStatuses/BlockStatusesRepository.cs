@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Common.Log;
-using Core.BlockStatus;
-using Core.Settings;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Settings;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using Repositories.Mongo;
+using Lykke.Ninja.Repositories.Mongo;
 
-namespace Repositories.BlockStatuses
+namespace Lykke.Ninja.Repositories.BlockStatuses
 {
     public class BlockStatusesRepository: IBlockStatusesRepository
     {

@@ -1,11 +1,11 @@
 ﻿using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
-using Core.AlertNotifications;
+using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.JobTriggers.Abstractions;
 using Lykke.SlackNotifications;
 
-namespace Services.AlertNotifications
+namespace Lykke.Ninja.Services.AlertNotifications
 {
     public class SlackNotificationsProducer : ISlackNotificationsProducer, IPoisionQueueNotifier
     {

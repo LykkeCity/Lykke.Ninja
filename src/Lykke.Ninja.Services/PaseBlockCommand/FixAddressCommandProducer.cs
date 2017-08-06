@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Core.ParseBlockCommand;
+using Lykke.Ninja.Core.ParseBlockCommand;
 using NBitcoin;
 
-namespace Services.PaseBlockCommand
+namespace Lykke.Ninja.Services.PaseBlockCommand
 {
     public class FixAddressCommandProducer: IFixAddressCommandProducer
     {

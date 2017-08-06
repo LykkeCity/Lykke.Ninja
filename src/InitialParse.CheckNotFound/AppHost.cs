@@ -1,12 +1,12 @@
 ﻿using System.IO;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
-using Core.Settings;
-using Core.Settings.Validation;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Settings.Validation;
 using InitialParse.CheckNotFound.Binders;
 using InitialParse.CheckNotFound.Functions;
 using Microsoft.Extensions.Configuration;
-using Services;
+using Lykke.Ninja.Services;
 
 namespace InitialParse.CheckNotFound
 {

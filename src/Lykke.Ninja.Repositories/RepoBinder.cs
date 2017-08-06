@@ -2,19 +2,19 @@
 using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Common.Log;
-using Core.AlertNotifications;
-using Core.BlockStatus;
-using Core.ParseBlockCommand;
-using Core.Queue;
-using Core.ServiceMonitoring;
-using Core.Settings;
-using Core.Transaction;
-using Repositories.BlockStatuses;
-using Repositories.Mongo;
-using Repositories.ParseBlockCommand;
-using Repositories.Transactions;
+using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.ParseBlockCommand;
+using Lykke.Ninja.Core.Queue;
+using Lykke.Ninja.Core.ServiceMonitoring;
+using Lykke.Ninja.Core.Settings;
+using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Repositories.BlockStatuses;
+using Lykke.Ninja.Repositories.Mongo;
+using Lykke.Ninja.Repositories.ParseBlockCommand;
+using Lykke.Ninja.Repositories.Transactions;
 
-namespace Repositories
+namespace Lykke.Ninja.Repositories
 {
     public static class RepoBinder
     {
