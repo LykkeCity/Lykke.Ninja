@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "src\Core\Core.csproj", "{FC7F0C81-1450-4202-9A67-04DECD5440CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "src\Lykke.Ninja.Core\Lykke.Ninja.Core.csproj", "{FC7F0C81-1450-4202-9A67-04DECD5440CB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParse.CheckNotFound", "src\InitialParse.CheckNotFound\InitialParse.CheckNotFound.csproj", "{1B8931A0-F3AC-4407-9F99-73004DCFC79E}"
 EndProject
@@ -11,13 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParser", "src\Initia
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InitialParser.SetSpendable", "src\InitialParser.SetSpendable\InitialParser.SetSpendable.csproj", "{AD8DB02B-ADE0-4FFB-9A0C-A3A99AFA7E10}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jobs", "src\Jobs\Jobs.csproj", "{79074DBA-2F59-4701-A6CD-D44953371A2B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jobs", "src\Lykke.Ninja.Jobs\Lykke.Ninja.Jobs.csproj", "{79074DBA-2F59-4701-A6CD-D44953371A2B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repositories", "src\Repositories\Repositories.csproj", "{B4161D04-F44F-412C-A6FA-827DED33CD7C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repositories", "src\Lykke.Ninja.Repositories\Lykke.Ninja.Repositories.csproj", "{B4161D04-F44F-412C-A6FA-827DED33CD7C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services", "src\Services\Services.csproj", "{99613362-A271-4858-B59D-1365B9001712}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services", "src\Lykke.Ninja.Services\Lykke.Ninja.Services.csproj", "{99613362-A271-4858-B59D-1365B9001712}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "src\Web\Web.csproj", "{03721D29-561B-47E2-A292-C39C70F1FDA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "src\Lykke.Ninja.Web\Lykke.Ninja.Web.csproj", "{03721D29-561B-47E2-A292-C39C70F1FDA4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

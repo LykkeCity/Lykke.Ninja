@@ -14,6 +14,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Core\Lykke.Ninja.Core.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Repositories\Lykke.Ninja.Repositories.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Services\Lykke.Ninja.Services.csproj" />
     <ProjectReference Include="..\Repositories\Repositories.csproj" />
     <ProjectReference Include="..\Services\Services.csproj" />
   </ItemGroup>

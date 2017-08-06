@@ -21,9 +21,9 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Repositories\Repositories.csproj" />
-    <ProjectReference Include="..\Services\Services.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Core\Lykke.Ninja.Core.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Jobs\Lykke.Ninja.Jobs.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Repositories\Lykke.Ninja.Repositories.csproj" />
   </ItemGroup>
 
 </Project>

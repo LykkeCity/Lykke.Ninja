@@ -18,13 +18,12 @@ The .env file must define the following environment variables: - SETTINGSURL con
 	"Network":"", // blockchain network type (mainnet, testnet, regtest)
 	"Db": { //azure table storage connection strings
 		"LogsConnString":"", // for logging purposes
-		"DataConnString":"",// xlsx reports stored here
-		"SharedConnString":"", // writes "is alive" messages for lykke monitoring system and produces slack notifications
+		"DataConnString":"",
 	},
 	
 	
 	"NinjaData": { // connection to common mongodb db
-		"", 
+		"ConnectionString": "",
 		"DbName": "" 	
 	}
 }
