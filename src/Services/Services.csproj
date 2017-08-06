@@ -9,6 +9,7 @@
     <PackageReference Include="Flurl.Http" Version="1.1.2" />
     <PackageReference Include="Lykke.AzureStorage" Version="1.2.24" />
     <PackageReference Include="Lykke.Common" Version="1.1.79" />
+    <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="1.0.4" />
     <PackageReference Include="NBitcoin" Version="3.0.2.26" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="QBitNinja.Client" Version="1.0.3.38" />

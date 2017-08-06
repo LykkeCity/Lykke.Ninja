@@ -9,12 +9,9 @@ using Core.Queue;
 using Core.ServiceMonitoring;
 using Core.Settings;
 using Core.Transaction;
-using Lykke.JobTriggers.Abstractions;
-using Repositories.AlertNotifications;
 using Repositories.BlockStatuses;
 using Repositories.Mongo;
 using Repositories.ParseBlockCommand;
-using Repositories.ServiceMonitoring;
 using Repositories.Transactions;
 
 namespace Repositories
@@ -29,8 +26,6 @@ namespace Repositories
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
-            ioc.RegisterInstance(new ServiceMonitoringRepository(new AzureTableStorage<MonitoringRecordEntity>(settings.Db.SharedConnString, "Monitoring", log)))
-                .As<IServiceMonitoringRepository>();
 
             ioc.RegisterInstance(new MongoSettings
             {
@@ -46,13 +41,7 @@ namespace Repositories
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
         {
 
-            ioc.Register(p => new SlackNotificationsProducer(
-                    new AzureQueueExt(settings.Db.SharedConnString, QueueNames.SlackNotifications)))
-                .As<ISlackNotificationsProducer>();
 
-            ioc.Register(p => new SlackNotificationsProducer(
-                    new AzureQueueExt(settings.Db.SharedConnString, QueueNames.SlackNotifications)))
-                .As<IPoisionQueueNotifier>();
 
 
             ioc.Register(p => new ParseBlockCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ParseBlockTasks)))

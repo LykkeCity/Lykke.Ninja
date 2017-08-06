@@ -46,7 +46,7 @@ namespace Jobs.Binders
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings.LykkeNinja);
 
-            ioc.BindCommonServices(settings.LykkeNinja, log);
+            ioc.BindCommonServices(settings, log);
             ioc.BindRepositories(settings.LykkeNinja, log);
             ioc.BindBackgroundJobs(settings.LykkeNinja, log);
 

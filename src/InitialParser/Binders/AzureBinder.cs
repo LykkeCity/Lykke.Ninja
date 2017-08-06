@@ -13,8 +13,9 @@ namespace InitialPerser.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(BaseSettings settings)
+        public ContainerBuilder Bind(GeneralSettings generalSettings)
         {
+            var settings = generalSettings.LykkeNinja;
             var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserError", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserWarning", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserInfo", null));
@@ -30,13 +31,14 @@ namespace InitialPerser.Binders
             ioc.RegisterInstance(consoleWriter).As<IConsole>();
 
             
-            InitContainer(ioc, settings, log);
+            InitContainer(ioc, generalSettings, log);
 
             return ioc;
         }
 
-        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private void InitContainer(ContainerBuilder ioc, GeneralSettings generalSettings, ILog log)
         {
+            var settings = generalSettings.LykkeNinja;
 #if DEBUG
             log.WriteInfoAsync("Lykke.Ninja GrabNinjaDataFunctions", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
@@ -46,7 +48,7 @@ namespace InitialPerser.Binders
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
 
-            ioc.BindCommonServices(settings, log);
+            ioc.BindCommonServices(generalSettings, log);
             ioc.BindRepositories(settings, log);
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());

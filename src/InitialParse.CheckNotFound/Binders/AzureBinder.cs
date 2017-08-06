@@ -13,8 +13,9 @@ namespace InitialParse.CheckNotFound.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(BaseSettings settings)
+        public ContainerBuilder Bind(GeneralSettings generalSettings)
         {
+            var settings = generalSettings.LykkeNinja;
             var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundError", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundWarning", null),
                                             new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundInfo", null));
@@ -30,13 +31,14 @@ namespace InitialParse.CheckNotFound.Binders
             ioc.RegisterInstance(consoleWriter).As<IConsole>();
 
             
-            InitContainer(ioc, settings, log);
+            InitContainer(ioc, generalSettings, log);
 
             return ioc;
         }
 
-        private void InitContainer(ContainerBuilder ioc, BaseSettings settings, ILog log)
+        private void InitContainer(ContainerBuilder ioc, GeneralSettings generalSettings, ILog log)
         {
+            var settings = generalSettings.LykkeNinja;
 #if DEBUG
             log.WriteInfoAsync("Lykke.Ninja InitialParserCheckNotFoundFunctions", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
@@ -46,7 +48,7 @@ namespace InitialParse.CheckNotFound.Binders
             ioc.RegisterInstance(log);
             ioc.RegisterInstance(settings);
 
-            ioc.BindCommonServices(settings, log);
+            ioc.BindCommonServices(generalSettings, log);
             ioc.BindRepositories(settings, log);
 
             ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());

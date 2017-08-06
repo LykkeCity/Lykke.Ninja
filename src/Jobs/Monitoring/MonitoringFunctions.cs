@@ -7,11 +7,11 @@ namespace Jobs.Monitoring
 {
     public class MonitoringFunctions
     {
-        private readonly IServiceMonitoringRepository _serviceMonitoringRepository;
+        private readonly IMonitoringService _monitoringService;
 
-        public MonitoringFunctions(IServiceMonitoringRepository serviceMonitoringRepository)
+        public MonitoringFunctions(IMonitoringService monitoringService)
         {
-            _serviceMonitoringRepository = serviceMonitoringRepository;
+            _monitoringService = monitoringService;
         }
 
         private const string ServiceName = "Lykke.Ninja.Jobs";
@@ -28,7 +28,7 @@ namespace Jobs.Monitoring
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
             };
 
-            await _serviceMonitoringRepository.UpdateOrCreate(record);
+            await _monitoringService.WriteRecord(record);
         }
     }
 }
