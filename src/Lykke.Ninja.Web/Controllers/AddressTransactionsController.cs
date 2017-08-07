@@ -50,9 +50,15 @@ namespace Lykke.Ninja.Web.Controllers
                     minBlockHeight: minBlockHeight, 
                     maxBlockHeight:maxBlockHeight);
             }
+            
+            var getMaxBlockHeader = !string.IsNullOrEmpty(maxBlockDescriptor)
+                ? _ninjaBlockService.GetBlockHeader(maxBlockDescriptor, withRetry: false)
+                : Task.FromResult((INinjaBlockHeader)null);
 
-            var getMaxBlockHeader = _ninjaBlockService.GetBlockHeader(maxBlockDescriptor);
-            var getMinBlockHeader = _ninjaBlockService.GetBlockHeader(minBlockDescriptor);
+            var getMinBlockHeader = !string.IsNullOrEmpty(minBlockDescriptor)
+                ? _ninjaBlockService.GetBlockHeader(minBlockDescriptor, withRetry: false)
+                : Task.FromResult((INinjaBlockHeader)null);
+            
 
             await Task.WhenAll(getMinBlockHeader, getMinBlockHeader);
 
@@ -71,7 +77,7 @@ namespace Lykke.Ninja.Web.Controllers
         {
             var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
 
-            var getNinjaTop = _ninjaBlockService.GetTip();
+            var getNinjaTop = _ninjaBlockService.GetTip(withRetry:false);
 
             Task<IEnumerable<ITransactionOutput>> getSpended;
             if (!unspendOnly)

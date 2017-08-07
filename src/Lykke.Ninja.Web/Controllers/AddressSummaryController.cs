@@ -33,7 +33,7 @@ namespace Lykke.Ninja.Web.Controllers
             int? atBlockHeight = null;
             if (!string.IsNullOrEmpty(at))
             {
-                var blockHeader = await _ninjaBlockService.GetBlockHeader(at);
+                var blockHeader = await _ninjaBlockService.GetBlockHeader(at, withRetry: false);
 
                 atBlockHeight = blockHeader?.BlockHeight;
             }
