@@ -82,7 +82,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var allIds = items.Select(p => p.Id);
 
-            var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            var existed = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -97,7 +97,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureInsertionIndexes();
 
             WriteConsole(blockHeight, "Retrieving existed started");
-            var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+            var existed = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
             WriteConsole(blockHeight, "Retrieving existed done");
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
@@ -133,7 +133,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
             
             WriteConsole("Get existed spend outputs started");
-            var foundOutputs = await _collection.AsQueryable().Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            var foundOutputs = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
             WriteConsole("Get existed spend outputs done");
 
             var inputsDictionary = inputs.ToDictionary(
@@ -174,7 +174,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
@@ -195,7 +195,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions{ AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => !p.SpendTxInput.IsSpended);
 
@@ -208,7 +208,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             {
                 query = query.Where(p => !p.ColoredData.HasColoredData);
             }
-
+            
             return await query
                 .SumAsync(p => p.BtcSatoshiAmount);
         }
@@ -218,7 +218,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable();
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true });
             query = query.Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
@@ -240,7 +240,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData);
 
@@ -263,7 +263,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => !p.SpendTxInput.IsSpended);
@@ -289,7 +289,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.SpendTxInput.IsSpended)
                 .Where(p => p.BtcSatoshiAmount != 0);
@@ -316,7 +316,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable()
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.BtcSatoshiAmount != 0);
 
