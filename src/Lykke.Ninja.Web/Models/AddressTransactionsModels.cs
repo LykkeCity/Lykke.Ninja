@@ -206,9 +206,10 @@ namespace Lykke.Ninja.Web.Models
             return null;
         }
 
-        public static string GetContinuationToken(int itemsToSkip)
+        public static string GetContinuationToken(int? itemsToSkip, int itemsToTake)
         {
-            return itemsToSkip.ToString();
+            var nextSkip = (itemsToSkip ?? 0) + itemsToTake;
+            return nextSkip.ToString();
         }
     }
     

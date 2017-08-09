@@ -16,15 +16,15 @@ namespace Lykke.Ninja.Services.AlertNotifications
             _slackClient = slackClient;
         }
 
-        public async Task SendNotification(string type, string message, string sender)
+        public async Task SendNotification(string type,  string message)
         {
 
-            await _slackClient.SendAsync(type, sender, message);
+            await _slackClient.SendAsync(type, "Lykke.Ninja", message);
         }
 
         public Task NotifyAsync(string message)
         {
-            return SendNotification("PoisonQueueNotifier", message, "Lykke.Ninja");
+            return SendNotification("PoisonQueueNotifier", message);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Lykke.Ninja.Jobs.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksConsumerFunctions), nameof(ParseBlock), context.ToJson(), e);
-                await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(ParseBlock), $"Error on {context.ToJson()}. Admin attention required");
+                await _slack.SendNotification(nameof(ParseBlock), $"Error on {context.ToJson()}");
                 throw;
             }
         }

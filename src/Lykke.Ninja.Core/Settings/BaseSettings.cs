@@ -9,7 +9,7 @@ namespace Lykke.Ninja.Core.Settings
             Proxy = new ProxySettings();
         }
 
-        public int ItemsOnAddressTransactionPage { get; set; } = 1000;
+        public int ItemsOnAddressTransactionPage { get; set; } = 500;
 
         [Required]
         public DbSettings Db { get; set; }

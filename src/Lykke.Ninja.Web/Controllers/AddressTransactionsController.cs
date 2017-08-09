@@ -117,8 +117,7 @@ namespace Lykke.Ninja.Web.Controllers
                 getReceived.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage)
             {
                 newContinuation =
-                    ContiniationBinder.GetContinuationToken(
-                        itemsToSkip ?? 0 + _baseSettings.ItemsOnAddressTransactionPage);
+                    ContiniationBinder.GetContinuationToken(itemsToSkip ,_baseSettings.ItemsOnAddressTransactionPage);
             }
 
             return AddressTransactionsViewModel.Create(getNinjaTop.Result, 

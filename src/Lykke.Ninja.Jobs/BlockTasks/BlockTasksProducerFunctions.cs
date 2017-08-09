@@ -69,12 +69,12 @@ namespace Lykke.Ninja.Jobs.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(ScanNewBlocks), null, e);
-                await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(ScanNewBlocks), e.Message);
+                await _slack.SendNotification(nameof(ScanNewBlocks), e.Message);
                 throw;
             }
         }
 
-        [TimerTrigger("00:00:30")]
+        [TimerTrigger("00:01:00")]
         public async Task PutFailedToQueueAgain()
         {
             try
@@ -90,7 +90,7 @@ namespace Lykke.Ninja.Jobs.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(PutFailedToQueueAgain), null, e);
-                await _slack.SendNotification(nameof(BlockTasksConsumerFunctions), nameof(PutFailedToQueueAgain), e.Message);
+                await _slack.SendNotification(nameof(PutFailedToQueueAgain), e.Message);
                 throw;
             }
         }
