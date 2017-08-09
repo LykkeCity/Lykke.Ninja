@@ -47,7 +47,7 @@ namespace Lykke.Ninja.Services.PaseBlockCommand
                 var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId))
                     .ContinueWith(p =>
                     {
-                        WriteConsole(context.BlockHeight, "get block done");
+                        WriteConsole(context.BlockHeight, "Get block done");
                         return p.Result;
                     });
 

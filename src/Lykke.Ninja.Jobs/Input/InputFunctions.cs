@@ -44,12 +44,12 @@ namespace Lykke.Ninja.Jobs.Input
             _slack = slack;
         }
 
-        [TimerTrigger("00:05:00")]
+        [TimerTrigger("00:01:00")]
         public async Task SetNotFoundSpendable()
         {
             _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFoundSpendable)} started");
 
-            var inputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 50000);
+            var inputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 5000);
             if (inputs.Any())
             {
                 await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFoundSpendable), inputs.Take(5).ToJson(),
@@ -58,12 +58,12 @@ namespace Lykke.Ninja.Jobs.Input
             }
         }
 
-        [TimerTrigger("01:00:00")]
+        [TimerTrigger("00:01:00")]
         public async Task SetWaitingToSpend()
         {
             _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetWaitingToSpend)} started");
 
-            var inputs = await _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: 50000);
+            var inputs = await _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: 5000);
             if (inputs.Any())
             {
                 await _blockService.ProcessInputsToSpend(inputs);
