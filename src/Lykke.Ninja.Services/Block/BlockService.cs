@@ -209,7 +209,7 @@ namespace Lykke.Ninja.Services.Block
 
             await Task.WhenAll(insertOutputs, insertInputs);
 
-            //await ProcessInputsToSpend(inputs);
+            await ProcessInputsToSpend(inputs);
         }
 
         public async Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)

@@ -16,6 +16,7 @@ namespace Lykke.Ninja.Web.Controllers
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly BaseSettings _baseSettings;
         private readonly INinjaBlockService _ninjaBlockService;
+        
 
         public AddressTransactionsController(ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, 
@@ -31,12 +32,14 @@ namespace Lykke.Ninja.Web.Controllers
             [FromQuery]bool colored = false, 
             [FromQuery]bool unspentonly = false, 
             [FromQuery(Name = "from")]string maxBlockDescriptor = null, 
-            [FromQuery(Name = "to")]string minBlockDescriptor = null)
+            [FromQuery(Name = "until")]string minBlockDescriptor = null,
+            [FromQuery]string continuation = null)
+
         {
             if (string.IsNullOrEmpty(maxBlockDescriptor) 
                 && string.IsNullOrEmpty(minBlockDescriptor))
             {
-                return await GetTransactions(address, colored, unspentonly);
+                return await GetTransactions(address, colored, unspentonly, continuation);
             }
 
             int maxBlockHeight;
@@ -46,7 +49,8 @@ namespace Lykke.Ninja.Web.Controllers
             {
                 return await GetTransactions(address, 
                     colored, 
-                    unspentonly, 
+                    unspentonly,
+                    continuation,
                     minBlockHeight: minBlockHeight, 
                     maxBlockHeight:maxBlockHeight);
             }
@@ -64,7 +68,8 @@ namespace Lykke.Ninja.Web.Controllers
 
             return await GetTransactions(address, 
                 colored, 
-                unspentonly, 
+                unspentonly,
+                continuation,
                 minBlockHeight: getMinBlockHeader.Result?.BlockHeight, 
                 maxBlockHeight: getMaxBlockHeader.Result?.BlockHeight);
         }
@@ -72,38 +77,54 @@ namespace Lykke.Ninja.Web.Controllers
         private async Task<AddressTransactionsViewModel> GetTransactions(string address, 
             bool colored, 
             bool unspendOnly, 
+            string continuation,
             int? minBlockHeight = null, 
             int? maxBlockHeight = null)
         {
             var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
 
             var getNinjaTop = _ninjaBlockService.GetTip(withRetry:false);
-
+            var itemsToSkip = ContiniationBinder.GetItemsToSkipFromContinuationToke(continuation);
+            
             Task<IEnumerable<ITransactionOutput>> getSpended;
             if (!unspendOnly)
             {
                 getSpended = _outputRepository.GetSpended(bitcoinAddress, 
                     minBlockHeight: minBlockHeight,
-                    maxBlockHeight: maxBlockHeight);
+                    maxBlockHeight: maxBlockHeight,
+                    itemsToSkip: itemsToSkip,
+                    itemsToTake: _baseSettings.ItemsOnAddressTransactionPage);
             }
             else
             {
                 getSpended = Task.FromResult(Enumerable.Empty<ITransactionOutput>());
             }
-
+            
             var getReceived = _outputRepository.GetReceived(bitcoinAddress, 
                 unspendOnly, 
                 minBlockHeight: minBlockHeight, 
-                maxBlockHeight: maxBlockHeight);
-
+                maxBlockHeight: maxBlockHeight,
+                itemsToSkip: itemsToSkip,
+                itemsToTake: _baseSettings.ItemsOnAddressTransactionPage);
+            
 
             await Task.WhenAll(getNinjaTop, 
                 getSpended, 
                 getReceived);
 
+            string newContinuation = null;
+            if (getSpended.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage ||
+                getReceived.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage)
+            {
+                newContinuation =
+                    ContiniationBinder.GetContinuationToken(
+                        itemsToSkip ?? 0 + _baseSettings.ItemsOnAddressTransactionPage);
+            }
+
             return AddressTransactionsViewModel.Create(getNinjaTop.Result, 
                 _baseSettings.UsedNetwork(), 
                 colored, 
+                newContinuation,
                 getSpended.Result, 
                 getReceived.Result);
         }

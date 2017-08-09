@@ -283,16 +283,18 @@ namespace Lykke.Ninja.Repositories.Transactions
 
         public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,
-            int? maxBlockHeight = null)
+            int? maxBlockHeight = null,
+            int? itemsToSkip = null,
+            int? itemsToTake = null)
         {
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
-                .Where(p => p.SpendTxInput.IsSpended)
-                .Where(p => p.BtcSatoshiAmount != 0);
+                .OrderByDescending(p => p.SpendTxInput.BlockHeight)
+                .Where(p => p.SpendTxInput.IsSpended);
 
             if (minBlockHeight != null)
             {
@@ -303,23 +305,40 @@ namespace Lykke.Ninja.Repositories.Transactions
             {
                 query = query.Where(p => p.SpendTxInput.BlockHeight <= maxBlockHeight.Value);
             }
+            
+            
 
-            return await query.ToListAsync();
+            if (itemsToSkip != null && itemsToSkip != 0)
+            {
+                query = query.Skip(itemsToSkip.Value);
+            }
+
+            if (itemsToTake != null)
+            {
+                query = query.Take(itemsToTake.Value);
+            }
+
+
+            return await query
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<ITransactionOutput>> GetReceived(BitcoinAddress address,
             bool unspentOnly = false,
             int? minBlockHeight = null,
-            int? maxBlockHeight = null)
+            int? maxBlockHeight = null,
+            int? itemsToSkip = null,
+            int? itemsToTake = null)
         {
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(new AggregateOptions {AllowDiskUse = true})
                 .Where(output => output.DestinationAddress == stringAddress)
-                .Where(p => p.BtcSatoshiAmount != 0);
+                .OrderByDescending(p => p.BlockHeight);
 
+            
             if (minBlockHeight != null)
             {
                 query = query.Where(p => p.BlockHeight >= minBlockHeight.Value);
@@ -335,8 +354,21 @@ namespace Lykke.Ninja.Repositories.Transactions
             {
                 query = query.Where(p => !p.SpendTxInput.IsSpended);
             }
+            
 
-            return await query.ToListAsync();
+            if (itemsToSkip != null && itemsToSkip != 0)
+            {
+                query = query.Skip(itemsToSkip.Value);
+            }
+
+            if (itemsToTake != null)
+            {
+                query = query.Take(itemsToTake.Value);
+            }
+
+            return (await query
+                .ToListAsync())
+                .Where(p => p.BtcSatoshiAmount != 0);
         }
 
         #region Indexes
@@ -399,13 +431,11 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var setIndexes = new[]
             {
-                SetHeightIndex(),
-                SetIdIndex(),
-                SetAddressIndex(),
-                SetHasColoredDataIndex(),
-                SetIsSpendedIndex(),
-                //SetAssetIdIndex(),
-                SetSpendTxInputBlockHeight()
+                //SetHeightIndex(),
+                //SetIdIndex(),
+                //SetSupportSummaryQueryIndex(),
+                SetSupportGetReceivedQueryIndex(),
+                SetSupportGetSpendedQueryIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -427,45 +457,39 @@ namespace Lykke.Ninja.Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
         }
 
-        private async Task SetAddressIndex()
-        {
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
-        }
-
-
-        private async Task SetHasColoredDataIndex()
-        {
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.HasColoredData);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
-        }
-
-
-
-
-        private async Task SetIsSpendedIndex()
-        {
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
-        }
-
-
-
-        private async Task SetAssetIdIndex()
-        {
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
-        }
-
-
-
-        private async Task SetSpendTxInputBlockHeight()
-        {
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
-        }
-
         #endregion
+
+
+        private async Task SetSupportSummaryQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
+        }
+
+        private async Task SetSupportGetReceivedQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+
+            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, height, isSpended);
+            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetReceived" });
+        }
+
+        private async Task SetSupportGetSpendedQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+
+            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, spentTxInputBlockHeight, isSpended);
+            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
+        }
+
 
         #endregion
     }

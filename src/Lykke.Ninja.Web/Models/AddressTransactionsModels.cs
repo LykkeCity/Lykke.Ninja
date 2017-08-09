@@ -15,12 +15,13 @@ namespace Lykke.Ninja.Web.Models
         public static AddressTransactionsViewModel Create(INinjaBlockHeader header, 
             Network network, 
             bool isColored,
+            string continuationToken,
             IEnumerable<ITransactionOutput> spended = null, 
             IEnumerable<ITransactionOutput> received = null)
         {
             return new AddressTransactionsViewModel
             {
-                ContinuationToken = null,
+                ContinuationToken = continuationToken,
                 Transactions = GetTxs(header, network, isColored, spended, received).ToArray(),
                 ConflictedOperations = Enumerable.Empty<object>().ToArray()
             };
@@ -189,6 +190,25 @@ namespace Lykke.Ninja.Web.Models
                 Received = received.ToArray(),
                 Spent = spended.ToArray(),
             };
+        }
+    }
+
+    public static class ContiniationBinder
+    {
+        public static int? GetItemsToSkipFromContinuationToke(string continuation)
+        {
+            int result;
+            if (int.TryParse(continuation, out result))
+            {
+                return result;
+            };
+
+            return null;
+        }
+
+        public static string GetContinuationToken(int itemsToSkip)
+        {
+            return itemsToSkip.ToString();
         }
     }
     
