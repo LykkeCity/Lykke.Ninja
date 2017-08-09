@@ -222,9 +222,9 @@ namespace Lykke.Ninja.Services.Block
                 var warnMessage = "Failed to set spended outputs " +
                                   $"Failed inputs count {setSpendedResult.NotFound.Count()}";
 
-                await _notificationsProducer.SendNotification(nameof(BlockService),
-                    warnMessage,
-                    nameof(InsertDataInDb));
+                await _notificationsProducer.SendNotification(
+                    nameof(InsertDataInDb),
+                    warnMessage);
 
                 await _log.WriteWarningAsync(nameof(BlockService),
                     nameof(InsertDataInDb),
