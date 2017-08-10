@@ -3,7 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
   </PropertyGroup>
-
+   <PropertyGroup>
+    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wp8+wpa81;</PackageTargetFallback>
+    <Version>1.0.1</Version>
+  </PropertyGroup> 
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="1.1.79" />
     <PackageReference Include="NBitcoin" Version="3.0.2.26" />
