@@ -1,0 +1,12 @@
+version: '2'
+services:
+  bcnbalance:
+    image: lykkex/lykkeninjajobs:dev
+    container_name: lykkeninjajobs
+    environment:
+      - SettingsUrl=${SettingsUrl}
+   
+
+networks:
+  mynet:
+    driver: bridge

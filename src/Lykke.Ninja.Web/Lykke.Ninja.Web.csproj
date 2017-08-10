@@ -25,5 +25,10 @@
     <ProjectReference Include="..\Lykke.Ninja.Jobs\Lykke.Ninja.Jobs.csproj" />
     <ProjectReference Include="..\Lykke.Ninja.Repositories\Lykke.Ninja.Repositories.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>

@@ -1,18 +1,16 @@
 version: '2'
+
 services:
-  bcnbalance:
-    image: lykkex/lykkeninja:dev
-    container_name: lykkeninja
+  lykkeninjaweb:
+    image: lykkedev/lykkeninjaweb:dev
+    container_name: lykkeninjaweb
     environment:
-      - SettingsUrl=${SettingsUrl}
+      - SettingsUrl={SettingsUrl}   
     ports:
       - "${Port}:5000"
     networks:
-      mynet:
-        aliases:
-          - lykkeninja
-   
+      - commondockernet
 
 networks:
-  mynet:
-    driver: bridge
+  commondockernet:
+    external: true
