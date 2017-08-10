@@ -174,7 +174,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true, MaxTime = TimeSpan.FromSeconds(5)})
                 .Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
@@ -182,12 +182,20 @@ namespace Lykke.Ninja.Repositories.Transactions
                 query = query.Where(p => p.BlockHeight <= at);
             }
 
-            return await query
-                .Select(p => new[] { p.TransactionId, p.SpendTxInput.SpendedInTxId })
-                .SelectMany(p => p)
-                .Where(p => p != null)
-                .Distinct()
-                .CountAsync();
+            try
+            {
+                return await query
+                    .Select(p => new[] { p.TransactionId, p.SpendTxInput.SpendedInTxId })
+                    .SelectMany(p => p)
+                    .Where(p => p != null)
+                    .Distinct()
+                    .CountAsync();
+            }
+            catch (Exception e)//TODO catch mongo timeout exception
+            {
+                return -1;
+            }
+
         }
 
         public async Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false)
@@ -431,9 +439,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var setIndexes = new[]
             {
-                //SetHeightIndex(),
-                //SetIdIndex(),
-                //SetSupportSummaryQueryIndex(),
+                SetSupportSummaryQueryIndex(),
                 SetSupportGetReceivedQueryIndex(),
                 SetSupportGetSpendedQueryIndex()
             };
@@ -465,9 +471,11 @@ namespace Lykke.Ninja.Repositories.Transactions
             var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
             var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
             var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
 
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false });
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData, height, btcValue);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummary" });
         }
 
         private async Task SetSupportGetReceivedQueryIndex()
