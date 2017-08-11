@@ -1,7 +1,7 @@
 version: '2'
 services:
-  bcnbalance:
-    image: lykkex/lykkeninjajobs:dev
+  lykkeninjajobs:
+    image: lykkedev/lykkeninjajobs:dev
     container_name: lykkeninjajobs
     environment:
       - SettingsUrl=${SettingsUrl}
