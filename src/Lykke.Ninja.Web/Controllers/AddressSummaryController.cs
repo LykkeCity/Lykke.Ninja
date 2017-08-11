@@ -51,12 +51,23 @@ namespace Lykke.Ninja.Web.Controllers
             var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, 
                 atBlockHeight, 
                 colored);
+            Task<IDictionary<string, long>> assetsReceiveds;
+            Task<IDictionary<string, long>> assetsAmounts;
+            if (colored)
+            {
+                assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress,
+                    atBlockHeight);
 
-            var assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress, 
-                atBlockHeight);
-
-            var assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress, 
-                atBlockHeight);
+                assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress,
+                    atBlockHeight);
+            }
+            else
+            {
+                IDictionary<string, long> emptyResult = new Dictionary<string, long>();
+                assetsReceiveds = Task.FromResult(emptyResult);
+                assetsAmounts = Task.FromResult(emptyResult);
+            }
+            
 
             await Task.WhenAll(getTxCount, getBtcAmount, getbtcReceived, assetsReceiveds);
 

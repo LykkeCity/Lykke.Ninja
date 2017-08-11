@@ -226,7 +226,6 @@ namespace Lykke.Ninja.Services.Block
             }
 
             await _inputRepository.SetSpended(setSpendedResult);
-
             if (setSpendedResult.NotFound.Any())
             {
                 var warnMessage = "Failed to set spended outputs " +
