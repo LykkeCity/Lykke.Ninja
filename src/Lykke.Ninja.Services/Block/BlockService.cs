@@ -215,9 +215,13 @@ namespace Lykke.Ninja.Services.Block
         public async Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)
         {
             var setSpendedResult = await _outputRepository.SetSpended(inputs);
+
+            var maxRetryCount = 3;
+            var retryCount = 0;
             //strange behaviour - sometimes on second time its ok
-            if (setSpendedResult.NotFound.Any())
+            if (setSpendedResult.NotFound.Any() && retryCount<=maxRetryCount)
             {
+                retryCount++;
                 setSpendedResult = await _outputRepository.SetSpended(inputs); 
             }
 
