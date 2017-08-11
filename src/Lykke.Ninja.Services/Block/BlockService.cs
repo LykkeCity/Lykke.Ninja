@@ -215,6 +215,12 @@ namespace Lykke.Ninja.Services.Block
         public async Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)
         {
             var setSpendedResult = await _outputRepository.SetSpended(inputs);
+            //strange behaviour - sometimes on second time its ok
+            if (setSpendedResult.NotFound.Any())
+            {
+                setSpendedResult = await _outputRepository.SetSpended(inputs); 
+            }
+
             await _inputRepository.SetSpended(setSpendedResult);
 
             if (setSpendedResult.NotFound.Any())
