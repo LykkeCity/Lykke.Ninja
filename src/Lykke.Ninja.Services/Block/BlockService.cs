@@ -212,20 +212,11 @@ namespace Lykke.Ninja.Services.Block
             await ProcessInputsToSpend(inputs);
         }
 
-        public async Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)
+        public async Task<ISetSpendableOperationResult> ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs)
         {
             var setSpendedResult = await _outputRepository.SetSpended(inputs);
-
-            var maxRetryCount = 3;
-            var retryCount = 0;
-            //strange behaviour - sometimes on second time its ok
-            if (setSpendedResult.NotFound.Any() && retryCount<=maxRetryCount)
-            {
-                retryCount++;
-                setSpendedResult = await _outputRepository.SetSpended(inputs); 
-            }
-
             await _inputRepository.SetSpended(setSpendedResult);
+
             if (setSpendedResult.NotFound.Any())
             {
                 var warnMessage = "Failed to set spended outputs " +
@@ -243,6 +234,8 @@ namespace Lykke.Ninja.Services.Block
                     }.ToJson(),
                     warnMessage);
             }
+
+            return setSpendedResult;
         }
 
         private void WriteConsole(int blockHeight, string message)

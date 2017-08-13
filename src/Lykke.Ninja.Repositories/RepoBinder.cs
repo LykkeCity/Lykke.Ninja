@@ -40,16 +40,14 @@ namespace Lykke.Ninja.Repositories
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
         {
-
-
-
-
             ioc.Register(p => new ParseBlockCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ParseBlockTasks)))
                 .As<IParseBlockCommandProducer>();
 
             ioc.Register(p => new FixAddressCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.AddressesToFix)))
                 .As<IFixAddressCommandProducer>();
-            
+
+            ioc.Register(p => new ScanNotFoundsCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ScanNotFounds)))
+                .As<IScanNotFoundsCommandProducer>();
         }
     }
 }

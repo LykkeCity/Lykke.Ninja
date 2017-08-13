@@ -157,9 +157,9 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             query = query.Limit(itemsToTake);
 
-            _console.WriteLine($"{nameof(Get)} Started");
+            _console.WriteLine($"{nameof(TransactionInputRepository)}.{nameof(Get)} Started");
             var result = await query.ToListAsync();
-            _console.WriteLine($"{nameof(Get)} Done");
+            _console.WriteLine($"{nameof(TransactionInputRepository)}.{nameof(Get)} Done");
 
             return result;
         }

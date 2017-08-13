@@ -8,6 +8,6 @@ namespace Lykke.Ninja.Core.Block
     public interface IBlockService
     {
         Task InsertDataInDb(GetBlockResponse block, IEnumerable<GetTransactionResponse> coloredTransactions);
-        Task ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs);
+        Task<ISetSpendableOperationResult> ProcessInputsToSpend(IEnumerable<ITransactionInput> inputs);
     }
 }

@@ -5,5 +5,6 @@
         public const string ParseBlockTasks = "parse-block-tasks";
         public const string SlackNotifications = "slack-notifications";
         public const string AddressesToFix = "addresses-to-fix";
+        public const string ScanNotFounds = "scan-not-founds";
     }
 }

@@ -1,15 +1,11 @@
 ﻿using Autofac;
-using AzureStorage.Queue;
-using Common;
 using Common.Log;
 using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.Ninja.Core.Block;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Ninja.Transaction;
 using Lykke.Ninja.Core.ParseBlockCommand;
-using Lykke.Ninja.Core.Queue;
 using Lykke.Ninja.Core.Settings;
-using Lykke.Ninja.Core.Transaction;
 using Lykke.AzureQueueIntegration.Publisher;
 using Lykke.JobTriggers.Abstractions;
 using Lykke.MonitoringServiceApiCaller;
