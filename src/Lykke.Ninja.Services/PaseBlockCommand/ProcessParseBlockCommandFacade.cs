@@ -38,49 +38,19 @@ namespace Lykke.Ninja.Services.PaseBlockCommand
             _log = log;
         }
 
-        public async Task ProcessCommand(ParseBlockCommandContext context)
+        public async Task ProcessCommand(ParseBlockCommandContext context, int timeoutMinutes = 10)
         {
             try
             {
-                WriteConsole(context.BlockHeight, "Started");
-
-                var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId))
-                    .ContinueWith(p =>
-                    {
-                        WriteConsole(context.BlockHeight, "Get block done");
-                        return p.Result;
-                    });
-
-                var setStartedStatus =
-                    _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started).ContinueWith(p =>
-                    {
-                        WriteConsole(context.BlockHeight, "ChangeProcessingStatus block done");
-                    });
-
-                await Task.WhenAll(getBlock, setStartedStatus);
-                
-                WriteConsole(context.BlockHeight, "Get Transactions started");
-
-                var coloredTransactions = await _ninjaTransactionService.Get(
-                    getBlock.Result.Block.Transactions
-                        .Where(p => p.HasValidColoredMarker())
-                        .Select(p => p.GetHash()));
-                
-                WriteConsole(context.BlockHeight, "Get Transactions Done");
-
-                WriteConsole(context.BlockHeight, "InsertDataInDb started");
-
-                await _blockService.InsertDataInDb(getBlock.Result, coloredTransactions);
-                
-                WriteConsole(context.BlockHeight, "InsertDataInDb Done");
-
-                WriteConsole(context.BlockHeight, "ChangeProcessingStatus started");
-
-                await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
-
-                WriteConsole(context.BlockHeight, "ChangeProcessingStatus Done");
-
-                WriteConsole(context.BlockHeight, "Done");
+                var task = Task.Run(() => ProcessCommandInner(context));
+                if (task.Wait(TimeSpan.FromMinutes(timeoutMinutes)))
+                {
+                    return;
+                }
+                else
+                {
+                    throw new TimeoutException($"{context.ToJson()} timed out");
+                }
             }
             catch (Exception e)
             {
@@ -88,6 +58,50 @@ namespace Lykke.Ninja.Services.PaseBlockCommand
 
                 throw;
             }
+        }
+
+
+        private async Task ProcessCommandInner(ParseBlockCommandContext context)
+        {
+            WriteConsole(context.BlockHeight, "Started");
+
+            var getBlock = _ninjaBlockService.GetBlock(uint256.Parse(context.BlockId))
+                .ContinueWith(p =>
+                {
+                    WriteConsole(context.BlockHeight, "Get block done");
+                    return p.Result;
+                });
+
+            var setStartedStatus =
+                _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Started).ContinueWith(p =>
+                {
+                    WriteConsole(context.BlockHeight, "ChangeProcessingStatus block done");
+                });
+
+            await Task.WhenAll(getBlock, setStartedStatus);
+
+            WriteConsole(context.BlockHeight, "Get Transactions started");
+
+            var coloredTransactions = await _ninjaTransactionService.Get(
+                getBlock.Result.Block.Transactions
+                    .Where(p => p.HasValidColoredMarker())
+                    .Select(p => p.GetHash()));
+
+            WriteConsole(context.BlockHeight, "Get Transactions Done");
+
+            WriteConsole(context.BlockHeight, "InsertDataInDb started");
+
+            await _blockService.InsertDataInDb(getBlock.Result, coloredTransactions);
+
+            WriteConsole(context.BlockHeight, "InsertDataInDb Done");
+
+            WriteConsole(context.BlockHeight, "ChangeProcessingStatus started");
+
+            await _blockStatusesRepository.ChangeProcessingStatus(context.BlockId, BlockProcessingStatus.Done);
+
+            WriteConsole(context.BlockHeight, "ChangeProcessingStatus Done");
+
+            WriteConsole(context.BlockHeight, "Done");
         }
 
         private void WriteConsole(int blockHeight, string message)

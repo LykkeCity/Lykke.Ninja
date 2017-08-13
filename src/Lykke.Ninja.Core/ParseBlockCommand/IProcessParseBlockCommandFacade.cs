@@ -4,6 +4,6 @@ namespace Lykke.Ninja.Core.ParseBlockCommand
 {
     public interface IProcessParseBlockCommandFacade
     {
-        Task ProcessCommand(ParseBlockCommandContext context);
+        Task ProcessCommand(ParseBlockCommandContext context, int timeOutMinutes = 10);
     }
 }

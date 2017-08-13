@@ -15,7 +15,7 @@ using NBitcoin;
 
 namespace Lykke.Ninja.Jobs.Input
 {
-    public class InputFunctions
+    public class ConsistencyFunctions
     {
         private readonly ITransactionInputRepository _inputRepository;
         private readonly IBlockService _blockService;
@@ -27,7 +27,7 @@ namespace Lykke.Ninja.Jobs.Input
         private readonly ISlackNotificationsProducer _slack;
         private readonly IScanNotFoundsCommandProducer _scanNotFoundsCommandProducer;
 
-        public InputFunctions(ITransactionInputRepository inputRepository,
+        public ConsistencyFunctions(ITransactionInputRepository inputRepository,
             IBlockService blockService, 
             ILog log, 
             IConsole console, 
@@ -53,7 +53,7 @@ namespace Lykke.Ninja.Jobs.Input
         [TimerTrigger("01:00:00")]
         public async Task SetWaitingToSpend()
         {
-            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetWaitingToSpend)} started");
+            _console.WriteLine($"{nameof(ConsistencyFunctions)}.{nameof(SetWaitingToSpend)} started");
 
             var inputs = await _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: 5000);
             if (inputs.Any())
@@ -65,12 +65,12 @@ namespace Lykke.Ninja.Jobs.Input
         [TimerTrigger("00:01:00")]
         public async Task SetNotFoundSpendable()
         {
-            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(SetNotFoundSpendable)} started");
+            _console.WriteLine($"{nameof(ConsistencyFunctions)}.{nameof(SetNotFoundSpendable)} started");
 
             var inputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: 5000);
             if (inputs.Any())
             {
-                await _log.WriteWarningAsync(nameof(InputFunctions), nameof(SetNotFoundSpendable), inputs.Take(5).ToJson(),
+                await _log.WriteWarningAsync(nameof(ConsistencyFunctions), nameof(SetNotFoundSpendable), inputs.Take(5).ToJson(),
                     "Processing not found inputs");
 
                 var operationResult = await _blockService.ProcessInputsToSpend(inputs);
@@ -85,7 +85,7 @@ namespace Lykke.Ninja.Jobs.Input
         [QueueTrigger(QueueNames.ScanNotFounds, notify: true, maxPollingIntervalMs: 60 * 1000)]
         public async Task ScanForNotFound(ScanNotFoundsContext context)
         {
-            _console.WriteLine($"{nameof(InputFunctions)}.{nameof(ScanForNotFound)} started");
+            _console.WriteLine($"{nameof(ConsistencyFunctions)}.{nameof(ScanForNotFound)} started");
 
             var inputs = await _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: int.MaxValue);
             if (inputs.Any())
@@ -108,7 +108,7 @@ namespace Lykke.Ninja.Jobs.Input
                     }
                     catch (Exception e)
                     {
-                        await _log.WriteErrorAsync(nameof(InputFunctions), nameof(ScanForNotFound), height.ToString(), e);
+                        await _log.WriteErrorAsync(nameof(ConsistencyFunctions), nameof(ScanForNotFound), height.ToString(), e);
                     }
                 }
 
