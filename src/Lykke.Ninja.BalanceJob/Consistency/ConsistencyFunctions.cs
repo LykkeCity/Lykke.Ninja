@@ -3,17 +3,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Lykke.Ninja.Core.Block;
-using Lykke.Ninja.Core.Transaction;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.Block;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Ninja.Transaction;
 using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Queue;
+using Lykke.Ninja.Core.Transaction;
 using NBitcoin;
 
-namespace Lykke.Ninja.Jobs.Input
+namespace Lykke.Ninja.BalanceJob.Consistency
 {
     public class ConsistencyFunctions
     {

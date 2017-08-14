@@ -26,8 +26,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lykke.Ninja.Core\Lykke.Ninja.Core.csproj" />
-    <ProjectReference Include="..\Lykke.Ninja.Jobs\Lykke.Ninja.Jobs.csproj" />
     <ProjectReference Include="..\Lykke.Ninja.Repositories\Lykke.Ninja.Repositories.csproj" />
+    <ProjectReference Include="..\Lykke.Ninja.Services\Lykke.Ninja.Services.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Dockerfile">

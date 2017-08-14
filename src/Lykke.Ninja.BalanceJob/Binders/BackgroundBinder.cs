@@ -1,9 +1,9 @@
 ﻿using Autofac;
 using Common.Log;
-using Lykke.Ninja.Core.Settings;
 using Lykke.JobTriggers.Extenstions;
+using Lykke.Ninja.Core.Settings;
 
-namespace Lykke.Ninja.Jobs.Binders
+namespace Lykke.Ninja.BalanceJob.Binders
 {
     public static class BackgroundBinder
     {

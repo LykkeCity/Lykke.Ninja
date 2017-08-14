@@ -2,12 +2,12 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Queue;
-using Lykke.JobTriggers.Triggers.Attributes;
 
-namespace Lykke.Ninja.Jobs.BlockTasks
+namespace Lykke.Ninja.BalanceJob.BlockTasks
 {
     public class BlockTasksConsumerFunctions
     {

@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading;
 using Autofac.Extensions.DependencyInjection;
+using Lykke.JobTriggers.Triggers;
+using Lykke.Ninja.BalanceJob.Binders;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Settings.Validation;
-using Lykke.Ninja.Jobs.Binders;
-using Lykke.JobTriggers.Triggers;
 using Microsoft.Extensions.Configuration;
 
-namespace Lykke.Ninja.Jobs
+namespace Lykke.Ninja.BalanceJob
 {
     public class AppHost
     {

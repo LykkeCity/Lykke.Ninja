@@ -3,9 +3,9 @@ using System.Runtime.Loader;
 using Autofac.Extensions.DependencyInjection;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Settings.Validation;
-using Lykke.Ninja.Jobs.Binders;
 using Lykke.JobTriggers.Triggers;
 using System.Threading;
+using Lykke.Ninja.BalanceJob;
 using Microsoft.Extensions.Configuration;
 
 namespace Lykke.Ninja.Jobs

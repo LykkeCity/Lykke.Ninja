@@ -9,7 +9,7 @@ using Lykke.Ninja.Repositories;
 using Lykke.Ninja.Repositories.Log;
 using Lykke.Ninja.Services;
 
-namespace Lykke.Ninja.Jobs.Binders
+namespace Lykke.Ninja.BalanceJob.Binders
 {
     public class AzureBinder
     {

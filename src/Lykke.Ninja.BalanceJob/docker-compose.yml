@@ -1,8 +1,8 @@
 version: '2'
 services:
-  lykkeninjajobs:
-    image: lykkedev/lykkeninjajobs:dev
-    container_name: lykkeninjajobs
+  lykkeninjabalancejob:
+    image: lykkedev/lykkeninjabalancejob:dev
+    container_name: lykkeninjabalancejob
     environment:
       - SettingsUrl=${SettingsUrl}
    
