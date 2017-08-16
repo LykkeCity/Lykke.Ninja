@@ -26,6 +26,7 @@ namespace Lykke.Ninja.Services.Ninja
 
             throw new Exception("Invalid base58 address");
         }
+
         public static bool IsBitcoinColoredAddress(string base58, Network network)
         {
             try

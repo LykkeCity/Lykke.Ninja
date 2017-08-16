@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Lykke.Ninja.Core.Block;
+using Lykke.Ninja.Core.BlockStatus;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
@@ -14,15 +16,18 @@ namespace Lykke.Ninja.Web.Controllers
     {
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly ITransactionOutputRepository _outputRepository;
+        private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly BaseSettings _baseSettings;
 
         public AddressSummaryController(INinjaBlockService ninjaBlockService, 
             ITransactionOutputRepository outputRepository, 
-            BaseSettings baseSettings)
+            BaseSettings baseSettings,
+            IBlockStatusesRepository blockStatusesRepository)
         {
             _ninjaBlockService = ninjaBlockService;
             _outputRepository = outputRepository;
             _baseSettings = baseSettings;
+            _blockStatusesRepository = blockStatusesRepository;
         }
 
         [HttpGet("{address}/summary")]
@@ -30,36 +35,33 @@ namespace Lykke.Ninja.Web.Controllers
             [FromQuery]string at = null, 
             [FromQuery]bool colored = false)
         {
-            int? atBlockHeight = null;
-            if (!string.IsNullOrEmpty(at))
-            {
-                var blockHeader = await _ninjaBlockService.GetBlockHeader(at, withRetry: false);
-
-                atBlockHeight = blockHeader?.BlockHeight;
-            }
-
+            var getAtBlockHeight = GetBlockHeight(at);
+            
             var btcAddress = BitcoinAddressHelper.GetBitcoinAddress(address, 
                 _baseSettings.UsedNetwork());
 
+            await getAtBlockHeight;
+
             var getTxCount = _outputRepository.GetTransactionsCount(btcAddress, 
-                atBlockHeight);
+                getAtBlockHeight.Result);
 
             var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, 
-                atBlockHeight, 
+                getAtBlockHeight.Result, 
                 colored);
 
             var getbtcReceived = _outputRepository.GetBtcReceivedSummary(btcAddress, 
-                atBlockHeight, 
+                getAtBlockHeight.Result, 
                 colored);
+
             Task<IDictionary<string, long>> assetsReceiveds;
             Task<IDictionary<string, long>> assetsAmounts;
             if (colored)
             {
                 assetsReceiveds = _outputRepository.GetAssetsReceived(btcAddress,
-                    atBlockHeight);
+                    getAtBlockHeight.Result);
 
                 assetsAmounts = _outputRepository.GetAssetsAmount(btcAddress,
-                    atBlockHeight);
+                    getAtBlockHeight.Result);
             }
             else
             {
@@ -76,6 +78,26 @@ namespace Lykke.Ninja.Web.Controllers
                 getbtcReceived.Result, 
                 assetsReceiveds.Result, 
                 assetsAmounts.Result);
+        }
+
+        private async Task<int?> GetBlockHeight(string descriptor)
+        {
+            if (string.IsNullOrEmpty(descriptor) || NinjaBlockHelper.IsTopBlock(descriptor))
+            {
+                return await _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
+            }
+
+            int parsedValue;
+
+            if (int.TryParse(descriptor, out parsedValue))
+            {
+                return parsedValue;
+            }
+
+
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor, withRetry: false);
+
+            return blockHeader?.BlockHeight;
         }
     }
 }

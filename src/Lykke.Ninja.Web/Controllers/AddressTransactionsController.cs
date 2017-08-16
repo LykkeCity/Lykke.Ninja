@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Lykke.Ninja.Core.BlockStatus;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
@@ -16,15 +17,18 @@ namespace Lykke.Ninja.Web.Controllers
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly BaseSettings _baseSettings;
         private readonly INinjaBlockService _ninjaBlockService;
+        private readonly IBlockStatusesRepository _blockStatusesRepository;
         
 
         public AddressTransactionsController(ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, 
-            INinjaBlockService ninjaBlockService)
+            INinjaBlockService ninjaBlockService,
+            IBlockStatusesRepository blockStatusesRepository)
         {
             _outputRepository = outputRepository;
             _baseSettings = baseSettings;
             _ninjaBlockService = ninjaBlockService;
+            _blockStatusesRepository = blockStatusesRepository;
         }
 
         [HttpGet("{address}")]
@@ -36,42 +40,17 @@ namespace Lykke.Ninja.Web.Controllers
             [FromQuery]string continuation = null)
 
         {
-            if (string.IsNullOrEmpty(maxBlockDescriptor) 
-                && string.IsNullOrEmpty(minBlockDescriptor))
-            {
-                return await GetTransactions(address, colored, unspentonly, continuation);
-            }
+            var getMaxBlockHeight = GetMaxBlockHeight(maxBlockDescriptor);
+            var getMinBlockHeight = GetMinBlockHeight(minBlockDescriptor);
 
-            int maxBlockHeight;
-            int minBlockHeight;
-            if (int.TryParse(maxBlockDescriptor, out maxBlockHeight) 
-                && int.TryParse(minBlockDescriptor, out minBlockHeight))
-            {
-                return await GetTransactions(address, 
-                    colored, 
-                    unspentonly,
-                    continuation,
-                    minBlockHeight: minBlockHeight, 
-                    maxBlockHeight:maxBlockHeight);
-            }
-            
-            var getMaxBlockHeader = !string.IsNullOrEmpty(maxBlockDescriptor)
-                ? _ninjaBlockService.GetBlockHeader(maxBlockDescriptor, withRetry: false)
-                : Task.FromResult((INinjaBlockHeader)null);
-
-            var getMinBlockHeader = !string.IsNullOrEmpty(minBlockDescriptor)
-                ? _ninjaBlockService.GetBlockHeader(minBlockDescriptor, withRetry: false)
-                : Task.FromResult((INinjaBlockHeader)null);
-            
-
-            await Task.WhenAll(getMinBlockHeader, getMinBlockHeader);
+            await Task.WhenAll(getMaxBlockHeight, getMaxBlockHeight);
 
             return await GetTransactions(address, 
                 colored, 
                 unspentonly,
                 continuation,
-                minBlockHeight: getMinBlockHeader.Result?.BlockHeight, 
-                maxBlockHeight: getMaxBlockHeader.Result?.BlockHeight);
+                minBlockHeight: getMinBlockHeight.Result, 
+                maxBlockHeight: getMaxBlockHeight.Result);
         }
 
         private async Task<AddressTransactionsViewModel> GetTransactions(string address, 
@@ -126,6 +105,47 @@ namespace Lykke.Ninja.Web.Controllers
                 newContinuation,
                 getSpended.Result, 
                 getReceived.Result);
+        }
+
+
+        private Task<int?> GetMinBlockHeight(string descriptor)
+        {
+            return GetBlockHeight(descriptor);
+        }
+
+        private async Task<int?> GetMaxBlockHeight(string descriptor)
+        {
+            if (string.IsNullOrEmpty(descriptor))
+            {
+                return await _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
+            }
+
+            return await GetBlockHeight(descriptor);
+        }
+
+        private async Task<int?> GetBlockHeight(string descriptor)
+        {
+            if (string.IsNullOrEmpty(descriptor))
+            {
+                return null;
+            }
+
+            if (NinjaBlockHelper.IsTopBlock(descriptor))
+            {
+                return await _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
+            }
+            
+            int parsedValue;
+
+            if (int.TryParse(descriptor, out parsedValue))
+            {
+                return parsedValue;
+            }
+
+
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor, withRetry: false);
+
+            return blockHeader?.BlockHeight;
         }
     }
 }

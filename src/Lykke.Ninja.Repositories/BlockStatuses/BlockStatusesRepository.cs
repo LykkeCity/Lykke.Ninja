@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Ninja.Core.BlockStatus;
@@ -43,6 +44,21 @@ namespace Lykke.Ninja.Repositories.BlockStatuses
             await EnsureQueryIndexes();
             return await _collection.AsQueryable().OrderByDescending(p => p.Height).FirstOrDefaultAsync();
         }
+
+        public async Task<int> GetLastBlockHeight(BlockProcessingStatus status)
+        {
+            await EnsureQueryIndexes();
+
+            var result = (await _collection.AsQueryable()
+                .OrderByDescending(p => p.Height)
+                .Where(p => p.ProcessingStatus == status.ToString())
+                .Select(p => p.Height)
+                .Take(1)
+                .ToListAsync());
+
+            return result.FirstOrDefault();
+        }
+
 
         public async Task<IBlockStatus> Get(string blockId)
         {

@@ -53,6 +53,7 @@ namespace Lykke.Ninja.Core.BlockStatus
     {
         Task<bool> Exists(string blockId);
         Task<IBlockStatus> GetLastQueuedBlock();
+        Task<int> GetLastBlockHeight(BlockProcessingStatus status);
         Task<IBlockStatus> Get(string blockId);
         Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status = null, 
             int? itemsToTake = null);
