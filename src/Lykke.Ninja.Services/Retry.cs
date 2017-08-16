@@ -86,5 +86,36 @@ namespace Lykke.Ninja.Services
                 }
             }
         }
+
+        public static async Task Try(Func<Task> action, int maxTryCount, Func<Exception, bool> exceptionFilter = null,
+            ILog logger = null)
+        {
+            int @try = 0;
+            if (exceptionFilter == null)
+            {
+                exceptionFilter = p => true;
+            }
+
+
+            while (@try <= maxTryCount)
+            {
+                try
+                {
+                    await action();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    @try++;
+                    if (!exceptionFilter(ex) || @try >= maxTryCount)
+                        throw;
+
+                    if (logger != null)
+                    {
+                        await logger.WriteErrorAsync("Retry", "Try", null, ex);
+                    }
+                }
+            }
+        }
     }
 }

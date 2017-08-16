@@ -6,6 +6,7 @@ using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Queue;
+using Lykke.Ninja.Services;
 
 namespace Lykke.Ninja.BalanceJob.BlockTasks
 {
@@ -24,12 +25,15 @@ namespace Lykke.Ninja.BalanceJob.BlockTasks
             _parseBlockCommandFacade = parseBlockCommandFacade;
         }
 
-        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 10 * 1000)]
+        [QueueTrigger(QueueNames.ParseBlockTasks, notify: true, maxPollingIntervalMs: 10 * 1000, maxDequeueCount:0)]
         public async Task ParseBlock(ParseBlockCommandContext context)
         {
             try
             {
-                await _parseBlockCommandFacade.ProcessCommand(context);
+                var maxTryCount = 5;
+                await Retry.Try(async () => await _parseBlockCommandFacade.ProcessCommand(context, timeOutMinutes: 10), 
+                    maxTryCount: maxTryCount, 
+                    exceptionFilter: p => p is TimeoutException, logger: _log);
             }
             catch (Exception e)
             {
