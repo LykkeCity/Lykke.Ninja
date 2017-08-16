@@ -307,12 +307,16 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
                 .Where(output => output.DestinationAddress == stringAddress)
-                .Where(p => p.ColoredData.HasColoredData)
-                .Where(p => !p.SpendTxInput.IsSpended);
+                .Where(p => p.ColoredData.HasColoredData);
 
             if (at != null)
             {
-                query = query.Where(p => p.BlockHeight <= at);
+                query = query.Where(p => p.BlockHeight <= at)
+                    .Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > at);
+            }
+            else
+            {
+                query = query.Where(p => !p.SpendTxInput.IsSpended);
             }
 
             var result = await query
