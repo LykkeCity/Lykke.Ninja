@@ -172,9 +172,14 @@ namespace Lykke.Ninja.Repositories.Transactions
         public async Task<long> GetTransactionsCount(BitcoinAddress address,
             int? at)
         {
+            if (at != null)
+            {
+                return -1;
+            }
+
             await EnsureQueryIndexes();
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true, MaxTime = TimeSpan.FromSeconds(5)})
+            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true, MaxTime = TimeSpan.FromSeconds(5) })
                 .Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
@@ -204,12 +209,17 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable(new AggregateOptions{ AllowDiskUse = true })
-                .Where(output => output.DestinationAddress == stringAddress)
-                .Where(p => !p.SpendTxInput.IsSpended);
+                .Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
             {
-                query = query.Where(p => p.BlockHeight <= at);
+                query = query.Where(p => p.BlockHeight <= at)
+                    .Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > at);
+            }
+            else
+            {
+                query = query.Where(p => !p.SpendTxInput.IsSpended);
+
             }
 
             if (isColored) // exclude btc with colored assets
@@ -224,6 +234,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         public async Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at, bool isColored = false)
         {
             await EnsureQueryIndexes();
+
 
             var stringAddress = address.ToWif();
             var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true });
