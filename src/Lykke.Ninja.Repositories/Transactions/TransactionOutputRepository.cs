@@ -172,33 +172,56 @@ namespace Lykke.Ninja.Repositories.Transactions
         public async Task<long> GetTransactionsCount(BitcoinAddress address,
             int? at)
         {
-            if (at != null)
-            {
-                return -1;
-            }
+            //the ugly way
+
+            var timeOutMagicValue = -1;
 
             await EnsureQueryIndexes();
+
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true, MaxTime = TimeSpan.FromSeconds(5) })
+
+            var query = _collection.AsQueryable(new AggregateOptions { MaxTime = TimeSpan.FromSeconds(5) })
                 .Where(output => output.DestinationAddress == stringAddress);
 
-            if (at != null)
+            if (at == null)
             {
-                query = query.Where(p => p.BlockHeight <= at);
+                try
+                {
+                 return await query
+                        .Select(p => new[] { p.TransactionId, p.SpendTxInput.SpendedInTxId })
+                        .SelectMany(p => p)
+                        .Where(p => p != null)
+                        .Distinct()
+                        .CountAsync();
+                }
+                catch (MongoExecutionTimeoutException)
+                {
+                    return timeOutMagicValue;
+                }
             }
+
+            var inputsQuery = query.Where(p => p.SpendTxInput.BlockHeight <= at);
+            var outputsQuery = query.Where(p => p.BlockHeight <= at);
 
             try
             {
-                return await query
-                    .Select(p => new[] { p.TransactionId, p.SpendTxInput.SpendedInTxId })
-                    .SelectMany(p => p)
+                var inputsTxCount = inputsQuery.Select(p => p.SpendTxInput.SpendedInTxId)
                     .Where(p => p != null)
                     .Distinct()
-                    .CountAsync();
+                    .ToListAsync();
+
+                var outputsTxCount = outputsQuery.Select(p => p.TransactionId)
+                    .Where(p => p != null)
+                    .Distinct()
+                    .ToListAsync();
+
+                await Task.WhenAll(inputsTxCount, outputsTxCount);
+
+                return inputsTxCount.Result.Union(outputsTxCount.Result).Distinct().Count();
             }
-            catch (Exception e)//TODO catch mongo timeout exception
+            catch (MongoExecutionTimeoutException)
             {
-                return -1;
+                return timeOutMagicValue;
             }
 
         }
