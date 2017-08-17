@@ -28,6 +28,8 @@ namespace Lykke.Ninja.Core.Settings
         public ProxySettings Proxy { get; set; }
 
         public InitialParserSettings InitialParser { get; set; }
+
+        public int MaxNinjaTopBlockDelay { get; set; } = 10;
     }
 
     public class DbSettings

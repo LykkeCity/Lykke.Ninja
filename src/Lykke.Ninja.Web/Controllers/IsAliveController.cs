@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Ninja.Block;
+using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
 using Lykke.Ninja.Web.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -16,19 +18,30 @@ namespace Lykke.Ninja.Web.Controllers
 
         private readonly ITransactionInputRepository _inputRepository;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
+        private readonly INinjaBlockService _ninjaBlockService;
+        private readonly BaseSettings _baseSettings;
 
-        public IsAliveController(ITransactionInputRepository inputRepository, IBlockStatusesRepository blockStatusesRepository)
+        public IsAliveController(ITransactionInputRepository inputRepository, 
+            IBlockStatusesRepository blockStatusesRepository, 
+            INinjaBlockService ninjaBlockService, 
+            BaseSettings baseSettings)
         {
             _inputRepository = inputRepository;
             _blockStatusesRepository = blockStatusesRepository;
+            _ninjaBlockService = ninjaBlockService;
+            _baseSettings = baseSettings;
         }
 
         [HttpGet]
         public async Task<IActionResult> Get()
         {
+            var getNinjaTopHeader = _ninjaBlockService.GetTip(false);
             var getFailedBlockCount = _blockStatusesRepository.Count(BlockProcessingStatus.Fail);
             var getNotFoundInputsCount = _inputRepository.Count(SpendProcessedStatus.NotFound);
-            await Task.WhenAll(getFailedBlockCount, getNotFoundInputsCount);
+            var getLastSuccesfullyProcessedBlockHeight =
+                _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
+
+            await Task.WhenAll(getFailedBlockCount, getNotFoundInputsCount, getNinjaTopHeader, getLastSuccesfullyProcessedBlockHeight);
 
             var issueIndicators = new List<IsAliveResponse.IssueIndicator>();
 
@@ -49,6 +62,18 @@ namespace Lykke.Ninja.Web.Controllers
                     Value = $"Failed blocks count {getFailedBlockCount.Result}"
                 });
             }
+
+            var ninjaTopDelay = getNinjaTopHeader.Result.BlockHeight - getLastSuccesfullyProcessedBlockHeight.Result;
+
+            if (ninjaTopDelay > _baseSettings.MaxNinjaTopBlockDelay)
+            {
+                issueIndicators.Add(new IsAliveResponse.IssueIndicator()
+                {
+                    Type = "Critical ninja top block delay",
+                    Value = $"{ninjaTopDelay} bl."
+                });
+            }
+            
 
             return new OkObjectResult(new IsAliveResponse
             {
