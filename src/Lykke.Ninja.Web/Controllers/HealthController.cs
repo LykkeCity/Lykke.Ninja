@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Transaction;
 using Microsoft.AspNetCore.Mvc;
@@ -13,14 +14,17 @@ namespace Lykke.Ninja.Web.Controllers
         private readonly IParseBlockCommandProducer _blockCommandProducer;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly ITransactionInputRepository _inputRepository;
+        private readonly INinjaBlockService _ninjaBlockService;
 
         public HealthController(IParseBlockCommandProducer blockCommandProducer, 
             IBlockStatusesRepository blockStatusesRepository,
-            ITransactionInputRepository inputRepository)
+            ITransactionInputRepository inputRepository,
+            INinjaBlockService ninjaBlockService)
         {
             _blockCommandProducer = blockCommandProducer;
             _blockStatusesRepository = blockStatusesRepository;
             _inputRepository = inputRepository;
+            _ninjaBlockService = ninjaBlockService;
         }
 
         [HttpGet("check")]
@@ -28,6 +32,7 @@ namespace Lykke.Ninja.Web.Controllers
         {
             const int showLastItemsCount = 5;
 
+            var getNinjaTopHeader = _ninjaBlockService.GetTip(false);
             var getQueuedCount = _blockCommandProducer.GetQueuedCommandCount();
             var getLastQueuedBlock = _blockStatusesRepository.GetLastQueuedBlock();
 
@@ -45,6 +50,9 @@ namespace Lykke.Ninja.Web.Controllers
 
             var getProccessingBlocks =
                 _blockStatusesRepository.GetList(BlockProcessingStatus.Started, itemsToTake: showLastItemsCount);
+            var getLastSuccesfullyProcessedBlockHeight =
+                _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
+
 
             await Task.WhenAll(getQueuedCount, 
                 getLastQueuedBlock, 
@@ -56,7 +64,8 @@ namespace Lykke.Ninja.Web.Controllers
                 getWaitingInputs, 
                 getNotFoundInputsCount,
                 getWaitingInputsCount,
-                getProccessingBlocks);
+                getProccessingBlocks,
+                getNinjaTopHeader, getLastSuccesfullyProcessedBlockHeight);
 
             return HealthCheckViewModel.Create(getQueuedCount.Result, 
                 getLastQueuedBlock.Result, 
@@ -68,7 +77,9 @@ namespace Lykke.Ninja.Web.Controllers
                 getFailedBlockCount.Result,
                 getQueuedBlocks.Result,
                 getQueuedBlockCount.Result,
-                getProccessingBlocks.Result);
+                getProccessingBlocks.Result,
+                getNinjaTopHeader.Result,
+                getLastSuccesfullyProcessedBlockHeight.Result);
         }
     }
 }

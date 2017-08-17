@@ -82,7 +82,7 @@ namespace Lykke.Ninja.Web.Controllers
 
         private async Task<int?> GetBlockHeight(string descriptor)
         {
-            if (string.IsNullOrEmpty(descriptor))
+            if (string.IsNullOrEmpty(descriptor) || NinjaBlockHelper.IsTopBlock(descriptor))
             {
                 return null;
             }

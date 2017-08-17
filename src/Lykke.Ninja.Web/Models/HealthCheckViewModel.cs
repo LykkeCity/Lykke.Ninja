@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Lykke.Ninja.Core.BlockStatus;
+using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Transaction;
 
 namespace Lykke.Ninja.Web.Models
@@ -18,6 +19,7 @@ namespace Lykke.Ninja.Web.Models
             NotFoundInputs = Enumerable.Empty<TransactionInputViewModel>();
         }
 
+        public int NinjaTopLag { get; set; }
         public bool ConsistencyOk => NotFoundInputsCount == 0 && FailedBlocksCount == 0;
 
         public long FailedBlocksCount { get; set; }
@@ -49,7 +51,9 @@ namespace Lykke.Ninja.Web.Models
             long failedBlocksCount,
             IEnumerable<IBlockStatus> queuedBlocks,
             long queuedBlocksCount,
-            IEnumerable<IBlockStatus> processingBlocks)
+            IEnumerable<IBlockStatus> processingBlocks,
+            INinjaBlockHeader ninjaTop,
+            int lastSuccesfullyProcessedBlockHeight)
         {
             return new HealthCheckViewModel
             {
@@ -63,7 +67,8 @@ namespace Lykke.Ninja.Web.Models
                 QueuedBlocksCount = queuedBlocksCount,
                 NotFoundInputsCount = notFoundInputsCount,
                 WaitingInputsCount = waitingInputsCount,
-                ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create)
+                ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create),
+                NinjaTopLag = ninjaTop.BlockHeight - lastSuccesfullyProcessedBlockHeight
             };
         }
     }
