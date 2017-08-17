@@ -477,6 +477,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var setIndexes = new[]
             {
+                SetSupportHistorySummaryQueryIndex(),
                 SetSupportSummaryQueryIndex(),
                 SetSupportGetReceivedQueryIndex(),
                 SetSupportGetSpendedQueryIndex()
@@ -514,6 +515,20 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData, height, btcValue);
             await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummary" });
+        }
+
+        private async Task SetSupportHistorySummaryQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spendHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
+
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, height, isSpended, spendHeight, hasColoredData, btcValue);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportHistorySummary" });
         }
 
         private async Task SetSupportGetReceivedQueryIndex()
