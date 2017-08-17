@@ -66,7 +66,7 @@ namespace Lykke.Ninja.Repositories.BlockStatuses
             return await _collection.Find(BlockStatusMongoEntity.Filter.EqBlockId(blockId)).FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<IBlockStatus>> GetAll(BlockProcessingStatus? status, int? itemsToTake)
+        public async Task<IEnumerable<IBlockStatus>> GetList(BlockProcessingStatus? status, int? itemsToTake)
         {
             await EnsureQueryIndexes();
             var query = _collection.AsQueryable();

@@ -79,7 +79,7 @@ namespace Lykke.Ninja.BalanceJob.BlockTasks
             try
             {
                 _console.WriteLine($"{nameof(PutFailedToQueueAgain)} started");
-                var failedBlocks = await _blockStatusesRepository.GetAll(BlockProcessingStatus.Fail, 50);
+                var failedBlocks = await _blockStatusesRepository.GetList(BlockProcessingStatus.Fail, 50);
 
                 foreach (var blockStatus in failedBlocks.Where(p => p.StatusChangedAt > DateTime.UtcNow.AddMinutes(-10)))
                 {

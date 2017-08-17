@@ -7,10 +7,10 @@ using Lykke.Ninja.Core.Transaction;
 
 namespace Lykke.Ninja.Web.Models
 {
-    public class ConsistencyCheckViewModel
+    public class HealthCheckViewModel
     {
 
-        public ConsistencyCheckViewModel()
+        public HealthCheckViewModel()
         {
             FailedBlocks = Enumerable.Empty<BlockStatusViewModel>();
             QueuedBlocks = Enumerable.Empty<BlockStatusViewModel>();
@@ -25,7 +25,7 @@ namespace Lykke.Ninja.Web.Models
         public long NotFoundInputsCount { get; set; }
 
         public int ParseBlockTasksQueuedCount { get; set; }
-
+        public IEnumerable<BlockStatusViewModel> ProcessingBlocks { get; set; }
         public BlockStatusViewModel LastQueuedBlock { get; set; }
 
         public IEnumerable<BlockStatusViewModel> FailedBlocks { get; set; }
@@ -39,7 +39,7 @@ namespace Lykke.Ninja.Web.Models
 
         public IEnumerable<TransactionInputViewModel> NotFoundInputs { get; set; }
 
-        public static ConsistencyCheckViewModel Create(int parseBlockTasksQueuedCount, 
+        public static HealthCheckViewModel Create(int parseBlockTasksQueuedCount, 
             IBlockStatus lastQueuedBlock,
             IEnumerable<ITransactionInput> waitingInputs,
             long waitingInputsCount,
@@ -48,9 +48,10 @@ namespace Lykke.Ninja.Web.Models
             IEnumerable<IBlockStatus> failedBlocks,
             long failedBlocksCount,
             IEnumerable<IBlockStatus> queuedBlocks,
-            long queuedBlocksCount)
+            long queuedBlocksCount,
+            IEnumerable<IBlockStatus> processingBlocks)
         {
-            return new ConsistencyCheckViewModel
+            return new HealthCheckViewModel
             {
                 ParseBlockTasksQueuedCount = parseBlockTasksQueuedCount,
                 LastQueuedBlock = BlockStatusViewModel.Create(lastQueuedBlock),
@@ -61,7 +62,8 @@ namespace Lykke.Ninja.Web.Models
                 FailedBlocksCount = failedBlocksCount,
                 QueuedBlocksCount = queuedBlocksCount,
                 NotFoundInputsCount = notFoundInputsCount,
-                WaitingInputsCount = waitingInputsCount
+                WaitingInputsCount = waitingInputsCount,
+                ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create)
             };
         }
     }

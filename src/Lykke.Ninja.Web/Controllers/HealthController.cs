@@ -23,18 +23,18 @@ namespace Lykke.Ninja.Web.Controllers
             _inputRepository = inputRepository;
         }
 
-        [HttpGet("consistency/check")]
-        public async Task<ConsistencyCheckViewModel> ConsistencyCheck()
+        [HttpGet("check")]
+        public async Task<HealthCheckViewModel> Check()
         {
             const int showLastItemsCount = 5;
 
             var getQueuedCount = _blockCommandProducer.GetQueuedCommandCount();
             var getLastQueuedBlock = _blockStatusesRepository.GetLastQueuedBlock();
 
-            var getFailedBlocks = _blockStatusesRepository.GetAll(BlockProcessingStatus.Fail, itemsToTake: showLastItemsCount);
+            var getFailedBlocks = _blockStatusesRepository.GetList(BlockProcessingStatus.Fail, itemsToTake: showLastItemsCount);
             var getFailedBlockCount = _blockStatusesRepository.Count(BlockProcessingStatus.Fail);
 
-            var getQueuedBlocks = _blockStatusesRepository.GetAll(BlockProcessingStatus.Queued, itemsToTake: showLastItemsCount);
+            var getQueuedBlocks = _blockStatusesRepository.GetList(BlockProcessingStatus.Queued, itemsToTake: showLastItemsCount);
             var getQueuedBlockCount = _blockStatusesRepository.Count(BlockProcessingStatus.Queued);
 
             var getNotFoundInputs = _inputRepository.Get(SpendProcessedStatus.NotFound, itemsToTake: showLastItemsCount);
@@ -42,6 +42,9 @@ namespace Lykke.Ninja.Web.Controllers
 
             var getWaitingInputs = _inputRepository.Get(SpendProcessedStatus.Waiting, itemsToTake: showLastItemsCount);
             var getWaitingInputsCount = _inputRepository.Count(SpendProcessedStatus.NotFound);
+
+            var getProccessingBlocks =
+                _blockStatusesRepository.GetList(BlockProcessingStatus.Started, itemsToTake: showLastItemsCount);
 
             await Task.WhenAll(getQueuedCount, 
                 getLastQueuedBlock, 
@@ -52,9 +55,10 @@ namespace Lykke.Ninja.Web.Controllers
                 getNotFoundInputs, 
                 getWaitingInputs, 
                 getNotFoundInputsCount,
-                getWaitingInputsCount);
+                getWaitingInputsCount,
+                getProccessingBlocks);
 
-            return ConsistencyCheckViewModel.Create(getQueuedCount.Result, 
+            return HealthCheckViewModel.Create(getQueuedCount.Result, 
                 getLastQueuedBlock.Result, 
                 getWaitingInputs.Result, 
                 getWaitingInputsCount.Result,
@@ -63,7 +67,8 @@ namespace Lykke.Ninja.Web.Controllers
                 getFailedBlocks.Result,
                 getFailedBlockCount.Result,
                 getQueuedBlocks.Result,
-                getQueuedBlockCount.Result);
+                getQueuedBlockCount.Result,
+                getProccessingBlocks.Result);
         }
     }
 }
