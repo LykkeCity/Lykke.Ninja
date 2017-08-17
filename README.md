@@ -2,7 +2,9 @@
 =======
 # lykke.ninja
 The service is used for:
- * retrieving address information from blockchain
+ * retrieving address information from blockchain and stores it in mongodb
+ * for request like balances/{address}/summary and balances/{address} uses mongodb info. For all other requests (like  transactions/{txId}) proxies to NbitcoinNinja
+ 
  
 # Deploy
 
@@ -25,7 +27,10 @@ The .env file must define the following environment variables: - SETTINGSURL con
 	"NinjaData": { // connection to common mongodb db
 		"ConnectionString": "",
 		"DbName": "" 	
-	}
+	},
+    "Proxy": {
+      "ProxyAllRequests": false // if true - proxies all request (include retrieving address info) to NBitcoin Ninja
+    }
 }
 
 ```
