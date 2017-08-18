@@ -78,7 +78,7 @@ namespace Lykke.Ninja.Web.Controllers
             return new OkObjectResult(new IsAliveResponse
             {
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
-                IssueIndicators = Enumerable.Empty<IsAliveResponse.IssueIndicator>()
+                IssueIndicators = issueIndicators
             });
         }
     }

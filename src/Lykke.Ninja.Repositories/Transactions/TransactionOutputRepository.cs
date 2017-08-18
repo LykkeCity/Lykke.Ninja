@@ -527,8 +527,8 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
 
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, height, isSpended, spendHeight, hasColoredData, btcValue);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportHistorySummary" });
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, spendHeight, height, hasColoredData, btcValue);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummaryHistory" });
         }
 
         private async Task SetSupportGetReceivedQueryIndex()
