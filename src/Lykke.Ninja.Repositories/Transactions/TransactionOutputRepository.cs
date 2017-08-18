@@ -45,7 +45,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         private readonly Lazy<Task> _ensureInsertIndexesLocker;
         private readonly Lazy<Task> _ensureUpdateIndexesLocker;
 
-        
+        private readonly AggregateOptions _defaultAggregateOptions;
         private readonly BaseSettings _baseSettings;
 
         public TransactionOutputRepository(MongoSettings mongoSettings,
@@ -64,6 +64,8 @@ namespace Lykke.Ninja.Repositories.Transactions
             _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);
             _ensureInsertIndexesLocker = new Lazy<Task>(SetInsertionIndexes);
             _ensureUpdateIndexesLocker = new Lazy<Task>(SetUpdateIndexes);
+
+            _defaultAggregateOptions = new AggregateOptions {MaxTime = TimeSpan.FromSeconds(35)};
         }
 
         private void WriteConsole(int blockHeight, string message)
@@ -82,7 +84,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var allIds = items.Select(p => p.Id);
 
-            var existed = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            var existed = await _collection.AsQueryable().Where(p => allIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
 
@@ -97,7 +99,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureInsertionIndexes();
 
             WriteConsole(blockHeight, "Retrieving existed started");
-            var existed = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
+            var existed = await _collection.AsQueryable().Where(p => p.BlockHeight == blockHeight).Select(p => p.Id).ToListAsync();
             WriteConsole(blockHeight, "Retrieving existed done");
 
             var itemsToInsert = items.Where(p => !existed.Contains(p.Id)).ToList();
@@ -133,7 +135,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 input => TransactionOutputMongoEntity.GenerateId(input.TxIn.Id));
             
             WriteConsole("Get existed spend outputs started");
-            var foundOutputs = await _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true }).Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+            var foundOutputs = await _collection.AsQueryable().Where(p => spendOutputIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
             WriteConsole("Get existed spend outputs done");
 
             var inputsDictionary = inputs.ToDictionary(
@@ -231,13 +233,13 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions{ AllowDiskUse = true })
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
             {
-                query = query.Where(p => p.BlockHeight <= at)
-                    .Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > at);
+                query = query.Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > at)
+                    .Where(p => p.BlockHeight <= at);
             }
             else
             {
@@ -260,7 +262,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true });
+            var query = _collection.AsQueryable(_defaultAggregateOptions);
             query = query.Where(output => output.DestinationAddress == stringAddress);
 
             if (at != null)
@@ -282,7 +284,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var stringAddress = address.ToWif();
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData);
 
@@ -305,7 +307,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = _collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData);
 
@@ -337,7 +339,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(new AggregateOptions { AllowDiskUse = true })
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .OrderByDescending(p => p.SpendTxInput.BlockHeight)
                 .Where(p => p.SpendTxInput.IsSpended);
@@ -380,7 +382,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var stringAddress = address.ToWif();
 
-            var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(new AggregateOptions {AllowDiskUse = true})
+            var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .OrderByDescending(p => p.BlockHeight);
 
