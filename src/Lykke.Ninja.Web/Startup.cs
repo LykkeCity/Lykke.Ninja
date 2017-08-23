@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Swashbuckle.Swagger.Model;
 using Lykke.Ninja.Web.Binders;
+using Lykke.Ninja.Web.Filters;
 using Lykke.Ninja.Web.Proxy;
 
 namespace Lykke.Ninja.Web
@@ -44,7 +45,10 @@ namespace Lykke.Ninja.Web
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
+            services.AddMvc(o =>
+                {
+                    o.Filters.Add(new HandleAllExceptionsFilterFactory());
+                })
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.Formatting = Formatting.Indented;
