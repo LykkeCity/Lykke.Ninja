@@ -2,6 +2,7 @@
 using AzureStorage.Queue;
 using AzureStorage.Tables;
 using Common.Log;
+using Lykke.Ninja.Core;
 using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.Ninja.Core.BlockStatus;
 using Lykke.Ninja.Core.ParseBlockCommand;
@@ -35,6 +36,7 @@ namespace Lykke.Ninja.Repositories
 
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>().SingleInstance();
             ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>().SingleInstance();
+            ioc.RegisterType<TransactionOutputRepository>().As<IAssetStatsService>().SingleInstance();
             ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>().SingleInstance();
         }
 

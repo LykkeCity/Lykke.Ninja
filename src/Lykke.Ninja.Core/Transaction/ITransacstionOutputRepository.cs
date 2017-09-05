@@ -53,7 +53,6 @@ namespace Lykke.Ninja.Core.Transaction
 
     public interface ITransactionOutputRepository
     {
-        //Task InsertIfNotExists(IEnumerable<ITransactionOutput> items);
         Task InsertIfNotExists(IEnumerable<ITransactionOutput> items, int blockHeight);
 
         Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs);
