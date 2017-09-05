@@ -46,8 +46,6 @@ namespace Lykke.Ninja.Web.Binders
 
             ioc.BindCommonServices(generalSettings, log);
             ioc.BindRepositories(settings, log);
-
-            ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        
     }
 }

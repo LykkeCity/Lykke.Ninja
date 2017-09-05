@@ -237,7 +237,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(new AggregateOptions { MaxTime = TimeSpan.FromSeconds(5) })
                 .Where(output => output.DestinationAddress == stringAddress);
@@ -289,7 +289,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress);
 
@@ -317,7 +317,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions);
             query = query.Where(output => output.DestinationAddress == stringAddress);
 
@@ -339,7 +339,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData);
@@ -361,7 +361,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -393,7 +393,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -436,7 +436,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -833,7 +833,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             public static FilterDefinition<TransactionOutputMongoEntity> EqAddress(BitcoinAddress address)
             {
-                return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToWif());
+                return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToString());
             }
         }
 
