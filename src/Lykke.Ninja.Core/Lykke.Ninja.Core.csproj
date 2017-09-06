@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
    <PropertyGroup>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wp8+wpa81;</PackageTargetFallback>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
     <Version>1.0.1</Version>
   </PropertyGroup> 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.79" />
-    <PackageReference Include="NBitcoin" Version="3.0.2.26" />
+    <PackageReference Include="Lykke.Common" Version="1.1.95" />
+    <PackageReference Include="NBitcoin" Version="4.0.0.37" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="QBitNinja.Client" Version="1.0.3.38" />
+    <PackageReference Include="QBitNinja.Client" Version="1.0.3.39" />
   </ItemGroup>
 
 </Project>

@@ -55,7 +55,7 @@ namespace Lykke.Ninja.Services.Block
                 BtcSatoshiAmount = output.ToCoin().Amount.Satoshi,
                 Index = output.N,
                 TransactionId = transaction.GetHash().ToString(),
-                DestinationAddress = output.TxOut.ScriptPubKey.GetDestinationAddress(network)?.ToWif()
+                DestinationAddress = output.TxOut.ScriptPubKey.GetDestinationAddress(network)?.ToString()
             };
         }
 

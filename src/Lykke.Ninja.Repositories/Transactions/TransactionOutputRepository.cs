@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using Lykke.Ninja.Core;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
 using MongoDB.Bson;
@@ -34,8 +36,63 @@ namespace Lykke.Ninja.Repositories.Transactions
         }
     }
 
+    public class AssetStatsAddressSummary : IAssetStatsAddressSummary
+    {
+        public string Address { get; set; }
+        public double Balance { get; set; }
 
-    public class TransactionOutputRepository : ITransactionOutputRepository
+        public static AssetStatsAddressSummary Create(string address, double balance)
+        {
+            return new AssetStatsAddressSummary
+            {
+                Address = address,
+                Balance = balance
+            };
+        }
+    }
+
+    public class AssetStatsTransaction : IAssetStatsTransaction
+    {
+        public string Hash { get; set; }
+
+        public static AssetStatsTransaction Create(string hash)
+        {
+            return new AssetStatsTransaction
+            {
+                Hash = hash
+            };
+        }
+    }
+
+    public class AssetStatsBlock : IAssetStatsBlock
+    {
+        public int Height { get; set; }
+
+        public static AssetStatsBlock Create(int height)
+        {
+            return new AssetStatsBlock
+            {
+                Height = height
+            };
+        }
+    }
+
+    public class AddressChange : IAddressChange
+    {
+        public string Address { get; set; }
+        public double Quantity { get; set; }
+
+        public static AddressChange Create(string address, double quantity)
+        {
+            return new AddressChange
+            {
+                Address = address,
+                Quantity = quantity
+            };
+        }
+    }
+
+    public class TransactionOutputRepository : ITransactionOutputRepository, IAssetStatsService
     {
         private readonly IMongoCollection<TransactionOutputMongoEntity> _collection;
         private readonly ILog _log;
@@ -180,7 +237,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(new AggregateOptions { MaxTime = TimeSpan.FromSeconds(5) })
                 .Where(output => output.DestinationAddress == stringAddress);
@@ -207,19 +264,19 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             try
             {
-                var inputsTxCount = inputsQuery.Select(p => p.SpendTxInput.SpendedInTxId)
+                var inputsTxs = inputsQuery.Select(p => p.SpendTxInput.SpendedInTxId)
                     .Where(p => p != null)
                     .Distinct()
                     .ToListAsync();
 
-                var outputsTxCount = outputsQuery.Select(p => p.TransactionId)
+                var outputsTxs = outputsQuery.Select(p => p.TransactionId)
                     .Where(p => p != null)
                     .Distinct()
                     .ToListAsync();
 
-                await Task.WhenAll(inputsTxCount, outputsTxCount);
+                await Task.WhenAll(inputsTxs, outputsTxs);
 
-                return inputsTxCount.Result.Union(outputsTxCount.Result).Distinct().Count();
+                return inputsTxs.Result.Union(outputsTxs.Result).Distinct().Count();
             }
             catch (MongoExecutionTimeoutException)
             {
@@ -232,7 +289,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress);
 
@@ -260,8 +317,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions);
             query = query.Where(output => output.DestinationAddress == stringAddress);
 
@@ -283,7 +339,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
                 .Where(p => p.ColoredData.HasColoredData);
@@ -305,7 +361,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -337,7 +393,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -380,7 +436,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var stringAddress = address.ToWif();
+            var stringAddress = address.ToString();
 
             var query = (IMongoQueryable<TransactionOutputMongoEntity>)_collection.AsQueryable(_defaultAggregateOptions)
                 .Where(output => output.DestinationAddress == stringAddress)
@@ -482,7 +538,8 @@ namespace Lykke.Ninja.Repositories.Transactions
                 SetSupportHistorySummaryQueryIndex(),
                 SetSupportSummaryQueryIndex(),
                 SetSupportGetReceivedQueryIndex(),
-                SetSupportGetSpendedQueryIndex()
+                SetSupportGetSpendedQueryIndex(),
+                SetSupportAssetsStatsQueryIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -553,8 +610,168 @@ namespace Lykke.Ninja.Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
         }
 
+        private async Task SetSupportAssetsStatsQueryIndex()
+        {
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, blockHeight, spentTxInputBlockHeight);
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStats", });
+        }
 
         #endregion
+
+        public async Task<IEnumerable<IAssetStatsAddressSummary>> GetSummaryAsync(IEnumerable<string> assetIds, int? maxBlockHeight)
+        {
+            await EnsureQueryIndexes();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => assetIds.Contains(p.ColoredData.AssetId));
+
+            if (maxBlockHeight != null)
+            {
+                query = query.Where(p => p.BlockHeight >= maxBlockHeight)
+                    .Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > maxBlockHeight); ;
+            }
+            else
+            {
+                query = query.Where(p => !p.SpendTxInput.IsSpended);
+            }
+
+            var grouping = await query.GroupBy(p => p.DestinationAddress).Select(p => new
+            {
+                Addr = p.Key,
+                Balance = p.Sum(x => x.ColoredData.Quantity)
+            }).ToListAsync();
+
+            var result = new List<IAssetStatsAddressSummary>();
+
+            foreach (var addrBalance in grouping.Where(p=>p.Balance != 0 && p.Addr != null)){      
+                result.Add(AssetStatsAddressSummary.Create(addrBalance.Addr, addrBalance.Balance));
+            }
+
+            return result.OrderByDescending(p => p.Balance);
+        }
+
+        public async Task<IEnumerable<IAssetStatsTransaction>> GetTransactionsForAssetAsync(IEnumerable<string> assetIds, int? minBlockHeight)
+        {
+            await EnsureQueryIndexes();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(output => assetIds.Contains(output.ColoredData.AssetId));
+
+            var inputsQuery = query;
+            var outputsQuery = query;
+
+            if (minBlockHeight != null)
+            {
+                inputsQuery = inputsQuery.Where(p => p.SpendTxInput.BlockHeight >= minBlockHeight);
+                outputsQuery = outputsQuery.Where(p => p.BlockHeight >= minBlockHeight);
+            }
+
+            var inputsTxs = inputsQuery
+                .OrderByDescending(p => p.SpendTxInput.BlockHeight)
+                .Select(p => p.SpendTxInput.SpendedInTxId)
+                .ToListAsync();
+
+            var outputsTxs = outputsQuery
+                .OrderByDescending(p => p.BlockHeight)
+                .Select(p => p.TransactionId)
+                .ToListAsync();
+
+            await Task.WhenAll(inputsTxs, outputsTxs);
+
+            return inputsTxs.Result.Union(outputsTxs.Result)
+                .Where(p=> p!= null)
+                .Distinct()
+                .ToList()
+                .Select(AssetStatsTransaction.Create);
+        }
+
+        public async Task<IAssetStatsTransaction> GetLatestTxAsync(IEnumerable<string> assetIds)
+        {
+            await EnsureQueryIndexes();
+
+            var outputsTxIds = await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => assetIds.Contains(p.ColoredData.AssetId))
+                .OrderByDescending(p => p.BlockHeight)
+                .Select(p => p.TransactionId)
+                .Take(1)
+                .ToListAsync();
+
+            if (outputsTxIds.Any())
+            {
+                return AssetStatsTransaction.Create(outputsTxIds.First());
+            }
+
+            return null;
+        }
+
+        public async Task<IEnumerable<IAddressChange>> GetAddressQuantityChangesAtBlock(int blockHeight, 
+            IEnumerable<string> assetIds)
+        {
+            await EnsureQueryIndexes();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => assetIds.Contains(p.ColoredData.AssetId));
+
+            var getReceived = query.Where(p => p.BlockHeight == blockHeight)
+                .Select(p => new {Address = p.DestinationAddress, p.ColoredData.Quantity})
+                .ToListAsync();
+
+            var getSpended = query.Where(p => p.SpendTxInput.BlockHeight == blockHeight)
+                .Select(p => new { Address = p.DestinationAddress, p.ColoredData.Quantity})
+                .ToListAsync();
+
+            await Task.WhenAll(getReceived, getSpended);
+
+            var result = new Dictionary<string, double>();
+
+            foreach (var receivedChange in getReceived.Result){
+                if (result.ContainsKey(receivedChange.Address))
+                {
+                    result[receivedChange.Address] = result[receivedChange.Address] + receivedChange.Quantity;
+                }
+                else
+                {
+
+                    result[receivedChange.Address] =  receivedChange.Quantity;
+                }
+            }
+
+            foreach (var spendedChange in getSpended.Result)
+            {
+                if (result.ContainsKey(spendedChange.Address))
+                {
+                    result[spendedChange.Address] = result[spendedChange.Address] - spendedChange.Quantity;
+                }
+                else
+                {
+
+                    result[spendedChange.Address] = (-1) * spendedChange.Quantity;
+                }
+            }
+
+            return result.Select(p => AddressChange.Create(p.Key, p.Value));
+        }
+
+        public async Task<IEnumerable<IAssetStatsBlock>> GetBlocksWithChanges(IEnumerable<string> assetIds)
+        {
+            await EnsureQueryIndexes();
+
+            var blockHeight = await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => assetIds.Contains(p.ColoredData.AssetId))
+                .Select(p => new[] { p.BlockHeight, p.SpendTxInput.BlockHeight })
+                .SelectMany(p => p)
+                .Distinct()
+                .ToListAsync();
+
+            return blockHeight
+                .Where(p => p != 0)
+                .OrderByDescending(p => p)
+                .Select(AssetStatsBlock.Create);
+        }
     }
 
     public class TransactionOutputMongoEntity: ITransactionOutput
@@ -616,7 +833,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             public static FilterDefinition<TransactionOutputMongoEntity> EqAddress(BitcoinAddress address)
             {
-                return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToWif());
+                return Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.DestinationAddress, address.ToString());
             }
         }
 

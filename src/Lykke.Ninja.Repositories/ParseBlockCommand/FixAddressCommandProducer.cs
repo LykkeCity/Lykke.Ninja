@@ -20,7 +20,7 @@ namespace Lykke.Ninja.Repositories.ParseBlockCommand
         {
             var msg = new FixAddressCommandContext
             {
-                Address = address.ToWif()
+                Address = address.ToString()
             };
 
 
