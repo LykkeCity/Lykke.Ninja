@@ -16,7 +16,7 @@ namespace Lykke.Ninja.Web
 #endif           
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseUrls("http://*:5000")
+                .UseUrls("http://*:80")
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
                 .UseApplicationInsights()

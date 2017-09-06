@@ -8,10 +8,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Swashbuckle.Swagger.Model;
 using Lykke.Ninja.Web.Binders;
 using Lykke.Ninja.Web.Filters;
 using Lykke.Ninja.Web.Proxy;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace Lykke.Ninja.Web
 {
@@ -56,11 +56,8 @@ namespace Lykke.Ninja.Web
 
             services.AddSwaggerGen(options =>
             {
-                options.SingleApiVersion(new Info
-                {
-                    Version = "v1",
-                    Title = "lykke.ninja"
-                });
+                options.SwaggerDoc("v1", new Info { Title = "lykke.ninja", Version = "v1" });
+
                 options.DescribeAllEnumsAsStrings();
             });
 
@@ -83,10 +80,15 @@ namespace Lykke.Ninja.Web
                 {
                     app.UseDeveloperExceptionPage();
                 }
+
+                app.UseStaticFiles();
+
                 app.UseSwagger();
-                app.UseSwaggerUi("swagger/ui/index");
 
-
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                });
 
                 app.UseMvc();
             }
