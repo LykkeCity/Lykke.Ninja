@@ -631,7 +631,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             if (maxBlockHeight != null)
             {
-                query = query.Where(p => p.BlockHeight >= maxBlockHeight)
+                query = query.Where(p => p.BlockHeight <= maxBlockHeight)
                     .Where(p => !p.SpendTxInput.IsSpended || p.SpendTxInput.BlockHeight > maxBlockHeight); ;
             }
             else
