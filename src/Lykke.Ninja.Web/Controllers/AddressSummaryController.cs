@@ -44,6 +44,7 @@ namespace Lykke.Ninja.Web.Controllers
 
             var getTxCount = _outputRepository.GetTransactionsCount(btcAddress, 
                 getAtBlockHeight.Result);
+            var getSpendedTxCount = _outputRepository.GetSpendTransactionsCount(btcAddress, getAtBlockHeight.Result);
 
             var getBtcAmount = _outputRepository.GetBtcAmountSummary(btcAddress, 
                 getAtBlockHeight.Result, 
@@ -71,9 +72,10 @@ namespace Lykke.Ninja.Web.Controllers
             }
             
 
-            await Task.WhenAll(getTxCount, getBtcAmount, getbtcReceived, assetsReceiveds);
+            await Task.WhenAll(getTxCount, getSpendedTxCount,  getBtcAmount, getbtcReceived, assetsReceiveds);
 
             return AddressSummaryViewModel.Create(getTxCount.Result, 
+                getSpendedTxCount.Result,
                 getBtcAmount.Result, 
                 getbtcReceived.Result, 
                 assetsReceiveds.Result, 

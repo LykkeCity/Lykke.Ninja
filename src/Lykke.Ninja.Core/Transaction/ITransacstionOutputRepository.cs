@@ -56,9 +56,13 @@ namespace Lykke.Ninja.Core.Transaction
         Task InsertIfNotExists(IEnumerable<ITransactionOutput> items, int blockHeight);
 
         Task<ISetSpendableOperationResult> SetSpended(IEnumerable<ITransactionInput> inputs);
-        
-        Task<long> GetTransactionsCount(BitcoinAddress address, int? at = null);
-        
+
+        //returns null on timeOut
+        Task<long?> GetTransactionsCount(BitcoinAddress address, int? at = null);
+
+        //returns null on timeOut
+        Task<long?> GetSpendTransactionsCount(BitcoinAddress address, int? at = null);
+
         Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
         Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at = null, bool isColored = false);
