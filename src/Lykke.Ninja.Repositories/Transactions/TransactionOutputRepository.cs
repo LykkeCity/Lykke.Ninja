@@ -228,12 +228,12 @@ namespace Lykke.Ninja.Repositories.Transactions
             return result;
         }
 
-        public async Task<long> GetTransactionsCount(BitcoinAddress address,
+        public async Task<long?> GetTransactionsCount(BitcoinAddress address,
             int? at)
         {
             //the ugly way
 
-            var timeOutMagicValue = -1;
+            int? timeOutMagicValue = null;
 
             await EnsureQueryIndexes();
 
@@ -283,6 +283,39 @@ namespace Lykke.Ninja.Repositories.Transactions
                 return timeOutMagicValue;
             }
 
+        }
+
+        public async Task<long?> GetSpendTransactionsCount(BitcoinAddress address,
+            int? at)
+        {
+            long? timeOutMagicValue = null;
+
+            await EnsureQueryIndexes();
+
+            var stringAddress = address.ToString();
+
+            var query = _collection.AsQueryable(new AggregateOptions { MaxTime = TimeSpan.FromSeconds(5) })
+                .Where(output => output.DestinationAddress == stringAddress);
+
+            if (at != null)
+            {
+                query = query.Where(p => p.SpendTxInput.IsSpended)
+                    .Where(p => p.SpendTxInput.BlockHeight <= at);
+            }
+            else
+            {
+                query = query.Where(p => p.SpendTxInput.IsSpended);
+            }
+            try
+            {
+                return await query.Select(p => p.SpendTxInput.SpendedInTxId)
+                    .Distinct()
+                    .CountAsync();
+            }
+            catch (MongoExecutionTimeoutException)
+            {
+                return timeOutMagicValue;
+            }
         }
 
         public async Task<long> GetBtcAmountSummary(BitcoinAddress address, int? at = null, bool isColored = false)

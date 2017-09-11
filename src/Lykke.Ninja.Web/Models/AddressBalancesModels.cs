@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Lykke.Ninja.Core.Ninja.Contracts;
+using Newtonsoft.Json;
 
 namespace Lykke.Ninja.Web.Models
 {
     public class AddressSummaryViewModel: AddressSummaryContract
     {
-        public static AddressSummaryViewModel Create(long transactionCount, 
+        public static AddressSummaryViewModel Create(long? transactionCount, 
+            long? spendedTransactionCount,
             long btcAmount, 
             long btcReceived,
             IDictionary<string, long> assetsReceived,
@@ -16,8 +18,8 @@ namespace Lykke.Ninja.Web.Models
             {
                 Unconfirmed = CreateInnerEmpty(),
                 Immature = CreateInnerEmpty(),
-                Confirmed = CreateInner(transactionCount, btcAmount, btcReceived, assetsReceived, assetAmounts),
-                Spendable = CreateInner(transactionCount, btcAmount, btcReceived, assetsReceived, assetAmounts),
+                Confirmed = CreateInner(transactionCount, spendedTransactionCount, btcAmount, btcReceived, assetsReceived, assetAmounts),
+                Spendable = CreateInner(transactionCount, spendedTransactionCount, btcAmount, btcReceived, assetsReceived, assetAmounts),
             };
         }
 
@@ -28,17 +30,33 @@ namespace Lykke.Ninja.Web.Models
                 Assets = Enumerable.Empty<AddressBalanceSummaryInnerContract.AddressAssetContract>().ToArray()
             };
         }
-        private static AddressBalanceSummaryInnerContract CreateInner(long transactionCount, 
+
+        private static AddressSummaryInnderViewModel CreateInner(long? totalTransactionCount,
+            long? spendedTransactionCount,
             long btcAmount, 
             long btcReceived,
             IDictionary<string, long> assetsReceived,
             IDictionary<string, long> assetsAmounts)
         {
-            return new AddressBalanceSummaryInnerContract
+            var txCountNotCalculatedMagicValue = -1;
+
+            long receivedTransactionsCount;
+            if (totalTransactionCount != null && spendedTransactionCount != null)
+            {
+                receivedTransactionsCount = totalTransactionCount.Value - spendedTransactionCount.Value;
+            }
+            else
+            {
+                receivedTransactionsCount = txCountNotCalculatedMagicValue;
+            }
+
+            return new AddressSummaryInnderViewModel
             {
                 Balance = btcAmount,
-                TotalTransactions = transactionCount,
-               Received = btcReceived,
+                TotalTransactions = totalTransactionCount ?? txCountNotCalculatedMagicValue,
+                SpendedTransactions = spendedTransactionCount ?? txCountNotCalculatedMagicValue,
+                ReceivedTransactions = receivedTransactionsCount,
+                Received = btcReceived,
                 Assets = assetsReceived.Select(p => new AddressBalanceSummaryInnerContract.AddressAssetContract
                 {
                     AssetId = p.Key,
@@ -47,5 +65,15 @@ namespace Lykke.Ninja.Web.Models
                 }).ToArray()
             };
         }
+    }
+
+
+    public class AddressSummaryInnderViewModel : AddressSummaryContract.AddressBalanceSummaryInnerContract
+    {
+        [JsonProperty("spendedTransactionCount")]
+        public long SpendedTransactions { get; set; }
+
+        [JsonProperty("receivedTransactionCount")]
+        public long ReceivedTransactions { get; set; }
     }
 }
