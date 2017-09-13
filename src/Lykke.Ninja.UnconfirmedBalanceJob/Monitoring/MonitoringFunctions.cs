@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.ServiceMonitoring;
 
-namespace Lykke.Ninja.BalanceJob.Monitoring
+namespace Lykke.Ninja.UnconfirmedBalanceJob.Monitoring
 {
     public class MonitoringFunctions
     {
@@ -14,7 +14,7 @@ namespace Lykke.Ninja.BalanceJob.Monitoring
             _monitoringService = monitoringService;
         }
 
-        private const string ServiceName = "Lykke.Ninja.Jobs.Balances";
+        private const string ServiceName = "Lykke.Ninja.Jobs.UnconfirmedBalances";
 
         [TimerTrigger("00:00:30")]
         public  async Task WriteMonitoringRecord()

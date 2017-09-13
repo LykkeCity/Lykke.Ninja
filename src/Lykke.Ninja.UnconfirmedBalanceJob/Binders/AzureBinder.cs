@@ -9,15 +9,15 @@ using Lykke.Ninja.Repositories;
 using Lykke.Ninja.Repositories.Log;
 using Lykke.Ninja.Services;
 
-namespace Lykke.Ninja.BalanceJob.Binders
+namespace Lykke.Ninja.UnconfirmedBalanceJob.Binders
 {
     public class AzureBinder
     {
         public ContainerBuilder Bind(GeneralSettings settings)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsError", null),
-                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsInfo", null));
+            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaUnconfirmedBalanceJobError", null),
+                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaUnconfirmedBalanceJobWarning", null),
+                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaUnconfirmedBalanceJobInfo", null));
             var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
@@ -38,9 +38,9 @@ namespace Lykke.Ninja.BalanceJob.Binders
         private void InitContainer(ContainerBuilder ioc, GeneralSettings settings, ILog log)
         {
 #if DEBUG
-            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.Jobs", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
+            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.UnconfirmedBalanceJobs", "App start", null, $"BaseSettings : {settings.ToJson()}").Wait();
 #else
-            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.Jobs", "App start", null, $"BaseSettings : private").Wait();
+            log.WriteInfoAsync("Lykke.Ninja Lykke.Ninja.UnconfirmedBalanceJobs", "App start", null, $"BaseSettings : private").Wait();
 #endif
 
             ioc.RegisterInstance(log);
