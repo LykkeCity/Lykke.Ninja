@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
-using Common;
 using Common.Log;
-using Lykke.Ninja.Core;
+using Lykke.Ninja.Core.AssetStats;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
 using MongoDB.Bson;
@@ -14,7 +12,6 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NBitcoin;
-using Lykke.Ninja.Repositories.Mongo;
 
 namespace Lykke.Ninja.Repositories.Transactions
 {
@@ -105,8 +102,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         private readonly AggregateOptions _defaultAggregateOptions;
         private readonly BaseSettings _baseSettings;
 
-        public TransactionOutputRepository(MongoSettings mongoSettings,
-            ILog log, 
+        public TransactionOutputRepository(ILog log, 
             IConsole console, 
             BaseSettings baseSettings)
         {
@@ -114,8 +110,8 @@ namespace Lykke.Ninja.Repositories.Transactions
             _console = console;
             _baseSettings = baseSettings;
 
-            var client = new MongoClient(mongoSettings.ConnectionString);
-            var db = client.GetDatabase(mongoSettings.DataDbName);
+            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
+            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
             _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
 
             _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);

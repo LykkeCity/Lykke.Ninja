@@ -1,4 +1,6 @@
-﻿using Autofac;
+﻿using System;
+using System.Net;
+using Autofac;
 using Common.Log;
 using Lykke.Ninja.Core.AlertNotifications;
 using Lykke.Ninja.Core.Block;
@@ -9,16 +11,22 @@ using Lykke.Ninja.Core.Settings;
 using Lykke.AzureQueueIntegration.Publisher;
 using Lykke.JobTriggers.Abstractions;
 using Lykke.MonitoringServiceApiCaller;
+using Lykke.Ninja.Core.Bitcoin;
+using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
 using Microsoft.Extensions.PlatformAbstractions;
 using QBitNinja.Client;
 using Lykke.Ninja.Repositories.ServiceMonitoring;
 using Lykke.Ninja.Services.AlertNotifications;
+using Lykke.Ninja.Services.Bitcoin;
 using Lykke.Ninja.Services.Block;
 using Lykke.Ninja.Services.Ninja.Block;
 using Lykke.Ninja.Services.Ninja.Transaction;
 using Lykke.Ninja.Services.PaseBlockCommand;
+using Lykke.Ninja.Services.UnconfirmedTransactions.Statuses;
+using NBitcoin;
+using NBitcoin.RPC;
 using IMonitoringService = Lykke.Ninja.Core.ServiceMonitoring.IMonitoringService;
 
 namespace Lykke.Ninja.Services
@@ -50,6 +58,14 @@ namespace Lykke.Ninja.Services
             
             ioc.Register(p => new SlackNotificationsProducer(slackClient))
                 .As<IPoisionQueueNotifier>();
+
+
+            ioc.RegisterInstance(new RPCClient(new NetworkCredential(settings.BitcoinRpc.Username, settings.BitcoinRpc.Password), settings.BitcoinRpc.IpAddress, settings.UsedNetwork()))
+                .AsSelf();
+
+
+            ioc.RegisterType<BitcoinRpcClient>().As<IBitcoinRpcClient>();
+            ioc.RegisterType<UnconfirmedTransactionStatusesService>().As<IUnconfirmedTransactionStatusesService>();
         }
     }
 }

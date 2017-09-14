@@ -10,7 +10,6 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using Lykke.Ninja.Repositories.Mongo;
 
 namespace Lykke.Ninja.Repositories.BlockStatuses
 {
@@ -22,11 +21,11 @@ namespace Lykke.Ninja.Repositories.BlockStatuses
         private readonly Lazy<Task> _ensureInsertIndexes;
 
         private readonly ILog _log;
-        public BlockStatusesRepository(MongoSettings settings, ILog log)
+        public BlockStatusesRepository(BaseSettings settings, ILog log)
         {
             _log = log;
-            var client = new MongoClient(settings.ConnectionString);
-            var db = client.GetDatabase(settings.DataDbName);
+            var client = new MongoClient(settings.NinjaData.ConnectionString);
+            var db = client.GetDatabase(settings.NinjaData.DbName);
             _collection = db.GetCollection<BlockStatusMongoEntity>(BlockStatusMongoEntity.CollectionName);
 
             _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
