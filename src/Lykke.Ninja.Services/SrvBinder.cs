@@ -12,6 +12,7 @@ using Lykke.AzureQueueIntegration.Publisher;
 using Lykke.JobTriggers.Abstractions;
 using Lykke.MonitoringServiceApiCaller;
 using Lykke.Ninja.Core.Bitcoin;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
@@ -24,6 +25,7 @@ using Lykke.Ninja.Services.Block;
 using Lykke.Ninja.Services.Ninja.Block;
 using Lykke.Ninja.Services.Ninja.Transaction;
 using Lykke.Ninja.Services.PaseBlockCommand;
+using Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges;
 using Lykke.Ninja.Services.UnconfirmedTransactions.Statuses;
 using NBitcoin;
 using NBitcoin.RPC;
@@ -64,8 +66,11 @@ namespace Lykke.Ninja.Services
                 .AsSelf();
 
 
+            ioc.RegisterInstance(settings.UsedNetwork()).AsSelf();
             ioc.RegisterType<BitcoinRpcClient>().As<IBitcoinRpcClient>();
-            ioc.RegisterType<UnconfirmedTransactionStatusesService>().As<IUnconfirmedTransactionStatusesService>();
+            ioc.RegisterType<UnconfirmedStatusesSinchronizeService>().As<IUnconfirmedStatusesSinchronizeService>();
+            ioc.RegisterType<UnconfirmedBalanceChangesSinchronizeService>().As<IUnconfirmedBalanceChangesSinchronizeService>();
+            
         }
     }
 }

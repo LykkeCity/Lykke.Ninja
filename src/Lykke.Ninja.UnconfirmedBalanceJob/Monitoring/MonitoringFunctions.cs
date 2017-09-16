@@ -16,6 +16,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.Monitoring
 
         private const string ServiceName = "Lykke.Ninja.Jobs.UnconfirmedBalances";
 
+#if !DEBUG
         [TimerTrigger("00:00:30")]
         public  async Task WriteMonitoringRecord()
         {
@@ -28,7 +29,9 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.Monitoring
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
             };
 
+
             await _monitoringService.WriteRecord(record);
         }
+#endif
     }
 }

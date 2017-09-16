@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using NBitcoin;
 
 namespace Lykke.Ninja.Core.Transaction
@@ -70,6 +71,8 @@ namespace Lykke.Ninja.Core.Transaction
         Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
 
         Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
+
+        Task<IEnumerable<IBalanceChange>> GetBalanceChanges(IEnumerable<string> ids);
 
         Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,

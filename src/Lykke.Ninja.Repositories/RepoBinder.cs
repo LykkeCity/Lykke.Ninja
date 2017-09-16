@@ -7,6 +7,7 @@ using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Queue;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using Lykke.Ninja.Repositories.BlockStatuses;
 using Lykke.Ninja.Repositories.ParseBlockCommand;
@@ -29,7 +30,8 @@ namespace Lykke.Ninja.Repositories
             ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>().SingleInstance();
             ioc.RegisterType<TransactionOutputRepository>().As<IAssetStatsService>().SingleInstance();
             ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>().SingleInstance();
-            ioc.RegisterType<UnconfirmedTransactionStatusesRepository>().As<IUnconfirmedTransactionStatusesRepository>().SingleInstance();
+            ioc.RegisterType<UnconfirmedStatusesRepository>().As<IUnconfirmedStatusesRepository>().SingleInstance();
+            ioc.RegisterType<UnconfirmedBalanceChangesRepository>().As<IUnconfirmedBalanceChangesRepository>().SingleInstance();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
@@ -42,6 +44,9 @@ namespace Lykke.Ninja.Repositories
 
             ioc.Register(p => new ScanNotFoundsCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ScanNotFounds)))
                 .As<IScanNotFoundsCommandProducer>();
+
+            ioc.Register(p => new UnconfirmedBalanceChangesCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.SynchronizeChanges)))
+                .As<IUnconfirmedBalanceChangesCommandProducer>();
         }
     }
 }

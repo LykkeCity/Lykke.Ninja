@@ -6,12 +6,14 @@ using Common.Log;
 using Lykke.Ninja.Core.AssetStats;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using NBitcoin;
+using IColoredOutputData = Lykke.Ninja.Core.Transaction.IColoredOutputData;
 
 namespace Lykke.Ninja.Repositories.Transactions
 {
@@ -85,6 +87,36 @@ namespace Lykke.Ninja.Repositories.Transactions
             {
                 Address = address,
                 Quantity = quantity
+            };
+        }
+    }
+
+    public class BalanceChange : IBalanceChange
+    {
+        public string Id => BalanceChangeIdGenerator.GenerateId(TxId, Index);
+        public string TxId { get; set; }
+        public ulong Index { get; set; }
+        public bool IsInput => false;
+        public long BtcSatoshiAmount { get; set; }
+        public string Address { get; set; }
+        public string AssetId { get; set; }
+        public long AssetQuantity { get; set; }
+
+        public static BalanceChange Create(string txId, 
+            ulong index, 
+            long btcSatoshiAmount, 
+            string address, 
+            string assetId, 
+            long quantity)
+        {
+            return new BalanceChange
+            {
+                TxId = txId,
+                BtcSatoshiAmount = btcSatoshiAmount,
+                Address = address,
+                AssetId = assetId,
+                Index = index,
+                AssetQuantity = quantity
             };
         }
     }
@@ -412,6 +444,33 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .ToListAsync();
 
             return result.ToDictionary(p => p.addr, p => p.sum);
+        }
+
+        public async Task<IEnumerable<IBalanceChange>> GetBalanceChanges(IEnumerable<string> ids)
+        {
+            await EnsureQueryIndexes();
+
+            var data = await _collection.AsQueryable()
+                .Where(p => ids.Contains(p.Id))
+                .Select(p => new
+                {
+                    p.TransactionId,
+                    p.BtcSatoshiAmount,
+                    p.DestinationAddress,
+                    p.ColoredData.AssetId,
+                    p.ColoredData.Quantity,
+                    p.Index
+                })
+                .ToListAsync();
+
+            return data
+                .Select(p => 
+                    BalanceChange.Create(p.TransactionId, 
+                        p.Index, 
+                        p.BtcSatoshiAmount, 
+                        p.DestinationAddress, 
+                        p.AssetId, 
+                        (-1) * p.Quantity));
         }
 
         public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,

@@ -23,12 +23,17 @@ namespace Lykke.Ninja.Services.Ninja.Transaction
         }
         
 
-        public async Task<GetTransactionResponse> Get(uint256 txId)
+        public async Task<GetTransactionResponse> Get(uint256 txId, bool withRetry)
         {
-            return await Retry.Try(async () => await _ninjaClient.GetTransaction(txId), logger: _log);
+            if (withRetry)
+            {
+                return await Retry.Try(async () => await _ninjaClient.GetTransaction(txId), logger: _log);
+            }
+
+            return await _ninjaClient.GetTransaction(txId);
         }
 
-        public async Task<IEnumerable<GetTransactionResponse>> Get(IEnumerable<uint256> txIds)
+        public async Task<IEnumerable<GetTransactionResponse>> Get(IEnumerable<uint256> txIds, bool withRetry)
         {
             var tasksToAwait = new List<Task>();
             var result = new ConcurrentBag<GetTransactionResponse>();
@@ -37,7 +42,7 @@ namespace Lykke.Ninja.Services.Ninja.Transaction
             foreach ( var txId  in txIds)
             {
                 await _lock.WaitAsync();
-                var tsk = Get(txId)
+                var tsk = Get(txId, withRetry)
                     .ContinueWith(p =>
                     {
                         _lock.Release();

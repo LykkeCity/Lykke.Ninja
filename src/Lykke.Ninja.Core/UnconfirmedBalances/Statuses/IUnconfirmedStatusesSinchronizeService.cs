@@ -5,15 +5,18 @@ using System.Threading.Tasks;
 
 namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
 {
-    public interface ISynchronizePlan
+    public interface IStatusesSynchronizePlan
     {
         IEnumerable<string> TxIdsToAdd { get; }
 
         IEnumerable<string> TxIdsToRemove { get; }
     }
-    public interface IUnconfirmedTransactionStatusesService
+
+
+
+    public interface IUnconfirmedStatusesSinchronizeService
     {
-        Task<ISynchronizePlan> GetSynchronizePlan(IEnumerable<string> txIds);
-        Task Synchronize(ISynchronizePlan plan);
+        Task<IStatusesSynchronizePlan> GetStatusesSynchronizePlan(IEnumerable<string> txIds);
+        Task Synchronize(IStatusesSynchronizePlan plan);
     }
 }

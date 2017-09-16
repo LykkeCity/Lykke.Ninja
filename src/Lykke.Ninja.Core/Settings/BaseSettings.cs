@@ -89,7 +89,10 @@ namespace Lykke.Ninja.Core.Settings
 
     public class UnconfirmedBalancesMongoCredentials: MongoCredentials
     {
-        public int TransactionStatusesCappedCollectionMaxDocuments { get; set; } = 300000;
-        public int TransactionStatusesCappedCollectionMaxSize { get; set; } = 1024000000;
+        public int StatusesCappedCollectionMaxDocuments { get; set; } = 300000;
+        public int StatusesCappedCollectionMaxSize { get; set; } = 1024000000;
+
+        public int ChangesCappedCollectionMaxDocuments { get; set; } = 1200000;
+        public int ChangesCappedCollectionMaxSize { get; set; } = 1024000000;
     }
 }
