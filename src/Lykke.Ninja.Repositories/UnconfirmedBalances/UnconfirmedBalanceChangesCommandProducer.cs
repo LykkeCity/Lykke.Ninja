@@ -18,11 +18,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             var msg = new BalanceChangeSynchronizeCommandContext();
 
-            //do not create large queue
-            if (await _queue.Count() <= 5)
-            {
-                await _queue.PutRawMessageAsync(msg.ToJson());
-            }
+            await _queue.PutRawMessageAsync(msg.ToJson());
         }
+
+        public async Task<bool> IsQueueFull()
+        {
+            return await _queue.Count() > 5;
+        } 
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Common;
 using Common.Extensions;
 using Common.Log;
 using Lykke.Ninja.Core.Bitcoin;
@@ -39,26 +40,36 @@ namespace Lykke.Ninja.Services.Bitcoin
             var tasksToAwait = new List<Task>();
             var result = new ConcurrentBag<Transaction>();
 
-            var counter = txIds.Count();
-            WriteConsole($"Retrieving {counter} txs started");
+            //var counter = txIds.Count();
+            //WriteConsole($"Retrieving {counter} txs started");
 
             foreach (var txId in txIds)
             {
+                //WriteConsole($"Awaiting lock {_lock.CurrentCount}");
                 await _lock.WaitAsync();
                 var tsk = GetRawTransaction(txId, timeoutSeconds)
-                    .ContinueWith(async p =>
+                    .ContinueWith(p =>
                     {
-                        counter--;
+                        //counter--;
+                        //WriteConsole($"Releasing lock {_lock.CurrentCount}");
 
-                         //WriteConsole($"Retrieving {txId.ToString()} done. {counter}");
-                        _lock.Release();
-                        if (!p.IsFaulted && p.Result != null)
+ 
+
+                        try
                         {
-                            result.Add(p.Result);
+                            if (p.Result != null)
+                            {
+                                result.Add(p.Result);
+                            }
+                            WriteConsole($"Retrieving {txId.ToString()} done.");
                         }
-                        else
+                        catch (Exception)
                         {
                             WriteConsole($"Error while retrieving {txId} from Bitcoin RPC");
+                        }
+                        finally
+                        {
+                            _lock.Release();
                         }
                     });
 
@@ -66,13 +77,16 @@ namespace Lykke.Ninja.Services.Bitcoin
 
             }
 
+            WriteConsole($"Retrieving txs done");
+
             await Task.WhenAll(tasksToAwait);
+
             return result;
         }
-
-        private async Task<Transaction> GetRawTransaction(uint256 txId, int timeoutSeconds)
+        
+        private Task<Transaction> GetRawTransaction(uint256 txId, int timeoutSeconds)
         {
-            return await _client.GetRawTransactionAsync(txId, false).WithTimeout(timeoutSeconds * 1000);
+            return _client.GetRawTransactionAsync(txId, false).WithTimeout(timeoutSeconds * 1000);
         }
 
         private void WriteConsole(string message)

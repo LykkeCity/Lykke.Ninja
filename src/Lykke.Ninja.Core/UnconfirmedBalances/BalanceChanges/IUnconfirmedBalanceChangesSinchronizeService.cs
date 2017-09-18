@@ -15,6 +15,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
     public interface IUnconfirmedBalanceChangesSinchronizeService
     {
         Task<IBalanceChangesSynchronizePlan> GetBalanceChangesSynchronizePlan();
-        Task Synchronize(IBalanceChangesSynchronizePlan synchronizePlan);
+        Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan);
     }
 }

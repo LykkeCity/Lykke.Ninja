@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
+using Common.Log;
 using Lykke.Ninja.Core.Bitcoin;
 using Lykke.Ninja.Core.Ninja.Transaction;
 using Lykke.Ninja.Core.Transaction;
 using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using Lykke.Ninja.Services.Block;
+using MoreLinq;
 using NBitcoin;
 using NBitcoin.OpenAsset;
 using QBitNinja.Client.Models;
@@ -91,6 +94,8 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
         private readonly INinjaTransactionService _ninjaTransactionService;
         private readonly ITransactionOutputRepository _confirmedOutputRepository;
         private readonly Network _network;
+        private readonly IConsole _console;
+        private readonly ILog _log;
 
 
         public UnconfirmedBalanceChangesSinchronizeService(IUnconfirmedBalanceChangesRepository balanceChangesRepository, 
@@ -98,7 +103,9 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             IBitcoinRpcClient bitcoinRpcClient, 
             INinjaTransactionService ninjaTransactionService, 
             ITransactionOutputRepository confirmedOutputRepository, 
-            Network network)
+            Network network, 
+            IConsole console, 
+            ILog log)
         {
             _balanceChangesRepository = balanceChangesRepository;
             _unconfirmedStatusesRepository = unconfirmedStatusesRepository;
@@ -106,6 +113,8 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             _ninjaTransactionService = ninjaTransactionService;
             _confirmedOutputRepository = confirmedOutputRepository;
             _network = network;
+            _console = console;
+            _log = log;
         }
 
         public async Task<IBalanceChangesSynchronizePlan> GetBalanceChangesSynchronizePlan()
@@ -119,7 +128,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             return BalanceChangesSynchronizePlan.Create(getIdsToInsert.Result, getIdsToRemove.Result);
         }
 
-        public async Task Synchronize(IBalanceChangesSynchronizePlan synchronizePlan)
+        public async Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan)
         {
             var insertChanges = InsertChanges(synchronizePlan.TxIdsToAdd);
             var removeChanges = RemoveChanges(synchronizePlan.TxIdsToRemove);
@@ -134,62 +143,172 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
         private async Task InsertChanges(IEnumerable<string> txIds)
         {
-            //debug
-           // txIds = txIds.Take(100);
+            foreach (var batch in txIds.Batch(10000, p => p.ToList()))
+            {
+                WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
 
-            var rawTxs = (await _bitcoinRpcClient.GetRawTransactions(txIds.Select(uint256.Parse))).ToList();
+                var rawTxs = (await _bitcoinRpcClient.GetRawTransactions(batch.Select(uint256.Parse))).ToDictionary(p => p.GetHash().ToString());
 
-            var getInputs = GetInputs(rawTxs);
+
+                var failedToRetrieveFromBitcoinClient = batch.Where(p => !rawTxs.ContainsKey(p)).ToList();
+                var insertChanges =  InsertChangesInner(rawTxs.Values);
+
+                var setFailed = _unconfirmedStatusesRepository.SetInsertStatus(failedToRetrieveFromBitcoinClient, InsertProcessStatus.Failed);
+
+                await Task.WhenAll(insertChanges, setFailed);
+
+                WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} done");
+            }
+        }
+
+        private async Task InsertChangesInner(IEnumerable<Transaction> rawTxs)
+        {
+            var getConfirmedInputs = GetConfirmedInputs(rawTxs);
             var getOutputs = GetOutputs(rawTxs);
 
-            await Task.WhenAll(getInputs, getOutputs);
+            await Task.WhenAll(getConfirmedInputs, getOutputs);
 
+            var balanceChanges = getConfirmedInputs.Result.Add(getOutputs.Result);
 
-            var balanceChanges = getInputs.Result.Union(getOutputs.Result).ToList();
-
-            var insertBalanceChanges = _balanceChangesRepository.Upsert(balanceChanges);
-
-            var rawTxsDic = rawTxs.ToDictionary(p => p.GetHash().ToString(), p => p);
-            var notFoundInBitcoinRpcTxs = txIds.Where(p => !rawTxsDic.ContainsKey(p));
-            var foundTxIds = balanceChanges.Select(p => p.TxId).Distinct();
-
-            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(notFoundInBitcoinRpcTxs, InsertProcessStatus.Failed);
-            var setDoneStatus = _unconfirmedStatusesRepository.SetInsertStatus(foundTxIds, InsertProcessStatus.Processed);
+            var insertBalanceChanges = _balanceChangesRepository.Upsert(balanceChanges.FoundBalanceChanges);
+            
+            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed);
+            var setDoneStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.OkTxIds, InsertProcessStatus.Processed);
 
             await Task.WhenAll(insertBalanceChanges, setDoneStatus, setFailedStatus);
         }
 
 
-        private async Task<IEnumerable<IBalanceChange>> GetInputs(IEnumerable<Transaction> rawTransactions)
+        private async Task<GetBalanceChangesResult> GetConfirmedInputs(IEnumerable<Transaction> rawTransactions)
         {
-            var uncolored = rawTransactions.Where(p => !p.HasValidColoredMarker()).ToList();
+            WriteConsole($"{nameof(GetConfirmedInputs)} started");
 
-            var spendOutputIds = uncolored
+            var spendOutputIds = rawTransactions
                 .SelectMany(p => p.Inputs
-                    .Select(x => TransactionInputOutputIdGenerator.GenerateId(x.PrevOut.Hash.ToString(), x.PrevOut.N)));
+                    .Select(x => BalanceChangeIdGenerator.GenerateId(x.PrevOut.Hash.ToString(), x.PrevOut.N)))
+                .ToList();
 
-            return await _confirmedOutputRepository.GetBalanceChanges(spendOutputIds);
+            var balanceChangesDictionary = new Dictionary<string, List<IBalanceChange>>();
+
+            var counter = 0;
+            //retry
+            do
+            {
+                var notRetrievedIds = spendOutputIds.Where(p => !balanceChangesDictionary.ContainsKey(p)).ToList();
+
+                var retrievedOutputIds = await _confirmedOutputRepository.GetBalanceChanges(notRetrievedIds);
+
+                foreach (var groupedBalanceChanges in retrievedOutputIds.GroupBy(p=>p.Id))
+                {
+                    if (balanceChangesDictionary.ContainsKey(groupedBalanceChanges.Key))
+                    {
+                        balanceChangesDictionary[groupedBalanceChanges.Key].AddRange(groupedBalanceChanges);
+                    }
+                    else
+                    {
+                        balanceChangesDictionary.Add(groupedBalanceChanges.Key, groupedBalanceChanges.ToList());
+                    }
+                }
+
+                counter++;
+            } while (balanceChangesDictionary.Count != spendOutputIds.Count && counter <= 3);
+
+            var notFoundConfirmedIds = spendOutputIds.Where(p => !balanceChangesDictionary.ContainsKey(p)).ToList();
+            var failedTxIds = notFoundConfirmedIds.Select(BalanceChangeIdGenerator.GetTxId);
+            var okTxIds = balanceChangesDictionary.Values.SelectMany(p => p.Select(x => x.TxId));
+
+            var result =  GetBalanceChangesResult.Create(balanceChangesDictionary.SelectMany(p=>p.Value), okTxIds, failedTxIds);
+
+
+            WriteConsole($"{nameof(GetConfirmedInputs)} done");
+
+            return result;
         }
 
 
-        private async Task<IEnumerable<IBalanceChange>> GetOutputs(IEnumerable<Transaction> rawTransactions)
+        private async Task<GetBalanceChangesResult> GetOutputs(IEnumerable<Transaction> rawTransactions)
         {
+            WriteConsole($"{nameof(GetOutputs)} {rawTransactions.Count()} tx started");
+
             var uncoloredChanges = rawTransactions.Where(p => !p.HasValidColoredMarker())
                 .SelectMany(p => BalanceChange.CreateUncolored(p, _network));
-            var getColoredChanges = GetColoredChanges(rawTransactions);
+            var getColoredChanges = GetColoredChanges(rawTransactions.Where(p => p.HasValidColoredMarker()));
 
             await Task.WhenAll(getColoredChanges);
 
-            return uncoloredChanges.Union(getColoredChanges.Result);
+            var result = getColoredChanges.Result.Add(uncoloredChanges);
+
+            WriteConsole($"{nameof(GetOutputs)} {rawTransactions.Count()} tx done");
+
+            return result;
         }
 
-        private async Task<IEnumerable<IBalanceChange>> GetColoredChanges(IEnumerable<Transaction> rawTransactions)
+        private async Task<GetBalanceChangesResult> GetColoredChanges(IEnumerable<Transaction> rawTransactions)
         {
+            WriteConsole($"{nameof(GetColoredChanges)} {rawTransactions.Count()} tx started");
 
-            var colored = rawTransactions.Where(p => p.HasValidColoredMarker()).ToList();
-            var ninjaTransactions =  await _ninjaTransactionService.Get(colored.Select(p => p.GetHash()), withRetry: false);
+            var ninjaTransactions = await Retry.Try(async () => await _ninjaTransactionService.Get(rawTransactions.Select(p => p.GetHash()),
+                    withRetrySchedule: false), maxTryCount: 5, logger: _log);
 
-            return ninjaTransactions.SelectMany(p => BalanceChange.CreateColored(p, _network));
+            var balanceChanges =  ninjaTransactions.SelectMany(p => BalanceChange.CreateColored(p, _network));
+            
+            WriteConsole($"{nameof(GetColoredChanges)} {rawTransactions.Count()} tx done");
+
+            return GetBalanceChangesResult.Create(balanceChanges);
+        }
+
+        private void WriteConsole(string message)
+        {
+            _console.WriteLine($"{nameof(UnconfirmedBalanceChangesSinchronizeService)} {message}");
+        }
+
+        private class GetBalanceChangesResult
+        {
+            public IEnumerable<string> OkTxIds { get; set; }
+
+            public IEnumerable<string> FailedTxIds { get; set; }
+
+            public IEnumerable<IBalanceChange> FoundBalanceChanges { get; set; }
+
+
+            public GetBalanceChangesResult Add(GetBalanceChangesResult added)
+            {
+                return new GetBalanceChangesResult
+                {
+                    OkTxIds = OkTxIds.Union(added.OkTxIds).Distinct().ToList(),
+                    FailedTxIds = FailedTxIds.Union(added.FailedTxIds).Distinct().ToList(),
+                    FoundBalanceChanges = FoundBalanceChanges.Union(added.FoundBalanceChanges).ToList()
+                };
+            }
+            public GetBalanceChangesResult Add(IEnumerable<IBalanceChange> added)
+            {
+                return new GetBalanceChangesResult
+                {
+                    OkTxIds = OkTxIds.Union(added.Select(p => p.TxId)).Distinct().ToList(),
+                    FoundBalanceChanges = FoundBalanceChanges.Union(added).ToList(),
+                    FailedTxIds = FailedTxIds
+                };
+            }
+
+
+            public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges,
+                IEnumerable<string> okTxIds, 
+                IEnumerable<string> failedTxIds)
+            {
+                return new GetBalanceChangesResult
+                {
+                    FoundBalanceChanges = foundBalanceChanges,
+                    FailedTxIds = failedTxIds ?? Enumerable.Empty<string>(),
+                    OkTxIds = okTxIds ?? Enumerable.Empty<string>()
+                };
+            }
+
+            public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges)
+            {
+                return GetBalanceChangesResult.Create(foundBalanceChanges, 
+                    foundBalanceChanges.Select(p => p.TxId),
+                    null);
+            }
         }
     }
 }

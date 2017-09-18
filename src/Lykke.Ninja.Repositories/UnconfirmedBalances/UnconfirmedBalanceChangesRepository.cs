@@ -39,6 +39,8 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
+            WriteConsole($"{nameof(Upsert)} {items.Count()} items started");
+
             if (items.Any())
             {
                 var updates = items.Select(p => new ReplaceOneModel<BalanceChangeMongoEntity>(
@@ -48,6 +50,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
                 await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
             }
+
+
+            WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
         }
 
         public async Task Remove(IEnumerable<string> txIds)

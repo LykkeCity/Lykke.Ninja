@@ -450,7 +450,9 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var data = await _collection.AsQueryable()
+            WriteConsole($"{nameof(GetBalanceChanges)} retrieving {ids.Count()} outputs started");
+
+            var data = await _collection.AsQueryable(new AggregateOptions() {MaxTime = TimeSpan.FromSeconds(60)})
                 .Where(p => ids.Contains(p.Id))
                 .Select(p => new
                 {
@@ -463,14 +465,21 @@ namespace Lykke.Ninja.Repositories.Transactions
                 })
                 .ToListAsync();
 
-            return data
+
+
+            var result =  data
                 .Select(p => 
                     BalanceChange.Create(p.TransactionId, 
-                        p.Index, 
-                        p.BtcSatoshiAmount, 
+                        p.Index,
+                        (-1) * p.BtcSatoshiAmount, 
                         p.DestinationAddress, 
                         p.AssetId, 
-                        (-1) * p.Quantity));
+                        (-1) * p.Quantity))
+                 .ToList();
+
+            WriteConsole($"{nameof(GetBalanceChanges)} retrieving  {result.Count} of {ids.Count()} outputs done");
+
+            return result;
         }
 
         public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,

@@ -11,5 +11,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
     public interface IUnconfirmedBalanceChangesCommandProducer
     {
         Task ProduceSynchronizeCommand();
+        Task<bool> IsQueueFull();
     }
 }

@@ -54,12 +54,17 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         public async Task SetInsertStatus(IEnumerable<string> txIds, InsertProcessStatus status)
         {
             await EnsureCollectionPrepared();
+
+            WriteConsole($"{nameof(SetInsertStatus)} {status.ToString()} for {txIds.Count()} started");
+
             if (txIds.Any())
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
                     Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue));
             }
+
+            WriteConsole($"{nameof(SetInsertStatus)} {status.ToString()} done");
         }
 
         public async Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status)

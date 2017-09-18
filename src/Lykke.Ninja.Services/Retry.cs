@@ -20,7 +20,35 @@ namespace Lykke.Ninja.Services
             TimeSpan.FromSeconds(30),
             TimeSpan.FromMinutes(1)
         };
+        public static async Task<T> Try<T>(Func<Task<T>> action, int maxTryCount, Func<Exception, bool> exceptionFilter = null,
+            ILog logger = null)
+        {
+            int @try = 0;
+            if (exceptionFilter == null)
+            {
+                exceptionFilter = p => true;
+            }
 
+
+            while (true)
+            {
+                try
+                {
+                    return await action();
+                }
+                catch (Exception ex)
+                {
+                    @try++;
+                    if (!exceptionFilter(ex) || @try >= maxTryCount)
+                        throw;
+
+                    if (logger != null)
+                    {
+                        await logger.WriteErrorAsync("Retry", "Try", null, ex);
+                    }
+                }
+            }
+        }
         public static async Task<T> Try<T>(Func<Task<T>> action, TimeSpan[] retryShedule = null, Func<Exception, bool> exceptionFilter = null, ILog logger = null)
         {
             int @try = 0;

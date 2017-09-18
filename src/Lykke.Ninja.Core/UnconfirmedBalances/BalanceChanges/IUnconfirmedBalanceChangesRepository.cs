@@ -25,6 +25,15 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
         {
             return $"{txId}_{index}";
         }
+        public static string GetTxId(string id)
+        {
+            if (id != null && id.Contains("_"))
+            {
+                return id.Split("_".ToCharArray())[0];
+            }
+
+            return null;
+        }
     }
     
 

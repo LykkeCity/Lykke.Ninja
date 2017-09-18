@@ -15,31 +15,43 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
     {
         private readonly IUnconfirmedBalanceChangesSinchronizeService _balanceChangesSinchronizeService;
         private readonly IConsole _console;
+        private readonly ILog _log;
+
 
         public UnconfirmedBalanceChangesFunctions(IUnconfirmedBalanceChangesSinchronizeService balanceChangesSinchronizeService, 
-            IConsole console)
+            IConsole console,
+            ILog log)
         {
             _balanceChangesSinchronizeService = balanceChangesSinchronizeService;
             _console = console;
+            _log = log;
         }
         
-        [QueueTrigger(QueueNames.SynchronizeChanges, maxPollingIntervalMs: 5000)]
+        [QueueTrigger(QueueNames.SynchronizeChanges, maxPollingIntervalMs: 5000, notify:true)]
         public async Task SynchronizeChanges(BalanceChangeSynchronizeCommandContext context)
         {
-            await SynchronizeChanges().WithTimeout(60 * 1000);
+            await SynchronizeChanges().WithTimeout(60 * 20 * 1000);
         }
 
         private async Task SynchronizeChanges()
         {
             WriteConsole($"{nameof(SynchronizeChanges)} started");
 
-            var synchronizePlan = await _balanceChangesSinchronizeService.GetBalanceChangesSynchronizePlan();
+            try
+            {
+                var synchronizePlan = await _balanceChangesSinchronizeService.GetBalanceChangesSynchronizePlan();
 
-            WriteConsole($"Synchronize started {synchronizePlan.TxIdsToRemove.Count()} items to remove, {synchronizePlan.TxIdsToAdd.Count()} items to add");
+                WriteConsole($"Synchronyze started {synchronizePlan.TxIdsToRemove.Count()} items to remove, {synchronizePlan.TxIdsToAdd.Count()} items to add");
 
-            await _balanceChangesSinchronizeService.Synchronize(synchronizePlan);
+                await _balanceChangesSinchronizeService.Synchronyze(synchronizePlan);
 
-            WriteConsole($"{nameof(SynchronizeChanges)} done");
+                WriteConsole($"{nameof(SynchronizeChanges)} done");
+            }
+            catch (Exception e)
+            {
+                await _log.WriteErrorAsync(nameof(UnconfirmedBalanceChangesFunctions), nameof(SynchronizeChanges), null, e);
+            }
+
         }
 
         private void WriteConsole(string message)

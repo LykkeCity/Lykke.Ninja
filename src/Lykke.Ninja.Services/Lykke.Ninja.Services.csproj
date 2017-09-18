@@ -13,6 +13,7 @@
     <PackageReference Include="Lykke.AzureStorage" Version="1.2.41" />
     <PackageReference Include="Lykke.Common" Version="1.1.97" />
     <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="1.0.5" />
+    <PackageReference Include="morelinq" Version="2.7.0" />
     <PackageReference Include="NBitcoin" Version="4.0.0.38" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="QBitNinja.Client" Version="1.0.3.39" />

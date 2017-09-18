@@ -7,7 +7,7 @@ namespace Lykke.Ninja.Core.Ninja.Transaction
 {
     public interface INinjaTransactionService
     {
-        Task<GetTransactionResponse> Get(uint256 txId, bool withRetry = true);
-        Task<IEnumerable<GetTransactionResponse>> Get(IEnumerable<uint256> txIds, bool withRetry = true);
+        Task<GetTransactionResponse> Get(uint256 txId, bool withRetrySchedule = true);
+        Task<IEnumerable<GetTransactionResponse>> Get(IEnumerable<uint256> txIds, bool withRetrySchedule = true);
     }
 }
