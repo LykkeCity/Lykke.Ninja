@@ -2,23 +2,21 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common;
+using System.Threading.Tasks.Dataflow;
 using Common.Extensions;
 using Common.Log;
 using Lykke.Ninja.Core.Bitcoin;
 using NBitcoin;
 using NBitcoin.RPC;
-using QBitNinja.Client.Models;
 
 namespace Lykke.Ninja.Services.Bitcoin
 {
     public class BitcoinRpcClient: IBitcoinRpcClient
     {
         private readonly RPCClient _client;
-        private static SemaphoreSlim _lock = new SemaphoreSlim(100);
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(100);
         private readonly IConsole _console;
         private readonly ILog _log;
 
@@ -30,63 +28,61 @@ namespace Lykke.Ninja.Services.Bitcoin
             _log = log;
         }
 
-        public async Task<IEnumerable<uint256>> GetUnconfirmedTransactionIds(int timeoutSeconds = 10)
+        public async Task<IEnumerable<uint256>> GetUnconfirmedTransactionIds()
         {
-            return await _client.GetRawMempoolAsync().WithTimeout(timeoutSeconds * 1000);
+            return await _client.GetRawMempoolAsync();
         }
 
-        public async Task<IEnumerable<Transaction>> GetRawTransactions(IEnumerable<uint256> txIds, int timeoutSeconds = 10)
+        public async Task<IEnumerable<Transaction>> GetRawTransactions(IEnumerable<uint256> txIds)
         {
             var tasksToAwait = new List<Task>();
             var result = new ConcurrentBag<Transaction>();
-
-            //var counter = txIds.Count();
-            //WriteConsole($"Retrieving {counter} txs started");
+            
+            WriteConsole($"Retrieving  txs started");
 
             foreach (var txId in txIds)
             {
-                //WriteConsole($"Awaiting lock {_lock.CurrentCount}");
-                await _lock.WaitAsync();
-                var tsk = GetRawTransaction(txId, timeoutSeconds)
-                    .ContinueWith(p =>
-                    {
-                        //counter--;
-                        //WriteConsole($"Releasing lock {_lock.CurrentCount}");
-
- 
-
-                        try
-                        {
-                            if (p.Result != null)
-                            {
-                                result.Add(p.Result);
-                            }
-                            WriteConsole($"Retrieving {txId.ToString()} done.");
-                        }
-                        catch (Exception)
-                        {
-                            WriteConsole($"Error while retrieving {txId} from Bitcoin RPC");
-                        }
-                        finally
-                        {
-                            _lock.Release();
-                        }
-                    });
-
-                tasksToAwait.Add(tsk);
-
+                tasksToAwait.Add(PutRawTransactionInBag(txId, result));
             }
 
+            
+            await Task.WhenAll(tasksToAwait).ConfigureAwait(false);
+
             WriteConsole($"Retrieving txs done");
-
-            await Task.WhenAll(tasksToAwait);
-
             return result;
         }
-        
-        private Task<Transaction> GetRawTransaction(uint256 txId, int timeoutSeconds)
+
+        private async Task PutRawTransactionInBag(uint256 txId,
+            ConcurrentBag<Transaction> transactions)
         {
-            return _client.GetRawTransactionAsync(txId, false).WithTimeout(timeoutSeconds * 1000);
+            var tx = await GetRawTransaction(txId).ConfigureAwait(false);
+            if (tx != null)
+            {
+                transactions.Add(tx);
+            }
+        }
+        
+        private async Task<Transaction> GetRawTransaction(uint256 txId)
+        {
+            await _lock.WaitAsync();
+            try
+            {
+                var result =  await _client.GetRawTransactionAsync(txId, false).ConfigureAwait(false);
+
+                WriteConsole($"{txId} Retrieving done.");
+
+                return result;
+            }
+            catch (Exception)
+            {
+
+                WriteConsole($"{txId} Not found.");
+                return null;
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
         private void WriteConsole(string message)

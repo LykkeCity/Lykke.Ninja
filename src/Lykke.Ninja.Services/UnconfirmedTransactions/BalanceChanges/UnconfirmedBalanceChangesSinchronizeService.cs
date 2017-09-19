@@ -143,7 +143,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
         private async Task InsertChanges(IEnumerable<string> txIds)
         {
-            foreach (var batch in txIds.Batch(10000, p => p.ToList()))
+            foreach (var batch in txIds.Batch(1000, p => p.ToList()))
             {
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
 
