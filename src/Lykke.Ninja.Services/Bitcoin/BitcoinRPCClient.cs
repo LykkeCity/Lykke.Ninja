@@ -44,6 +44,7 @@ namespace Lykke.Ninja.Services.Bitcoin
             {
                 tasksToAwait.Add(PutRawTransactionInBag(txId, result));
             }
+            
 
             
             await Task.WhenAll(tasksToAwait).ConfigureAwait(false);
@@ -58,7 +59,12 @@ namespace Lykke.Ninja.Services.Bitcoin
             var tx = await GetRawTransaction(txId).ConfigureAwait(false);
             if (tx != null)
             {
+                WriteConsole($"{txId} Retrieving done.");
                 transactions.Add(tx);
+            }
+            else
+            {
+                WriteConsole($"{txId} Not found.");
             }
         }
         
@@ -69,14 +75,13 @@ namespace Lykke.Ninja.Services.Bitcoin
             {
                 var result =  await _client.GetRawTransactionAsync(txId, false).ConfigureAwait(false);
 
-                WriteConsole($"{txId} Retrieving done.");
+
 
                 return result;
             }
             catch (Exception)
             {
 
-                WriteConsole($"{txId} Not found.");
                 return null;
             }
             finally
