@@ -572,7 +572,9 @@ namespace Lykke.Ninja.Repositories.Transactions
                 SetSupportSummaryQueryIndex(),
                 SetSupportGetReceivedQueryIndex(),
                 SetSupportGetSpendedQueryIndex(),
-                SetSupportAssetsStatsQueryIndex()
+                SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
+                SetSupportAssetsStatsAddressGroupingQueryIndex(),
+                SetSupportAssetsStatsTransactionsQueryIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -643,7 +645,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
         }
 
-        private async Task SetSupportAssetsStatsQueryIndex()
+        private async Task SetSupportAssetsStatsBlocksWithChangesQueryIndex()
         {
             var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
             var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
@@ -651,6 +653,33 @@ namespace Lykke.Ninja.Repositories.Transactions
             var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, blockHeight, spentTxInputBlockHeight);
 
             await _collection.Indexes.CreateOneAsync(combineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStats", });
+        }
+
+        private async Task SetSupportAssetsStatsAddressGroupingQueryIndex()
+        {
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.DestinationAddress);
+            var quantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.Quantity);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, isSpended, address, quantity);
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStatsAddressGrouping", });
+        }
+
+        private async Task SetSupportAssetsStatsTransactionsQueryIndex()
+        {
+            //var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            //var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            //var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            //var txId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.TransactionId);
+            //var spendedTxId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.SpendedInTxId);
+
+            //var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, spentTxInputBlockHeight, spendedTxId);
+            //var outputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, blockHeight, txId);
+
+            //await _collection.Indexes.CreateOneAsync(inputsCombineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStatsTransactionsInputs" });
+            //await _collection.Indexes.CreateOneAsync(outputsCombineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStatsTransactionsOutputs" });
         }
 
         #endregion
