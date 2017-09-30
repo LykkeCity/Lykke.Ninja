@@ -180,7 +180,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                     new CreateCollectionOptions
                     {
                         Capped = true,
-                        MaxDocuments = _baseSettings.UnconfirmedNinjaData.StatusesCappedCollectionMaxDocuments,
+                        MaxDocuments = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxDocuments,
                         MaxSize = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxSize
 
                     });
