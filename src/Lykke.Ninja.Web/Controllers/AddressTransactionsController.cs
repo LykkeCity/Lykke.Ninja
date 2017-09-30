@@ -5,6 +5,7 @@ using Lykke.Ninja.Core.BlockStatus;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Microsoft.AspNetCore.Mvc;
 using Lykke.Ninja.Services.Ninja;
 using Lykke.Ninja.Web.Models;
@@ -18,17 +19,20 @@ namespace Lykke.Ninja.Web.Controllers
         private readonly BaseSettings _baseSettings;
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
+        private readonly IUnconfirmedBalanceChangesRepository _unconfirmedBalanceChangesRepository;
         
 
         public AddressTransactionsController(ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, 
             INinjaBlockService ninjaBlockService,
-            IBlockStatusesRepository blockStatusesRepository)
+            IBlockStatusesRepository blockStatusesRepository,
+            IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository)
         {
             _outputRepository = outputRepository;
             _baseSettings = baseSettings;
             _ninjaBlockService = ninjaBlockService;
             _blockStatusesRepository = blockStatusesRepository;
+            _unconfirmedBalanceChangesRepository = unconfirmedBalanceChangesRepository;
         }
 
         [HttpGet("{address}")]
@@ -85,11 +89,26 @@ namespace Lykke.Ninja.Web.Controllers
                 maxBlockHeight: maxBlockHeight,
                 itemsToSkip: itemsToSkip,
                 itemsToTake: _baseSettings.ItemsOnAddressTransactionPage);
-            
+
+            Task<IEnumerable<IBalanceChange>> getUnconfirmedSpended;
+            Task<IEnumerable<IBalanceChange>> getUnconfirmedReceived;
+
+            if (minBlockHeight == null)
+            {
+                getUnconfirmedSpended = _unconfirmedBalanceChangesRepository.GetSpended(bitcoinAddress.ToString());
+                getUnconfirmedReceived = _unconfirmedBalanceChangesRepository.GetReceived(bitcoinAddress.ToString());
+            }
+            else
+            {
+                getUnconfirmedSpended = Task.FromResult(Enumerable.Empty<IBalanceChange>());
+                getUnconfirmedReceived = Task.FromResult(Enumerable.Empty<IBalanceChange>());
+            }
 
             await Task.WhenAll(getNinjaTop, 
                 getSpended, 
-                getReceived);
+                getReceived,
+                getUnconfirmedSpended,
+                getUnconfirmedReceived);
 
             string newContinuation = null;
             if (getSpended.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage ||
@@ -104,7 +123,9 @@ namespace Lykke.Ninja.Web.Controllers
                 colored, 
                 newContinuation,
                 getSpended.Result, 
-                getReceived.Result);
+                getReceived.Result,
+                getUnconfirmedSpended.Result,
+                getUnconfirmedReceived.Result);
         }
 
 

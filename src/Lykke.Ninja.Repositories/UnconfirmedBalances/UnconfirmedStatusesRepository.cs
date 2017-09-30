@@ -61,7 +61,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue).Set(p=>p.LastStatusChange, DateTime.Now));
             }
 
             WriteConsole($"{nameof(SetInsertStatus)} {status.ToString()} done");
@@ -75,7 +75,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue).Set(p => p.LastStatusChange, DateTime.Now));
             }
         }
 
@@ -97,7 +97,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return await _collection.AsQueryable().Where(p => !p.Removed).Select(p => p.TxId).ToListAsync();
         }
 
-        public async Task<IEnumerable<string>> GetTxIds(InsertProcessStatus[] statuses)
+        public async Task<IEnumerable<string>> GetNotRemovedTxIds(InsertProcessStatus[] statuses)
         {
             var numStatuses = statuses.Select(p=>(int)p);
             return await _collection.AsQueryable()
@@ -107,7 +107,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<string>> GetTxIds(RemoveProcessStatus[] statuses)
+        public async Task<IEnumerable<string>> GetRemovedTxIds(RemoveProcessStatus[] statuses)
         {
             var numStatuses = statuses.Select(p => (int)p);
             return await _collection.AsQueryable()

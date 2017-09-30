@@ -8,6 +8,7 @@ using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Repositories.Mongo;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 {
@@ -19,6 +20,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
+        private readonly AggregateOptions _defaultAggregateOptions;
 
         public UnconfirmedBalanceChangesRepository(BaseSettings settings, IConsole console)
         {
@@ -32,6 +34,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             _collection =
                 _db.GetCollection<BalanceChangeMongoEntity>(BalanceChangeMongoEntity
                     .CollectionName);
+            _defaultAggregateOptions = new AggregateOptions { MaxTime = TimeSpan.FromSeconds(35) };
         }
 
 
@@ -64,54 +67,101 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             }
         }
 
-        public async Task<long> GetTransactionsCount(string address, int? at = null)
+        public async Task<long> GetTransactionsCount(string address)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p=>!p.Removed);
+
+            return await query.Select(p => p.TxId).Distinct().CountAsync();
         }
 
-        public async Task<long> GetSpendTransactionsCount(string address, int? at = null)
+        public async Task<long> GetSpendTransactionsCount(string address)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed)
+                .Where(p => p.IsInput);
+
+            return await query.Select(p => p.TxId).Distinct().CountAsync();
         }
 
-        public async Task<long> GetBtcAmountSummary(string address, int? at = null, bool isColored = false)
+        public async Task<long> GetBtcAmountSummary(string address, bool isColored = false)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed);
+
+            return await query.SumAsync(p => p.BtcSatoshiAmount);
         }
 
-        public async Task<long> GetBtcReceivedSummary(string address, int? at = null, bool isColored = false)
+        public async Task<long> GetBtcReceivedSummary(string address,  bool isColored = false)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed)
+                .Where(p => !p.IsInput);
+
+            return await query.SumAsync(p => p.BtcSatoshiAmount);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsReceived(string address, int? at = null)
+        public async Task<IDictionary<string, long>> GetAssetsReceived(string address)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed)
+                .Where(p => !p.IsInput);
+
+            var result = await query
+                .GroupBy(p => p.AssetId)
+                .Select(p => new { assetId = p.Key, sum = p.Sum(x => x.AssetQuantity) })
+                .ToListAsync();
+
+
+            return result.Where(p => string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsAmount(string address, int? at = null)
+        public async Task<IDictionary<string, long>> GetAssetsAmount(string address)
         {
-            await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+            await EnsureCollectionPrepared(); 
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed);
+
+            var result = await query
+                .GroupBy(p => p.AssetId)
+                .Select(p => new { assetId = p.Key, sum = p.Sum(x => x.AssetQuantity) })
+                .ToListAsync();
+
+
+            return result.Where(p => string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
         }
 
-        public async Task<IEnumerable<IBalanceChange>> GetSpended(string address, int? minBlockHeight = null, int? maxBlockHeight = null, int? itemsToSkip = null,
-            int? itemsToTake = null)
+        public async Task<IEnumerable<IBalanceChange>> GetSpended(string address)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed)
+                .Where(p=>p.IsInput);
+
+            return await query.ToListAsync();
         }
 
-        public async Task<IEnumerable<IBalanceChange>> GetReceived(string address, bool unspendOnly, int? minBlockHeight = null, int? maxBlockHeight = null,
-            int? itemsToSkip = null, int? itemsToTake = null)
+        public async Task<IEnumerable<IBalanceChange>> GetReceived(string address)
         {
             await EnsureCollectionPrepared();
-            throw new NotImplementedException();
+
+            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+                .Where(p => !p.Removed)
+                .Where(p => !p.IsInput);
+
+            return await query.ToListAsync();
         }
 
         private Task EnsureCollectionPrepared()
@@ -139,6 +189,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             var setIndexes = new[]
             {
                 SetTxIdIndex(),
+                SetCommonIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -150,6 +201,17 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             var ind = Builders<BalanceChangeMongoEntity>.IndexKeys.Descending(p => p.TxId);
             await _collection.Indexes.CreateOneAsync(ind);
+        }
+
+        private async Task SetCommonIndex()
+        {
+            var addr = Builders<BalanceChangeMongoEntity>.IndexKeys.Descending(p => p.Address);
+            var isSpended = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.Removed);
+            var isInput = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.IsInput);
+
+
+            var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(addr, isSpended, isInput);
+            await _collection.Indexes.CreateOneAsync(combine);
         }
 
         private void WriteConsole(string message)

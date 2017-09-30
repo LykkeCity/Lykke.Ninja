@@ -43,29 +43,20 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
         Task Remove(IEnumerable<string> txIds);
 
-        Task<long> GetTransactionsCount(string address, int? at = null);
+        Task<long> GetTransactionsCount(string address);
 
-        Task<long> GetSpendTransactionsCount(string address, int? at = null);
+        Task<long> GetSpendTransactionsCount(string address);
 
-        Task<long> GetBtcAmountSummary(string address, int? at = null, bool isColored = false);
+        Task<long> GetBtcAmountSummary(string address, bool isColored = false);
 
-        Task<long> GetBtcReceivedSummary(string address, int? at = null, bool isColored = false);
+        Task<long> GetBtcReceivedSummary(string address, bool isColored = false);
 
-        Task<IDictionary<string, long>> GetAssetsReceived(string address, int? at = null);
+        Task<IDictionary<string, long>> GetAssetsReceived(string address);
 
-        Task<IDictionary<string, long>> GetAssetsAmount(string address, int? at = null);
+        Task<IDictionary<string, long>> GetAssetsAmount(string address);
 
-        Task<IEnumerable<IBalanceChange>> GetSpended(string address,
-            int? minBlockHeight = null,
-            int? maxBlockHeight = null,
-            int? itemsToSkip = null,
-            int? itemsToTake = null);
+        Task<IEnumerable<IBalanceChange>> GetSpended(string address);
 
-        Task<IEnumerable<IBalanceChange>> GetReceived(string address,
-            bool unspendOnly,
-            int? minBlockHeight = null,
-            int? maxBlockHeight = null,
-            int? itemsToSkip = null,
-            int? itemsToTake = null);
+        Task<IEnumerable<IBalanceChange>> GetReceived(string address);
     }
 }

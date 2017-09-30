@@ -119,8 +119,8 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
         public async Task<IBalanceChangesSynchronizePlan> GetBalanceChangesSynchronizePlan()
         {
-            var getIdsToInsert = _unconfirmedStatusesRepository.GetTxIds(InsertProcessStatus.Waiting, InsertProcessStatus.Failed);
-            var getIdsToRemove = _unconfirmedStatusesRepository.GetTxIds(RemoveProcessStatus.Waiting, RemoveProcessStatus.Failed);
+            var getIdsToInsert = _unconfirmedStatusesRepository.GetNotRemovedTxIds(InsertProcessStatus.Waiting, InsertProcessStatus.Failed);
+            var getIdsToRemove = _unconfirmedStatusesRepository.GetRemovedTxIds(RemoveProcessStatus.Waiting, RemoveProcessStatus.Failed);
 
 
             await Task.WhenAll(getIdsToInsert, getIdsToRemove);

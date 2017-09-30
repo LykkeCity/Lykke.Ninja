@@ -4,6 +4,7 @@ using System.Linq;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Ninja.Contracts;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using NBitcoin;
 using Newtonsoft.Json;
 using Lykke.Ninja.Services.Ninja;
@@ -16,13 +17,15 @@ namespace Lykke.Ninja.Web.Models
             Network network, 
             bool isColored,
             string continuationToken,
-            IEnumerable<ITransactionOutput> spended = null, 
-            IEnumerable<ITransactionOutput> received = null)
+            IEnumerable<ITransactionOutput> spended, 
+            IEnumerable<ITransactionOutput> received,
+            IEnumerable<IBalanceChange> unconfirmedSpended,
+            IEnumerable<IBalanceChange> unconfirmedReceived)
         {
             return new AddressTransactionsViewModel
             {
                 ContinuationToken = continuationToken,
-                Transactions = GetTxs(header, network, isColored, spended, received).ToArray(),
+                Transactions = GetTxs(header, network, isColored, spended, received, unconfirmedSpended, unconfirmedReceived).ToArray(),
                 ConflictedOperations = Enumerable.Empty<object>().ToArray()
             };
         }
@@ -30,8 +33,10 @@ namespace Lykke.Ninja.Web.Models
         private static IEnumerable<AddressTransactionListItemContract> GetTxs(INinjaBlockHeader header, 
             Network network, 
             bool isColored,
-            IEnumerable<ITransactionOutput> spended = null,
-            IEnumerable<ITransactionOutput> received = null)
+            IEnumerable<ITransactionOutput> spended,
+            IEnumerable<ITransactionOutput> received,
+            IEnumerable<IBalanceChange> unconfirmedSpended,
+            IEnumerable<IBalanceChange> unconfirmedReceived)
         {
             spended = spended ?? Enumerable.Empty<ITransactionOutput>();
             received = received ?? Enumerable.Empty<ITransactionOutput>();
@@ -64,6 +69,7 @@ namespace Lykke.Ninja.Web.Models
 
         [JsonIgnore]
         public string OperationBlockId { get; set; }
+
 
         [JsonIgnore]
         public int OperationBlockHeight { get; set; }
