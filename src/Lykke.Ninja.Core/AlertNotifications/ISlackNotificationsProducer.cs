@@ -11,6 +11,6 @@ namespace Lykke.Ninja.Core.AlertNotifications
 
     public interface ISlackNotificationsProducer
     {
-        Task SendNotification(string type, string message);
+        Task SendError(string type, string message);
     }
 }

@@ -38,7 +38,7 @@ namespace Lykke.Ninja.BalanceJob.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksConsumerFunctions), nameof(ParseBlock), context.ToJson(), e);
-                await _slack.SendNotification(nameof(ParseBlock), $"Error on {context.ToJson()}");
+                await _slack.SendError(nameof(ParseBlock), $"Error on {context.ToJson()} {e.Message}");
                 throw;
             }
         }
