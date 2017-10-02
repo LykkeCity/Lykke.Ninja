@@ -72,7 +72,7 @@ namespace Lykke.Ninja.Core.Transaction
 
         Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
 
-        Task<IEnumerable<IBalanceChange>> GetBalanceChanges(IEnumerable<string> ids);
+        Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids);
 
         Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,

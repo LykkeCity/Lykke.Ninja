@@ -17,22 +17,19 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
         string AssetId { get; }
 
         long AssetQuantity { get; }
+
+        bool HasColoredData { get; }
+
+        string SpendTxId { get; }
+
+        ulong? SpendTxInput { get; }
     }
 
     public static class BalanceChangeIdGenerator
     {
-        public static string GenerateId(string txId, ulong index)
+        public static string GenerateId(string txId, ulong index, string spendTxId)
         {
-            return $"{txId}_{index}";
-        }
-        public static string GetTxId(string id)
-        {
-            if (id != null && id.Contains("_"))
-            {
-                return id.Split("_".ToCharArray())[0];
-            }
-
-            return null;
+            return $"{txId}_{index}_{spendTxId}";
         }
     }
     

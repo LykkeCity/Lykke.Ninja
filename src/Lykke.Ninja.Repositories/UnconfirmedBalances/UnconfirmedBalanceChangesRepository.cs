@@ -9,6 +9,7 @@ using Lykke.Ninja.Repositories.Mongo;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using MoreLinq;
 
 namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 {
@@ -44,16 +45,28 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items started");
 
+
             if (items.Any())
             {
-                var updates = items.Select(p => new ReplaceOneModel<BalanceChangeMongoEntity>(
-                        Builders<BalanceChangeMongoEntity>.Filter.Eq(x => x.Id, p.Id),
-                        BalanceChangeMongoEntity.Create(p))
-                    { IsUpsert = true });
+                foreach (var b in items.Batch(1))
+                {
+                    var updates = b.Select(p => new ReplaceOneModel<BalanceChangeMongoEntity>(
+                            Builders<BalanceChangeMongoEntity>.Filter.Eq(x => x.Id, p.Id),
+                            BalanceChangeMongoEntity.Create(p))
+                        { IsUpsert = true });
 
-                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
+                    try
+                    {
+                        await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
+                    }
+                }
+
             }
-
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
         }
@@ -181,7 +194,8 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                     {
                         Capped = true,
                         MaxDocuments = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxDocuments,
-                        MaxSize = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxSize
+                        MaxSize = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxSize,
+                        
 
                     });
             }
@@ -253,6 +267,11 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         [BsonElement("hcd")]
         public bool HasColoredData { get; set; }
 
+        [BsonElement("sptxid")]
+        public string SpendTxId { get; set; }
+
+        [BsonElement("sptxind")]
+        public ulong? SpendTxInput { get; set; }
 
         public static BalanceChangeMongoEntity Create(IBalanceChange source)
         {
@@ -266,8 +285,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 IsInput = source.IsInput,
                 Id = source.Id,
                 AssetId = source.AssetId,
-                HasColoredData = source.AssetId != null,
-                AssetQuantity = source.AssetQuantity
+                HasColoredData = source.HasColoredData,
+                AssetQuantity = source.AssetQuantity,
+                SpendTxInput = source.SpendTxInput,
+                SpendTxId = source.SpendTxId
             };
         }
     }

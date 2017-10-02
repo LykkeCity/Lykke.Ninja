@@ -90,37 +90,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             };
         }
     }
-
-    public class BalanceChange : IBalanceChange
-    {
-        public string Id => BalanceChangeIdGenerator.GenerateId(TxId, Index);
-        public string TxId { get; set; }
-        public ulong Index { get; set; }
-        public bool IsInput => false;
-        public long BtcSatoshiAmount { get; set; }
-        public string Address { get; set; }
-        public string AssetId { get; set; }
-        public long AssetQuantity { get; set; }
-
-        public static BalanceChange Create(string txId, 
-            ulong index, 
-            long btcSatoshiAmount, 
-            string address, 
-            string assetId, 
-            long quantity)
-        {
-            return new BalanceChange
-            {
-                TxId = txId,
-                BtcSatoshiAmount = btcSatoshiAmount,
-                Address = address,
-                AssetId = assetId,
-                Index = index,
-                AssetQuantity = quantity
-            };
-        }
-    }
-
+    
     public class TransactionOutputRepository : ITransactionOutputRepository, IAssetStatsService
     {
         private readonly IMongoCollection<TransactionOutputMongoEntity> _collection;
@@ -446,38 +416,17 @@ namespace Lykke.Ninja.Repositories.Transactions
             return result.ToDictionary(p => p.addr, p => p.sum);
         }
 
-        public async Task<IEnumerable<IBalanceChange>> GetBalanceChanges(IEnumerable<string> ids)
+        public async Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids)
         {
             await EnsureQueryIndexes();
 
-            WriteConsole($"{nameof(GetBalanceChanges)} retrieving {ids.Count()} outputs started");
+            WriteConsole($"{nameof(GetByIds)} retrieving {ids.Count()} outputs started");
 
-            var data = await _collection.AsQueryable(new AggregateOptions() {MaxTime = TimeSpan.FromSeconds(60)})
+            var result = await _collection.AsQueryable(new AggregateOptions() {MaxTime = TimeSpan.FromSeconds(60)})
                 .Where(p => ids.Contains(p.Id))
-                .Select(p => new
-                {
-                    p.TransactionId,
-                    p.BtcSatoshiAmount,
-                    p.DestinationAddress,
-                    p.ColoredData.AssetId,
-                    p.ColoredData.Quantity,
-                    p.Index
-                })
                 .ToListAsync();
-
-
-
-            var result =  data
-                .Select(p => 
-                    BalanceChange.Create(p.TransactionId, 
-                        p.Index,
-                        (-1) * p.BtcSatoshiAmount, 
-                        p.DestinationAddress, 
-                        p.AssetId, 
-                        (-1) * p.Quantity))
-                 .ToList();
-
-            WriteConsole($"{nameof(GetBalanceChanges)} retrieving  {result.Count} of {ids.Count()} outputs done");
+            
+            WriteConsole($"{nameof(GetByIds)} retrieving  {result.Count} of {ids.Count()} outputs done");
 
             return result;
         }

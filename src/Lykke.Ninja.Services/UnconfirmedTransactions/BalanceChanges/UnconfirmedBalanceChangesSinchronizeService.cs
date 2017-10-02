@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Common;
 using Common.Log;
 using Lykke.Ninja.Core.Bitcoin;
 using Lykke.Ninja.Core.Ninja.Transaction;
 using Lykke.Ninja.Core.Transaction;
 using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
+using Lykke.Ninja.Repositories.Transactions;
 using Lykke.Ninja.Services.Block;
 using MoreLinq;
 using NBitcoin;
@@ -34,7 +33,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
     public class BalanceChange : IBalanceChange
     {
-        public string Id => BalanceChangeIdGenerator.GenerateId(TxId, Index);
+        public string Id => BalanceChangeIdGenerator.GenerateId(TxId, Index, SpendTxId);
         public string TxId { get; set; }
         public ulong Index { get; set; }
         public bool IsInput { get; set; }
@@ -42,33 +41,39 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
         public string Address { get; set; }
         public string AssetId { get; set; }
         public long AssetQuantity { get; set; }
+        public bool HasColoredData => AssetId != null;
+        public string SpendTxId { get; set; }
+        public ulong? SpendTxInput { get; set; }
 
         public static IEnumerable<IBalanceChange> CreateUncolored(Transaction transaction, Network network)
         {
-            return transaction.Outputs.AsIndexedOutputs().Select(output => CreateUncolored(output, transaction, network));
+            return transaction.Outputs.AsIndexedOutputs().Select(output => CreateUncoloredOutput(output, transaction, network));
         }
 
-        public static BalanceChange CreateUncolored(IndexedTxOut output, Transaction transaction, Network network)
+        public static BalanceChange CreateUncoloredOutput(IndexedTxOut output, Transaction transaction, Network network)
         {
             return new BalanceChange
             {
                 BtcSatoshiAmount = output.ToCoin().Amount.Satoshi,
                 Index = output.N,
                 TxId = transaction.GetHash().ToString(),
-                Address = output.TxOut.ScriptPubKey.GetDestinationAddress(network)?.ToString()
+                Address = output.TxOut.ScriptPubKey.GetDestinationAddress(network)?.ToString(),
+                IsInput = false,
+                SpendTxInput = null,
+                SpendTxId = null
             };
         }
 
-        public static IEnumerable<IBalanceChange> CreateColored(GetTransactionResponse txResp, Network network)
+        public static IEnumerable<IBalanceChange> CreateColoredOutput(GetTransactionResponse txResp, Network network)
         {
-            var uncolored = txResp.Transaction.Outputs.AsIndexedOutputs().Select(output => CreateUncolored(output, txResp.Transaction, network));
+            var uncolored = txResp.Transaction.Outputs.AsIndexedOutputs().Select(output => CreateUncoloredOutput(output, txResp.Transaction, network));
 
             var coloredData = txResp.ReceivedCoins.OfType<ColoredCoin>()
                 .Select(coloredCoin => new
                 {
                     AssetId = coloredCoin.AssetId.ToString(network),
                     Quantity = coloredCoin.Amount.Quantity,
-                    Id = BalanceChangeIdGenerator.GenerateId(txResp.Transaction.GetHash().ToString(), coloredCoin.Outpoint.N)
+                    Id = BalanceChangeIdGenerator.GenerateId(txResp.Transaction.GetHash().ToString(), coloredCoin.Outpoint.N, spendTxId:null)
                 });
             
 
@@ -83,6 +88,22 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             }
 
             return balanceChangesDictionary.Values;
+        }
+
+        public static BalanceChange CreateInput(ITransactionOutput foundOutput, string txId)
+        {
+            return new BalanceChange
+            {
+                Address = foundOutput.DestinationAddress,
+                AssetId = foundOutput.ColoredData?.AssetId,
+                AssetQuantity = foundOutput.ColoredData?.Quantity ?? 0,
+                BtcSatoshiAmount = foundOutput.BtcSatoshiAmount,
+                TxId = txId,
+                Index = foundOutput.Index,
+                IsInput = true,
+                SpendTxInput = foundOutput.Index,
+                SpendTxId = foundOutput.TransactionId
+            };
         }
     }
 
@@ -149,7 +170,6 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
                 var rawTxs = (await _bitcoinRpcClient.GetRawTransactions(batch.Select(uint256.Parse))).ToDictionary(p => p.GetHash().ToString());
 
-
                 var failedToRetrieveFromBitcoinClient = batch.Where(p => !rawTxs.ContainsKey(p)).ToList();
                 var insertChanges =  InsertChangesInner(rawTxs.Values);
 
@@ -171,9 +191,9 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             var balanceChanges = getConfirmedInputs.Result.Add(getOutputs.Result);
 
             var insertBalanceChanges = _balanceChangesRepository.Upsert(balanceChanges.FoundBalanceChanges);
-            
-            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed);
+
             var setDoneStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.OkTxIds, InsertProcessStatus.Processed);
+            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed);
 
             await Task.WhenAll(insertBalanceChanges, setDoneStatus, setFailedStatus);
         }
@@ -183,42 +203,38 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
         {
             WriteConsole($"{nameof(GetConfirmedInputs)} started");
 
-            var spendOutputIds = rawTransactions
-                .SelectMany(p => p.Inputs
-                    .Select(x => BalanceChangeIdGenerator.GenerateId(x.PrevOut.Hash.ToString(), x.PrevOut.N)))
+
+            var allInputIds = rawTransactions
+                .SelectMany(p => p.Inputs.Select(x => TransactionInputOutputIdGenerator.GenerateId(x.PrevOut.Hash.ToString(), x.PrevOut.N)))
                 .ToList();
 
-            var balanceChangesDictionary = new Dictionary<string, List<IBalanceChange>>();
+            var inputsTransactions = rawTransactions.SelectMany(
+                tx => tx.Inputs.Select(input => new {
+                    spentInputId = TransactionInputOutputIdGenerator.GenerateId(input.PrevOut.Hash.ToString(), input.PrevOut.N),
+                    txId = tx.GetHash().ToString()})
+                ).ToDictionary(p => p.spentInputId, p => p.txId);
 
-            var counter = 0;
-            //retry
-            do
+            var foundInputs = new Dictionary<string, ITransactionOutput>();
+
+            var notRetrievedIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
+
+            var outputs = await _confirmedOutputRepository.GetByIds(notRetrievedIds);
+
+            foreach (var foundOutput in outputs)
             {
-                var notRetrievedIds = spendOutputIds.Where(p => !balanceChangesDictionary.ContainsKey(p)).ToList();
+                foundInputs[foundOutput.Id] = foundOutput;
+            }
 
-                var retrievedOutputIds = await _confirmedOutputRepository.GetBalanceChanges(notRetrievedIds);
+            var notFoundInputIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
 
-                foreach (var groupedBalanceChanges in retrievedOutputIds.GroupBy(p=>p.Id))
-                {
-                    if (balanceChangesDictionary.ContainsKey(groupedBalanceChanges.Key))
-                    {
-                        balanceChangesDictionary[groupedBalanceChanges.Key].AddRange(groupedBalanceChanges);
-                    }
-                    else
-                    {
-                        balanceChangesDictionary.Add(groupedBalanceChanges.Key, groupedBalanceChanges.ToList());
-                    }
-                }
+            var failedTxIds = notFoundInputIds.Select(p => inputsTransactions[p]);
 
-                counter++;
-            } while (balanceChangesDictionary.Count != spendOutputIds.Count && counter <= 3);
+            var okTxIds = foundInputs.Keys.Select(p => inputsTransactions[p]);
 
-            var notFoundConfirmedIds = spendOutputIds.Where(p => !balanceChangesDictionary.ContainsKey(p)).ToList();
-            var failedTxIds = notFoundConfirmedIds.Select(BalanceChangeIdGenerator.GetTxId);
-            var okTxIds = balanceChangesDictionary.Values.SelectMany(p => p.Select(x => x.TxId));
-
-            var result =  GetBalanceChangesResult.Create(balanceChangesDictionary.SelectMany(p=>p.Value), okTxIds, failedTxIds);
-
+            var result =  GetBalanceChangesResult
+                .Create(foundInputs.Select(p => BalanceChange.CreateInput(foundOutput:p.Value, txId: inputsTransactions[p.Key])), 
+                    okTxIds, 
+                    failedTxIds);
 
             WriteConsole($"{nameof(GetConfirmedInputs)} done");
 
@@ -250,7 +266,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             var ninjaTransactions = await Retry.Try(async () => await _ninjaTransactionService.Get(rawTransactions.Select(p => p.GetHash()),
                     withRetrySchedule: false), maxTryCount: 5, logger: _log);
 
-            var balanceChanges =  ninjaTransactions.SelectMany(p => BalanceChange.CreateColored(p, _network));
+            var balanceChanges =  ninjaTransactions.SelectMany(p => BalanceChange.CreateColoredOutput(p, _network));
             
             WriteConsole($"{nameof(GetColoredChanges)} {rawTransactions.Count()} tx done");
 
@@ -273,41 +289,34 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
             public GetBalanceChangesResult Add(GetBalanceChangesResult added)
             {
-                return new GetBalanceChangesResult
-                {
-                    OkTxIds = OkTxIds.Union(added.OkTxIds).Distinct().ToList(),
-                    FailedTxIds = FailedTxIds.Union(added.FailedTxIds).Distinct().ToList(),
-                    FoundBalanceChanges = FoundBalanceChanges.Union(added.FoundBalanceChanges).ToList()
-                };
+                return GetBalanceChangesResult.Create(FoundBalanceChanges.Union(added.FoundBalanceChanges).ToList(),
+                    OkTxIds.Union(added.OkTxIds).Distinct().ToList(), 
+                    FailedTxIds.Union(added.FailedTxIds).Distinct().ToList());
             }
             public GetBalanceChangesResult Add(IEnumerable<IBalanceChange> added)
             {
-                return new GetBalanceChangesResult
-                {
-                    OkTxIds = OkTxIds.Union(added.Select(p => p.TxId)).Distinct().ToList(),
-                    FoundBalanceChanges = FoundBalanceChanges.Union(added).ToList(),
-                    FailedTxIds = FailedTxIds
-                };
+                return GetBalanceChangesResult.Create(FoundBalanceChanges.Union(FoundBalanceChanges.Union(added).ToList()),
+                    OkTxIds.Union(added.Select(p => p.TxId)).Distinct().ToList(),
+                    FailedTxIds = FailedTxIds.ToList());
             }
-
+            public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges)
+            {
+                return GetBalanceChangesResult.Create(foundBalanceChanges,
+                    foundBalanceChanges.Select(p => p.TxId),
+                    null);
+            }
 
             public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges,
                 IEnumerable<string> okTxIds, 
                 IEnumerable<string> failedTxIds)
             {
+                var failedTxIdDict = (failedTxIds ?? Enumerable.Empty<string>()).Distinct().ToDictionary(p => p);
                 return new GetBalanceChangesResult
                 {
                     FoundBalanceChanges = foundBalanceChanges,
-                    FailedTxIds = failedTxIds ?? Enumerable.Empty<string>(),
-                    OkTxIds = okTxIds ?? Enumerable.Empty<string>()
+                    FailedTxIds = failedTxIdDict.Values,
+                    OkTxIds = (okTxIds ?? Enumerable.Empty<string>()).Where(p => !failedTxIdDict.ContainsKey(p))
                 };
-            }
-
-            public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges)
-            {
-                return GetBalanceChangesResult.Create(foundBalanceChanges, 
-                    foundBalanceChanges.Select(p => p.TxId),
-                    null);
             }
         }
     }

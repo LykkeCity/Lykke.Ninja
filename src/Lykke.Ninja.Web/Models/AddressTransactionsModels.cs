@@ -99,8 +99,8 @@ namespace Lykke.Ninja.Web.Models
             return new InOutViewModel
             {
                 Address = output.DestinationAddress,
-                AssetId = isColored ? (output.ColoredData?.AssetId) : null,
-                Quantity = isColored ? (output.ColoredData?.Quantity) : null,
+                AssetId = isColored ? output.ColoredData?.AssetId : null,
+                Quantity = isColored ? output.ColoredData?.Quantity : null,
                 TransactionId = output.TransactionId,
                 Index = output.Index,
                 Value = output.BtcSatoshiAmount,
@@ -111,6 +111,49 @@ namespace Lykke.Ninja.Web.Models
                 IsColored = output.ColoredData != null
             };
         }
+
+        //todo
+        public static InOutViewModel CreateUnconfirmedSpend(
+            IBalanceChange balanceChange,
+            bool isColored,
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary)
+        {
+            return CreateUnconfirmed(balanceChange, isColored, network, scriptPubKeyDictionary);
+        }
+
+        //todo
+        public static InOutViewModel CreateUnconfirmedReceived(
+            IBalanceChange balanceChange,
+            bool isColored,
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary)
+        {
+            return CreateUnconfirmed(balanceChange, isColored, network, scriptPubKeyDictionary);
+        }
+
+        //todo
+        public static InOutViewModel CreateUnconfirmed(
+            IBalanceChange balanceChange,
+            bool isColored, 
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary)
+        {
+            return new InOutViewModel
+            {
+                Address = balanceChange.Address,
+                AssetId = isColored ? balanceChange.AssetId : null,
+                Quantity = isColored ? (long?)balanceChange.AssetQuantity : null,
+                TransactionId = balanceChange.TxId,
+                Index = balanceChange.Index,
+                Value = balanceChange.BtcSatoshiAmount,
+                ScriptPubKey = GetPubKeyCached(balanceChange.Address, network, scriptPubKeyDictionary),
+                OperationTransactionId = balanceChange.TxId,
+                IsColored = balanceChange.HasColoredData
+            };
+        }
+
+
 
         private static string GetPubKeyCached(string address, 
             Network network, 
