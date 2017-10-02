@@ -68,7 +68,7 @@ namespace Lykke.Ninja.BalanceJob.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(ScanNewBlocks), null, e);
-                await _slack.SendNotification(nameof(ScanNewBlocks), e.Message);
+                await _slack.SendError(nameof(ScanNewBlocks), e.Message);
                 throw;
             }
         }
@@ -89,7 +89,7 @@ namespace Lykke.Ninja.BalanceJob.BlockTasks
             catch (Exception e)
             {
                 await _log.WriteErrorAsync(nameof(BlockTasksProducerFunctions), nameof(PutFailedToQueueAgain), null, e);
-                await _slack.SendNotification(nameof(PutFailedToQueueAgain), e.Message);
+                await _slack.SendError(nameof(PutFailedToQueueAgain), e.Message);
                 throw;
             }
         }

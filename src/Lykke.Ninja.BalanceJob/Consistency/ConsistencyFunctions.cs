@@ -102,7 +102,7 @@ namespace Lykke.Ninja.BalanceJob.Consistency
                     {
                         var header = await _ninjaBlockService.GetBlockHeader(height);
 
-                        await _slack.SendNotification(nameof(ScanForNotFound), $"Parse Block {header.ToJson()}");
+                        await _slack.SendError(nameof(ScanForNotFound), $"Parse Block {header.ToJson()}");
                         await _parseBlockCommandFacade.ProcessCommand(
                             new ParseBlockCommandContext { BlockHeight = header.BlockHeight, BlockId = header.BlockId.ToString() });
                     }
