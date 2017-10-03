@@ -192,7 +192,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
         private async Task InsertChanges(IEnumerable<string> txIds)
         {
             var notFoundInputs = new List<GroupedTransactionInputs>();
-            foreach (var batch in txIds.Batch(1000, p => p.ToList()))
+            foreach (var batch in txIds.Batch(500, p => p.ToList()))
             {
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
 
@@ -251,15 +251,21 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                 ).ToDictionary(p => p.spentInputId, p => p.txId);
 
             var foundInputs = new Dictionary<string, ITransactionOutput>();
-
-            var notRetrievedIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
-
-            var outputs = await _confirmedOutputRepository.GetByIds(notRetrievedIds);
-
-            foreach (var foundOutput in outputs)
+            var counter = 0;
+            do
             {
-                foundInputs[foundOutput.Id] = foundOutput;
-            }
+                counter++;
+                var notRetrievedIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
+
+                var outputs = await _confirmedOutputRepository.GetByIds(notRetrievedIds);
+
+                foreach (var foundOutput in outputs)
+                {
+                    foundInputs[foundOutput.Id] = foundOutput;
+                }
+            } while (foundInputs.Count != allInputIds.Count && counter <= 3);
+
+
 
             var notFoundInputIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
 

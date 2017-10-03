@@ -416,13 +416,13 @@ namespace Lykke.Ninja.Repositories.Transactions
             return result.ToDictionary(p => p.addr, p => p.sum);
         }
 
-        public async Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids)
+        public async Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids, int timeoutSeconds)
         {
             await EnsureQueryIndexes();
 
             WriteConsole($"{nameof(GetByIds)} retrieving {ids.Count()} outputs started");
 
-            var result = await _collection.AsQueryable(new AggregateOptions() {MaxTime = TimeSpan.FromSeconds(60)})
+            var result = await _collection.AsQueryable(new AggregateOptions() {MaxTime = TimeSpan.FromSeconds(timeoutSeconds) })
                 .Where(p => ids.Contains(p.Id))
                 .ToListAsync();
             
