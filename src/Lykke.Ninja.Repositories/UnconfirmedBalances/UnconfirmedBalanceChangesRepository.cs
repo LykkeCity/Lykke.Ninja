@@ -177,7 +177,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            WriteConsole($"{nameof(PrepareCollection)} started. Ids {ids.Count()}");
+            WriteConsole($"{nameof(GetByIds)} started. Ids {ids.Count()}");
 
             IEnumerable<IBalanceChange> result;
 
@@ -193,7 +193,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             }
 
 
-            WriteConsole($"{nameof(PrepareCollection)} started. Ids  {result.Count()} of {ids.Count()}");
+            WriteConsole($"{nameof(GetByIds)} started. Ids  {result.Count()} of {ids.Count()}");
 
             return result;
         }

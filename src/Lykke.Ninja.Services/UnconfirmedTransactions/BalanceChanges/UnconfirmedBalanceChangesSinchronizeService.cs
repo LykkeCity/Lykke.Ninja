@@ -97,8 +97,8 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             {
                 Address = foundOutput.DestinationAddress,
                 AssetId = foundOutput.ColoredData?.AssetId,
-                AssetQuantity = foundOutput.ColoredData?.Quantity ?? 0,
-                BtcSatoshiAmount = foundOutput.BtcSatoshiAmount,
+                AssetQuantity = (foundOutput.ColoredData?.Quantity ?? 0) * (-1),
+                BtcSatoshiAmount = foundOutput.BtcSatoshiAmount * (-1),
                 TxId = txId,
                 Index = foundOutput.Index,
                 IsInput = true,
