@@ -572,7 +572,9 @@ namespace Lykke.Ninja.Repositories.Transactions
                 SetSupportSummaryQueryIndex(),
                 SetSupportGetReceivedQueryIndex(),
                 SetSupportGetSpendedQueryIndex(),
-                SetSupportAssetsStatsQueryIndex()
+                SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
+                SetSupportAssetsStatsAddressGroupingQueryIndex(),
+                SetSupportAssetsStatsTransactionsQueryIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -643,14 +645,74 @@ namespace Lykke.Ninja.Repositories.Transactions
             await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
         }
 
-        private async Task SetSupportAssetsStatsQueryIndex()
+        private async Task SetSupportAssetsStatsBlocksWithChangesQueryIndex()
         {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
             var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
             var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
             var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(asset, blockHeight, spentTxInputBlockHeight);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, spentTxInputBlockHeight);
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "AssetsStatsBlocksWithChanges",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
+                };
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
 
-            await _collection.Indexes.CreateOneAsync(combineIndex, new CreateIndexOptions { Background = true, Name = "SupportAssetStats", });
+        private async Task SetSupportAssetsStatsAddressGroupingQueryIndex()
+        {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.DestinationAddress);
+            var quantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.Quantity);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, isSpended, address, quantity);
+
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsAddressGrouping",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
+                };
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
+
+        private async Task SetSupportAssetsStatsTransactionsQueryIndex()
+        {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            var txId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.TransactionId);
+            var spendedTxId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.SpendedInTxId);
+
+            var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, spentTxInputBlockHeight, spendedTxId);
+            var outputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, txId);
+
+            var hasColoredDataFilterExpression =
+                Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true);
+
+            await _collection.Indexes.CreateOneAsync(inputsCombineIndex, 
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsTransactionsInputs",
+                    PartialFilterExpression = hasColoredDataFilterExpression
+                });
+
+            await _collection.Indexes.CreateOneAsync(outputsCombineIndex, 
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsTransactionsOutputs",
+                    PartialFilterExpression = hasColoredDataFilterExpression
+                });
         }
 
         #endregion
@@ -660,6 +722,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId));
 
             if (maxBlockHeight != null)
@@ -692,6 +755,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
                 .Where(output => assetIds.Contains(output.ColoredData.AssetId));
 
             var inputsQuery = query;
@@ -727,6 +791,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var outputsTxIds = await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
                 .OrderByDescending(p => p.BlockHeight)
                 .Select(p => p.TransactionId)
@@ -747,6 +812,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId));
 
             var getReceived = query.Where(p => p.BlockHeight == blockHeight)
@@ -794,6 +860,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             await EnsureQueryIndexes();
 
             var blockHeight = await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
                 .Select(p => new[] { p.BlockHeight, p.SpendTxInput.BlockHeight })
                 .SelectMany(p => p)
