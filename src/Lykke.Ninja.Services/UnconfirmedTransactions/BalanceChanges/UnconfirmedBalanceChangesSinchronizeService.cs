@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
@@ -105,6 +106,22 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                 SpendTxId = foundOutput.TransactionId
             };
         }
+
+        public static BalanceChange CreateInput(IBalanceChange spendOutput, string txId)
+        {
+            return new BalanceChange
+            {
+                Address = spendOutput.Address,
+                AssetId = spendOutput.AssetId,
+                SpendTxInput = spendOutput.Index,
+                SpendTxId = spendOutput.TxId,
+                AssetQuantity = spendOutput.AssetQuantity * (-1),
+                BtcSatoshiAmount = spendOutput.BtcSatoshiAmount * (-1),
+                Index = spendOutput.Index,
+                IsInput = true,
+                TxId = txId
+            };
+        }
     }
 
     public class UnconfirmedBalanceChangesSinchronizeService: IUnconfirmedBalanceChangesSinchronizeService
@@ -149,21 +166,32 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             return BalanceChangesSynchronizePlan.Create(getIdsToInsert.Result, getIdsToRemove.Result);
         }
 
+        #region Synchronyze
+
         public async Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan)
         {
             var insertChanges = InsertChanges(synchronizePlan.TxIdsToAdd);
             var removeChanges = RemoveChanges(synchronizePlan.TxIdsToRemove);
 
-            await Task.WhenAll(removeChanges, insertChanges);}
+            await Task.WhenAll(removeChanges, insertChanges);
+            
+        }
+
+        #region RemoveChanges
 
         private async Task RemoveChanges(IEnumerable<string> txIds)
         {
             await _balanceChangesRepository.Remove(txIds);
             await _unconfirmedStatusesRepository.SetRemovedProcessingStatus(txIds, RemoveProcessStatus.Processed);
         }
+        
+        #endregion
+
+        #region InsertChanges
 
         private async Task InsertChanges(IEnumerable<string> txIds)
         {
+            var notFoundInputs = new List<GroupedTransactionInputs>();
             foreach (var batch in txIds.Batch(1000, p => p.ToList()))
             {
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
@@ -177,11 +205,15 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
                 await Task.WhenAll(insertChanges, setFailed);
 
+                notFoundInputs.AddRange(insertChanges.Result.NotFoundTransactionInputs);
+
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} done");
             }
+
+            await InsertUnconfirmedInputs(notFoundInputs);
         }
 
-        private async Task InsertChangesInner(IEnumerable<Transaction> rawTxs)
+        private async Task<InsertChangesResult> InsertChangesInner(IEnumerable<Transaction> rawTxs)
         {
             var getConfirmedInputs = GetConfirmedInputs(rawTxs);
             var getOutputs = GetOutputs(rawTxs);
@@ -196,19 +228,23 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed);
 
             await Task.WhenAll(insertBalanceChanges, setDoneStatus, setFailedStatus);
+
+            return InsertChangesResult.Create(getConfirmedInputs.Result.NotFoundTransactionInputs);
         }
 
-
-        private async Task<GetBalanceChangesResult> GetConfirmedInputs(IEnumerable<Transaction> rawTransactions)
+        private async Task<GetConfirmedInputsResult> GetConfirmedInputs(IEnumerable<Transaction> rawTransactions)
         {
             WriteConsole($"{nameof(GetConfirmedInputs)} started");
 
+            var inputDictionary = rawTransactions.SelectMany(p => p.Inputs.Select(txIn => new
+            {
+                id = TransactionInputOutputIdGenerator.GenerateId(txIn.PrevOut.Hash.ToString(), txIn.PrevOut.N),
+                input = txIn
+            })).ToDictionary(p => p.id, p => p.input);
 
-            var allInputIds = rawTransactions
-                .SelectMany(p => p.Inputs.Select(x => TransactionInputOutputIdGenerator.GenerateId(x.PrevOut.Hash.ToString(), x.PrevOut.N)))
-                .ToList();
+            var allInputIds = inputDictionary.Keys;
 
-            var inputsTransactions = rawTransactions.SelectMany(
+            var txInputIdDictionary = rawTransactions.SelectMany(
                 tx => tx.Inputs.Select(input => new {
                     spentInputId = TransactionInputOutputIdGenerator.GenerateId(input.PrevOut.Hash.ToString(), input.PrevOut.N),
                     txId = tx.GetHash().ToString()})
@@ -227,20 +263,47 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
             var notFoundInputIds = allInputIds.Where(p => !foundInputs.ContainsKey(p)).ToList();
 
-            var failedTxIds = notFoundInputIds.Select(p => inputsTransactions[p]);
+            var failedTxIds = notFoundInputIds.Select(p => txInputIdDictionary[p]);
 
-            var okTxIds = foundInputs.Keys.Select(p => inputsTransactions[p]);
+            var okTxIds = foundInputs.Keys.Select(p => txInputIdDictionary[p]);
 
             var result =  GetBalanceChangesResult
-                .Create(foundInputs.Select(p => BalanceChange.CreateInput(foundOutput:p.Value, txId: inputsTransactions[p.Key])), 
+                .Create(foundInputs.Select(p => BalanceChange.CreateInput(foundOutput:p.Value, txId: txInputIdDictionary[p.Key])), 
                     okTxIds, 
                     failedTxIds);
 
             WriteConsole($"{nameof(GetConfirmedInputs)} done");
 
-            return result;
+            return GetConfirmedInputsResult.Create(result, 
+                GroupedTransactionInputs.Create(notFoundInputIds, 
+                    inpId=> txInputIdDictionary[inpId], 
+                    inpId => inputDictionary[inpId]));
         }
 
+        private async Task InsertUnconfirmedInputs(IEnumerable<GroupedTransactionInputs> groupedTxInputs)
+        {
+            var inputTransactions = groupedTxInputs
+                .SelectMany(p => p.Inputs.Select(x => new {input = x, txId = p.TransactionId}))
+                .ToDictionary(p => p.input.Id, p => p.txId);
+            var inputIds = groupedTxInputs.SelectMany(p => p.Inputs.Select(inp => inp.Id)).ToList();
+            var foundInputIds = (await _balanceChangesRepository.GetByIds(inputIds)).ToDictionary(p => p.Id);
+
+            var okTxIds  = new List<string>();
+
+            foreach (var tx in groupedTxInputs){
+                if (tx.Inputs.All(p => foundInputIds.ContainsKey(p.Id)))
+                {
+                    okTxIds.Add(tx.TransactionId);
+                }
+            }
+            var insertChanges =_balanceChangesRepository.Upsert(
+                foundInputIds.Values.Select(p =>BalanceChange.CreateInput(p, inputTransactions[p.Id])));
+            var setOkStatuses = _unconfirmedStatusesRepository.SetInsertStatus(okTxIds, InsertProcessStatus.Processed);
+
+            await Task.WhenAll(insertChanges, setOkStatuses);
+        }
+
+        #region GetOutputs
 
         private async Task<GetBalanceChangesResult> GetOutputs(IEnumerable<Transaction> rawTransactions)
         {
@@ -248,7 +311,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
             var uncoloredChanges = rawTransactions.Where(p => !p.HasValidColoredMarker())
                 .SelectMany(p => BalanceChange.CreateUncolored(p, _network));
-            var getColoredChanges = GetColoredChanges(rawTransactions.Where(p => p.HasValidColoredMarker()));
+            var getColoredChanges = GetColoredOutputs(rawTransactions.Where(p => p.HasValidColoredMarker()));
 
             await Task.WhenAll(getColoredChanges);
 
@@ -259,25 +322,23 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             return result;
         }
 
-        private async Task<GetBalanceChangesResult> GetColoredChanges(IEnumerable<Transaction> rawTransactions)
+        private async Task<GetBalanceChangesResult> GetColoredOutputs(IEnumerable<Transaction> rawTransactions)
         {
-            WriteConsole($"{nameof(GetColoredChanges)} {rawTransactions.Count()} tx started");
+            WriteConsole($"{nameof(GetColoredOutputs)} {rawTransactions.Count()} tx started");
 
             var ninjaTransactions = await Retry.Try(async () => await _ninjaTransactionService.Get(rawTransactions.Select(p => p.GetHash()),
                     withRetrySchedule: false), maxTryCount: 5, logger: _log);
 
             var balanceChanges =  ninjaTransactions.SelectMany(p => BalanceChange.CreateColoredOutput(p, _network));
             
-            WriteConsole($"{nameof(GetColoredChanges)} {rawTransactions.Count()} tx done");
+            WriteConsole($"{nameof(GetColoredOutputs)} {rawTransactions.Count()} tx done");
 
             return GetBalanceChangesResult.Create(balanceChanges);
         }
+        
+        #endregion
 
-        private void WriteConsole(string message)
-        {
-            _console.WriteLine($"{nameof(UnconfirmedBalanceChangesSinchronizeService)} {message}");
-        }
-
+        #region Classes
         private class GetBalanceChangesResult
         {
             public IEnumerable<string> OkTxIds { get; set; }
@@ -290,15 +351,17 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             public GetBalanceChangesResult Add(GetBalanceChangesResult added)
             {
                 return GetBalanceChangesResult.Create(FoundBalanceChanges.Union(added.FoundBalanceChanges).ToList(),
-                    OkTxIds.Union(added.OkTxIds).Distinct().ToList(), 
+                    OkTxIds.Union(added.OkTxIds).Distinct().ToList(),
                     FailedTxIds.Union(added.FailedTxIds).Distinct().ToList());
             }
+
             public GetBalanceChangesResult Add(IEnumerable<IBalanceChange> added)
             {
                 return GetBalanceChangesResult.Create(FoundBalanceChanges.Union(FoundBalanceChanges.Union(added).ToList()),
                     OkTxIds.Union(added.Select(p => p.TxId)).Distinct().ToList(),
                     FailedTxIds = FailedTxIds.ToList());
             }
+
             public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges)
             {
                 return GetBalanceChangesResult.Create(foundBalanceChanges,
@@ -307,7 +370,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
             }
 
             public static GetBalanceChangesResult Create(IEnumerable<IBalanceChange> foundBalanceChanges,
-                IEnumerable<string> okTxIds, 
+                IEnumerable<string> okTxIds,
                 IEnumerable<string> failedTxIds)
             {
                 var failedTxIdDict = (failedTxIds ?? Enumerable.Empty<string>()).Distinct().ToDictionary(p => p);
@@ -318,6 +381,87 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                     OkTxIds = (okTxIds ?? Enumerable.Empty<string>()).Where(p => !failedTxIdDict.ContainsKey(p))
                 };
             }
+        }
+
+        private class GetConfirmedInputsResult : GetBalanceChangesResult
+        {
+            //key tx id, values inputs for transactions
+            public IEnumerable<GroupedTransactionInputs> NotFoundTransactionInputs { get; set; }
+
+            public static GetConfirmedInputsResult Create(GetBalanceChangesResult getBalanceChangesResult,
+                IEnumerable<GroupedTransactionInputs> notFoundTransactionInputs)
+            {
+                return new GetConfirmedInputsResult
+                {
+                    OkTxIds = getBalanceChangesResult.OkTxIds,
+                    FailedTxIds = getBalanceChangesResult.FailedTxIds,
+                    FoundBalanceChanges = getBalanceChangesResult.FoundBalanceChanges,
+                    NotFoundTransactionInputs = notFoundTransactionInputs
+                };
+            }
+        }
+
+        private class InsertChangesResult
+        {
+            //key tx id, values inputs for transactions
+            public IEnumerable<GroupedTransactionInputs> NotFoundTransactionInputs { get; set; }
+
+            public static InsertChangesResult Create(IEnumerable<GroupedTransactionInputs> notFoundTransactionInputs)
+            {
+                return new InsertChangesResult
+                {
+                    NotFoundTransactionInputs = notFoundTransactionInputs
+                };
+            }
+        }
+
+        private class GroupedTransactionInputs
+        {
+            public string TransactionId { get; set; }
+
+            public IEnumerable<Input> Inputs { get; set; }
+
+            public static IEnumerable<GroupedTransactionInputs> Create(IEnumerable<string> inputIds,
+                Func<string, string> getTxIdFromInputId, Func<string, TxIn> getInputFromInputId)
+            {
+                var result = inputIds.Select(inputId => new { inputId, txId = getTxIdFromInputId(inputId), input = getInputFromInputId(inputId) }).ToList()
+                    .GroupBy(p => p.txId).Select(p => new GroupedTransactionInputs
+                    {
+                        TransactionId = p.Key,
+                        Inputs = p.Select(x=> Input.Create(x.input))
+                    });
+
+                return result;
+            }
+
+            public class Input
+            {
+                public string PrevTxId { get; set; }
+                public ulong Index { get; set; }
+
+                public string Id { get; set; }
+
+                public static Input Create(TxIn txIn)
+                {
+
+                    return new Input
+                    {
+                        Index = txIn.PrevOut.N,
+                        PrevTxId = txIn.PrevOut.Hash.ToString(),
+                        Id = BalanceChangeIdGenerator.GenerateId(txIn.PrevOut.Hash.ToString(), txIn.PrevOut.N)
+                    };
+                }
+            }
+        }
+        #endregion
+
+        #endregion
+        
+        #endregion
+
+        private void WriteConsole(string message)
+        {
+            _console.WriteLine($"{nameof(UnconfirmedBalanceChangesSinchronizeService)} {message}");
         }
     }
 }

@@ -48,24 +48,20 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
             if (items.Any())
             {
-                foreach (var b in items.Batch(1))
+                var updates = items.Select(p => new ReplaceOneModel<BalanceChangeMongoEntity>(
+                        Builders<BalanceChangeMongoEntity>.Filter.Eq(x => x.Id, p.Id),
+                        BalanceChangeMongoEntity.Create(p))
+                    { IsUpsert = true });
+
+                try
                 {
-                    var updates = b.Select(p => new ReplaceOneModel<BalanceChangeMongoEntity>(
-                            Builders<BalanceChangeMongoEntity>.Filter.Eq(x => x.Id, p.Id),
-                            BalanceChangeMongoEntity.Create(p))
-                        { IsUpsert = true });
-
-                    try
-                    {
-                        await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                        throw;
-                    }
+                    await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
                 }
-
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
@@ -175,6 +171,31 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => !p.IsInput);
 
             return await query.ToListAsync();
+        }
+
+        public async Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids)
+        {
+            await EnsureCollectionPrepared();
+
+            WriteConsole($"{nameof(PrepareCollection)} started. Ids {ids.Count()}");
+
+            IEnumerable<IBalanceChange> result;
+
+            if (ids.Any())
+            {
+                result =  await _collection.AsQueryable(_defaultAggregateOptions)
+                    .Where(p => ids.Contains(p.Id))
+                    .ToListAsync();
+            }
+            else
+            {
+                result = Enumerable.Empty<IBalanceChange>();
+            }
+
+
+            WriteConsole($"{nameof(PrepareCollection)} started. Ids  {result.Count()} of {ids.Count()}");
+
+            return result;
         }
 
         private Task EnsureCollectionPrepared()

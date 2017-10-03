@@ -27,7 +27,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
     public static class BalanceChangeIdGenerator
     {
-        public static string GenerateId(string txId, ulong index, string spendTxId)
+        public static string GenerateId(string txId, ulong index, string spendTxId = null)
         {
             return $"{txId}_{index}_{spendTxId}";
         }
@@ -55,5 +55,8 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
         Task<IEnumerable<IBalanceChange>> GetSpended(string address);
 
         Task<IEnumerable<IBalanceChange>> GetReceived(string address);
+
+        Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids);
+
     }
 }
