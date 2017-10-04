@@ -56,7 +56,9 @@ namespace Lykke.Ninja.Web.Models
             IEnumerable<IBlockStatus> processingBlocks,
             INinjaBlockHeader ninjaTop,
             int lastSuccesfullyProcessedBlockHeight,
-            long failedUnconfirmedTxCount)
+            long failedUnconfirmedTxCount,
+            long allTxCount,
+            long waitingTxCount)
         {
             return new HealthCheckViewModel
             {
@@ -72,7 +74,7 @@ namespace Lykke.Ninja.Web.Models
                 WaitingInputsCount = waitingInputsCount,
                 ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create),
                 NinjaTopLag = ninjaTop.BlockHeight - lastSuccesfullyProcessedBlockHeight,
-                Unconfirmed = UnconfirmedReportViewModel.Create(failedUnconfirmedTxCount)
+                Unconfirmed = UnconfirmedReportViewModel.Create(failedUnconfirmedTxCount, allTxCount, waitingTxCount)
             };
         }
     }
@@ -127,13 +129,19 @@ namespace Lykke.Ninja.Web.Models
 
     public class UnconfirmedReportViewModel
     {
+        public long AllTxCount { get; set; }
+        public long WaitingTxCount { get; set; }
         public long FailedTxCount { get; set; }
 
-        public static UnconfirmedReportViewModel Create(long failedTxCount)
+        public static UnconfirmedReportViewModel Create(long failedTxCount,
+            long allTxCount,
+            long waitingTxCount)
         {
             return new UnconfirmedReportViewModel
             {
-                FailedTxCount = failedTxCount
+                FailedTxCount = failedTxCount,
+                AllTxCount = allTxCount,
+                WaitingTxCount = waitingTxCount
             };
         }
     }

@@ -16,8 +16,6 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
     public class UnconfirmedBalanceChangesRepository: IUnconfirmedBalanceChangesRepository
     {
         private readonly IMongoCollection<BalanceChangeMongoEntity> _collection;
-        private readonly IMongoDatabase _db;
-        private readonly BaseSettings _baseSettings;
 
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
@@ -25,15 +23,14 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
         public UnconfirmedBalanceChangesRepository(BaseSettings settings, IConsole console)
         {
-            _baseSettings = settings;
             _console = console;
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
 
             var client = new MongoClient(settings.UnconfirmedNinjaData.ConnectionString);
-            _db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
+            var db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
 
             _collection =
-                _db.GetCollection<BalanceChangeMongoEntity>(BalanceChangeMongoEntity
+                db.GetCollection<BalanceChangeMongoEntity>(BalanceChangeMongoEntity
                     .CollectionName);
             _defaultAggregateOptions = new AggregateOptions { MaxTime = TimeSpan.FromSeconds(35) };
         }

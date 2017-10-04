@@ -63,6 +63,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
         Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status);
         Task Remove(IEnumerable<string> txIds, RemoveProcessStatus status);
         Task<IEnumerable<string>> GetAllTxIds();
+        Task<long> GetAllTxCount();
         Task<IEnumerable<string>> GetNotRemovedTxIds(params InsertProcessStatus[] status);
         Task<long> GetNotRemovedTxCount(params InsertProcessStatus[] status);
         Task<IEnumerable<string>> GetRemovedTxIds(params RemoveProcessStatus[] status);

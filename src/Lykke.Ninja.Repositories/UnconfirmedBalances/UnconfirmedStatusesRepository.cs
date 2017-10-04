@@ -15,7 +15,6 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
     public class UnconfirmedStatusesRepository: IUnconfirmedStatusesRepository
     {
         private readonly IMongoCollection<TransactionStatusMongoEntity> _collection;
-        private readonly IMongoDatabase _db;
 
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
@@ -26,10 +25,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
 
             var client = new MongoClient(settings.UnconfirmedNinjaData.ConnectionString);
-            _db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
+            var db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
 
             _collection =
-                _db.GetCollection<TransactionStatusMongoEntity>(TransactionStatusMongoEntity
+                db.GetCollection<TransactionStatusMongoEntity>(TransactionStatusMongoEntity
                     .CollectionName);
         }
 
@@ -95,6 +94,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return await _collection.AsQueryable().Where(p => !p.Removed).Select(p => p.TxId).ToListAsync();
         }
 
+        public async Task<long> GetAllTxCount()
+        {
+            await EnsureCollectionPrepared();
+            return await _collection.AsQueryable().Where(p => !p.Removed).CountAsync();
+        }
+
         public async Task<IEnumerable<string>> GetNotRemovedTxIds(InsertProcessStatus[] statuses)
         {
             var numStatuses = statuses.Select(p=>(int)p);
@@ -112,7 +117,6 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return await _collection.AsQueryable()
                 .Where(p => numStatuses.Contains(p.InsertProcessStatus))
                 .Where(p => !p.Removed)
-                .Select(p => p.TxId)
                 .CountAsync();}
 
         public async Task<IEnumerable<string>> GetRemovedTxIds(RemoveProcessStatus[] statuses)

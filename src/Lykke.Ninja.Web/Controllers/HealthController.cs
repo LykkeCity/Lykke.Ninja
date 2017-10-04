@@ -55,8 +55,10 @@ namespace Lykke.Ninja.Web.Controllers
                 _blockStatusesRepository.GetList(BlockProcessingStatus.Started, itemsToTake: showLastItemsCount);
             var getLastSuccesfullyProcessedBlockHeight =
                 _blockStatusesRepository.GetLastBlockHeight(BlockProcessingStatus.Done);
-            var getFailedUnconfirmedTxCount =
-                _unconfirmedStatusesRepository.GetNotRemovedTxCount(InsertProcessStatus.Failed);
+
+            var getFailedUnconfirmedTxCount = _unconfirmedStatusesRepository.GetNotRemovedTxCount(InsertProcessStatus.Failed);
+            var getAllTxCount = _unconfirmedStatusesRepository.GetAllTxCount();
+            var getWaitingUnconfirmedTxCount = _unconfirmedStatusesRepository.GetNotRemovedTxCount(InsertProcessStatus.Waiting);
 
             await Task.WhenAll(getQueuedCount, 
                 getLastQueuedBlock, 
@@ -71,7 +73,9 @@ namespace Lykke.Ninja.Web.Controllers
                 getProccessingBlocks,
                 getNinjaTopHeader, 
                 getLastSuccesfullyProcessedBlockHeight,
-                getFailedUnconfirmedTxCount);
+                getFailedUnconfirmedTxCount, 
+                getAllTxCount,
+                getWaitingUnconfirmedTxCount);
 
             return HealthCheckViewModel.Create(getQueuedCount.Result, 
                 getLastQueuedBlock.Result, 
@@ -86,7 +90,9 @@ namespace Lykke.Ninja.Web.Controllers
                 getProccessingBlocks.Result,
                 getNinjaTopHeader.Result,
                 getLastSuccesfullyProcessedBlockHeight.Result,
-                getFailedUnconfirmedTxCount.Result);
+                getFailedUnconfirmedTxCount.Result,
+                getAllTxCount.Result,
+                getWaitingUnconfirmedTxCount.Result);
         }
     }
 }
