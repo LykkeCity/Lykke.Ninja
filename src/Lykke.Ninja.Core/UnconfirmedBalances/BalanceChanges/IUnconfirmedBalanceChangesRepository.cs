@@ -58,5 +58,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
         Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids);
 
+        Task UpdateExpiration();
     }
 }

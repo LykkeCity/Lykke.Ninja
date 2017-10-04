@@ -223,6 +223,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return result;
         }
 
+        public async Task UpdateExpiration()
+        {
+            await EnsureCollectionPrepared();
+            await _collection.UpdateManyAsync(p => !p.Removed, Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow));
+        }
+
         private Task EnsureCollectionPrepared()
         {
             return _collectionPreparedLocker.Value;
