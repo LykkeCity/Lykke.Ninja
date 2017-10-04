@@ -184,7 +184,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             var changed = Builders<TransactionStatusMongoEntity>.IndexKeys.Descending(p => p.Changed);
 
-            await _collection.Indexes.CreateOneAsync(changed, new CreateIndexOptions { ExpireAfter = TimeSpan.FromDays(1) });
+            await _collection.Indexes.CreateOneAsync(changed, new CreateIndexOptions { ExpireAfter = TimeSpan.FromHours(3) });
         }
     }
 
