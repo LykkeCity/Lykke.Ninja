@@ -294,6 +294,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         [BsonElement("sptxind")]
         public ulong? SpendTxInput { get; set; }
 
+        [BsonElement("chng")]
+        public DateTime Changed { get; set; }
+
         public static BalanceChangeMongoEntity Create(IBalanceChange source)
         {
             return new BalanceChangeMongoEntity
@@ -309,7 +312,8 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 HasColoredData = source.HasColoredData,
                 AssetQuantity = source.AssetQuantity,
                 SpendTxInput = source.SpendTxInput,
-                SpendTxId = source.SpendTxId
+                SpendTxId = source.SpendTxId,
+                Changed = DateTime.UtcNow
             };
         }
     }
