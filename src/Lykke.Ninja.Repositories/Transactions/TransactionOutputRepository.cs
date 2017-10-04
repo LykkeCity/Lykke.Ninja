@@ -366,7 +366,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .SumAsync(p => p.BtcSatoshiAmount);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null)
+        public async Task<IReadOnlyDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null)
         {
             await EnsureQueryIndexes();
 
@@ -388,7 +388,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             return result.ToDictionary(p => p.assetId, p => p.sum);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null)
+        public async Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null)
         {
             await EnsureQueryIndexes();
 

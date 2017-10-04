@@ -48,13 +48,13 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
         Task<long> GetBtcReceivedSummary(string address, bool isColored = false);
 
-        Task<IDictionary<string, long>> GetAssetsReceived(string address);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsReceived(string address);
 
-        Task<IDictionary<string, long>> GetAssetsAmount(string address);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(string address);
 
-        Task<IEnumerable<IBalanceChange>> GetSpended(string address);
+        Task<IEnumerable<IBalanceChange>> GetSpended(string address, bool isColored = false);
 
-        Task<IEnumerable<IBalanceChange>> GetReceived(string address);
+        Task<IEnumerable<IBalanceChange>> GetReceived(string address, bool isColored = false);
 
         Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids);
 

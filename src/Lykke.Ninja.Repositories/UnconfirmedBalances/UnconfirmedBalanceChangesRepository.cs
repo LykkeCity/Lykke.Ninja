@@ -104,6 +104,11 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => !p.Removed)
                 .Where(p => p.Address == address);
 
+            if (isColored)
+            {
+                query = query.Where(p => !p.HasColoredData);
+            }
+
             return await query.SumAsync(p => p.BtcSatoshiAmount);
         }
 
@@ -116,10 +121,15 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => p.Address == address)
                 .Where(p => !p.IsInput);
 
+            if (isColored)
+            {
+                query = query.Where(p => !p.HasColoredData);
+            }
+
             return await query.SumAsync(p => p.BtcSatoshiAmount);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsReceived(string address)
+        public async Task<IReadOnlyDictionary<string, long>> GetAssetsReceived(string address)
         {
             await EnsureCollectionPrepared();
 
@@ -134,10 +144,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .ToListAsync();
 
 
-            return result.Where(p => string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
+            return result.Where(p => !string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
         }
 
-        public async Task<IDictionary<string, long>> GetAssetsAmount(string address)
+        public async Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(string address)
         {
             await EnsureCollectionPrepared(); 
 
@@ -151,10 +161,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .ToListAsync();
 
 
-            return result.Where(p => string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
+            return result.Where(p => !string.IsNullOrEmpty(p.assetId)).ToDictionary(p => p.assetId, p => p.sum);
         }
 
-        public async Task<IEnumerable<IBalanceChange>> GetSpended(string address)
+        public async Task<IEnumerable<IBalanceChange>> GetSpended(string address, bool isColored)
         {
             await EnsureCollectionPrepared();
 
@@ -163,10 +173,15 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => p.Address == address)
                 .Where(p => p.IsInput);
 
+            if (isColored)
+            {
+                query = query.Where(p => !p.HasColoredData);
+            }
+
             return await query.ToListAsync();
         }
 
-        public async Task<IEnumerable<IBalanceChange>> GetReceived(string address)
+        public async Task<IEnumerable<IBalanceChange>> GetReceived(string address, bool isColored)
         {
             await EnsureCollectionPrepared();
 
@@ -174,6 +189,11 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => !p.Removed)
                 .Where(p => p.Address == address)
                 .Where(p => !p.IsInput);
+
+            if (isColored)
+            {
+                query = query.Where(p => !p.HasColoredData);
+            }
 
             return await query.ToListAsync();
         }
@@ -235,9 +255,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             var removed = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.Removed);
             var addr = Builders<BalanceChangeMongoEntity>.IndexKeys.Descending(p => p.Address);
             var isInput = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.IsInput);
+            var hasColoredData = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.HasColoredData);
 
 
-            var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(removed, addr, isInput);
+            var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(removed, addr, isInput, hasColoredData);
             await _collection.Indexes.CreateOneAsync(combine, 
                 new CreateIndexOptions<BalanceChangeMongoEntity>
                 {

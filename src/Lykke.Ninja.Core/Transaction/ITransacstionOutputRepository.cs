@@ -68,9 +68,9 @@ namespace Lykke.Ninja.Core.Transaction
 
         Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
-        Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
 
-        Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
 
         Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids, int timeoutSeconds = 240);
 
