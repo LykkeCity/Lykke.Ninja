@@ -38,18 +38,16 @@ namespace Lykke.Ninja.Services.Bitcoin
             var tasksToAwait = new List<Task>();
             var result = new ConcurrentBag<Transaction>();
             
-            WriteConsole($"Retrieving  txs started");
+            WriteConsole($"Retrieving  txs {txIds.Count()} started");
 
             foreach (var txId in txIds)
             {
                 tasksToAwait.Add(PutRawTransactionInBag(txId, result));
             }
             
-
-            
             await Task.WhenAll(tasksToAwait).ConfigureAwait(false);
 
-            WriteConsole($"Retrieving txs done");
+            WriteConsole($"Retrieving txs {result.Count} of {txIds.Count()} done");
             return result;
         }
 
@@ -59,12 +57,7 @@ namespace Lykke.Ninja.Services.Bitcoin
             var tx = await GetRawTransaction(txId).ConfigureAwait(false);
             if (tx != null)
             {
-                WriteConsole($"{txId} Retrieving done.");
                 transactions.Add(tx);
-            }
-            else
-            {
-                WriteConsole($"{txId} Not found.");
             }
         }
         
