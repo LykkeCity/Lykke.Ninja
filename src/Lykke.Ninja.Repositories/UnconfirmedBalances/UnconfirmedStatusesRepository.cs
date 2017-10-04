@@ -16,14 +16,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
     {
         private readonly IMongoCollection<TransactionStatusMongoEntity> _collection;
         private readonly IMongoDatabase _db;
-        private readonly BaseSettings _baseSettings;
 
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
 
         public UnconfirmedStatusesRepository(BaseSettings settings, IConsole console)
         {
-            _baseSettings = settings;
             _console = console;
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
 
@@ -106,6 +104,16 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Select(p => p.TxId)
                 .ToListAsync();
         }
+
+        public async Task<long> GetNotRemovedTxCount(params InsertProcessStatus[] statuses)
+        {
+            var numStatuses = statuses.Select(p => (int)p);
+
+            return await _collection.AsQueryable()
+                .Where(p => numStatuses.Contains(p.InsertProcessStatus))
+                .Where(p => !p.Removed)
+                .Select(p => p.TxId)
+                .CountAsync();}
 
         public async Task<IEnumerable<string>> GetRemovedTxIds(RemoveProcessStatus[] statuses)
         {
