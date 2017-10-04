@@ -77,7 +77,8 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.Address == address)
                 .Where(p=>!p.Removed);
 
             return await query.Select(p => p.TxId).Distinct().CountAsync();
@@ -87,8 +88,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => !p.Removed)
+                .Where(p => p.Address == address)
                 .Where(p => p.IsInput);
 
             return await query.Select(p => p.TxId).Distinct().CountAsync();
@@ -98,8 +100,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
-                .Where(p => !p.Removed);
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => !p.Removed)
+                .Where(p => p.Address == address);
 
             return await query.SumAsync(p => p.BtcSatoshiAmount);
         }
@@ -108,8 +111,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => !p.Removed)
+                .Where(p => p.Address == address)
                 .Where(p => !p.IsInput);
 
             return await query.SumAsync(p => p.BtcSatoshiAmount);
@@ -119,8 +123,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => !p.Removed)
+                .Where(p => p.Address == address)
                 .Where(p => !p.IsInput);
 
             var result = await query
@@ -136,8 +141,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared(); 
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
-                .Where(p => !p.Removed);
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => !p.Removed)
+                .Where(p => p.Address == address);
 
             var result = await query
                 .GroupBy(p => p.AssetId)
@@ -152,9 +158,10 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => !p.Removed)
-                .Where(p=>p.IsInput);
+                .Where(p => p.Address == address)
+                .Where(p => p.IsInput);
 
             return await query.ToListAsync();
         }
@@ -163,8 +170,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            var query = _collection.AsQueryable(_defaultAggregateOptions).Where(p => p.Address == address)
+            var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => !p.Removed)
+                .Where(p => p.Address == address)
                 .Where(p => !p.IsInput);
 
             return await query.ToListAsync();
@@ -224,13 +232,17 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
         private async Task SetCommonIndex()
         {
+            var removed = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.Removed);
             var addr = Builders<BalanceChangeMongoEntity>.IndexKeys.Descending(p => p.Address);
-            var isSpended = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.Removed);
             var isInput = Builders<BalanceChangeMongoEntity>.IndexKeys.Ascending(p => p.IsInput);
 
 
-            var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(addr, isSpended, isInput);
-            await _collection.Indexes.CreateOneAsync(combine);
+            var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(removed, addr, isInput);
+            await _collection.Indexes.CreateOneAsync(combine, 
+                new CreateIndexOptions<BalanceChangeMongoEntity>
+                {
+                    PartialFilterExpression = Builders<BalanceChangeMongoEntity>.Filter.Eq(p => p.Removed, false)
+                });
         }
 
         private async Task SetExpirationIndex()
