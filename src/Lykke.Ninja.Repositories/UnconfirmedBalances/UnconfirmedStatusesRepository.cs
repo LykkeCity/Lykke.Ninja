@@ -61,7 +61,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue).Set(p=>p.LastStatusChange, DateTime.Now));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue).Set(p=>p.Changed, DateTime.Now));
             }
 
             WriteConsole($"{nameof(SetInsertStatus)} {status.ToString()} done");
@@ -75,7 +75,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue).Set(p => p.LastStatusChange, DateTime.Now));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue).Set(p => p.Changed, DateTime.Now));
             }
         }
 
@@ -125,25 +125,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             WriteConsole($"{nameof(PrepareCollection)} started");
 
-            if (!await _db.IsCollectionExistsAsync(TransactionStatusMongoEntity.CollectionName))
-            {
-                await _db.CreateCollectionAsync(
-                    TransactionStatusMongoEntity.CollectionName,
-                    new CreateCollectionOptions
-                    {
-                        Capped = true,
-                        MaxDocuments = _baseSettings.UnconfirmedNinjaData.StatusesCappedCollectionMaxDocuments,
-                        MaxSize = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxSize
-
-                    });
-            }
-
-
             var setIndexes = new[]
             {
                 SetConfirmedIndex(),
                 SetInsertProcessStatusQueryIndexIndex(),
-                SetRemoveProcessStatusQueryIndex()
+                SetRemoveProcessStatusQueryIndex(),
+                SetExpirationIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -180,6 +167,13 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
             await _collection.Indexes.CreateOneAsync(combine);
         }
+
+        private async Task SetExpirationIndex()
+        {
+            var changed = Builders<TransactionStatusMongoEntity>.IndexKeys.Descending(p => p.Changed);
+
+            await _collection.Indexes.CreateOneAsync(changed, new CreateIndexOptions { ExpireAfter = TimeSpan.FromDays(1) });
+        }
     }
 
     public class TransactionStatusMongoEntity: ITransactionStatus
@@ -194,7 +188,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         public DateTime Created { get; set; }
 
         [BsonElement("chng")]
-        public DateTime LastStatusChange { get; set; }
+        public DateTime Changed { get; set; }
 
         [BsonElement("rem")]
         public bool Removed { get; set; }
@@ -214,7 +208,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 Removed = source.Removed,
                 Created = source.Created,
-                LastStatusChange = source.LastStatusChange,
+                Changed = source.Changed,
                 InsertProcessStatus = (int) source.InsertProcessStatus,
                 RemoveProcessStatus = (int) source.RemoveProcessStatus,
                 TxId = source.TxId

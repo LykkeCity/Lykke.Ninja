@@ -11,7 +11,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
 
         DateTime Created { get; }
 
-        DateTime LastStatusChange { get; }
+        DateTime Changed { get; }
 
         bool Removed { get; }
 
@@ -23,7 +23,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
     {
         public string TxId { get; set; }
         public DateTime Created { get; set; }
-        public DateTime LastStatusChange { get; set; }
+        public DateTime Changed { get; set; }
         public bool Removed { get; set; }
         public InsertProcessStatus InsertProcessStatus { get; set; }
         public RemoveProcessStatus RemoveProcessStatus { get; set; }
@@ -33,7 +33,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
             {
                 Removed = false,
                 Created = DateTime.Now,
-                LastStatusChange = DateTime.Now,
+                Changed = DateTime.Now,
                 TxId = txId,
                 InsertProcessStatus = InsertProcessStatus.Waiting,
                 RemoveProcessStatus = RemoveProcessStatus.Unconfirmed

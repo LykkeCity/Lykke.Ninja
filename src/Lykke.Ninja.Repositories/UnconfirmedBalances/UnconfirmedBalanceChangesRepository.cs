@@ -206,25 +206,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         private async Task PrepareCollection()
         {
             WriteConsole($"{nameof(PrepareCollection)} started");
-
-            if (!await _db.IsCollectionExistsAsync(BalanceChangeMongoEntity.CollectionName))
-            {
-                await _db.CreateCollectionAsync(
-                    BalanceChangeMongoEntity.CollectionName,
-                    new CreateCollectionOptions
-                    {
-                        Capped = true,
-                        MaxDocuments = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxDocuments,
-                        MaxSize = _baseSettings.UnconfirmedNinjaData.ChangesCappedCollectionMaxSize,
-                        
-
-                    });
-            }
             
             var setIndexes = new[]
             {
                 SetTxIdIndex(),
-                SetCommonIndex()
+                SetCommonIndex(),
+                SetExpirationIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -247,6 +234,13 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
             var combine = Builders<BalanceChangeMongoEntity>.IndexKeys.Combine(addr, isSpended, isInput);
             await _collection.Indexes.CreateOneAsync(combine);
+        }
+
+        private async Task SetExpirationIndex()
+        {
+            var changed = Builders<BalanceChangeMongoEntity>.IndexKeys.Descending(p => p.Changed);
+            
+            await _collection.Indexes.CreateOneAsync(changed, new CreateIndexOptions{ ExpireAfter = TimeSpan.FromDays(1)});
         }
 
         private void WriteConsole(string message)
