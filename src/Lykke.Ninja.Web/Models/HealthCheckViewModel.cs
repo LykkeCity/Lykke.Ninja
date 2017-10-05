@@ -22,6 +22,8 @@ namespace Lykke.Ninja.Web.Models
         public int NinjaTopLag { get; set; }
         public bool ConsistencyOk => NotFoundInputsCount == 0 && FailedBlocksCount == 0;
 
+        public UnconfirmedReportViewModel Unconfirmed { get; set; }
+
         public long FailedBlocksCount { get; set; }
         public long QueuedBlocksCount { get; set; }
         public long NotFoundInputsCount { get; set; }
@@ -40,7 +42,7 @@ namespace Lykke.Ninja.Web.Models
 
 
         public IEnumerable<TransactionInputViewModel> NotFoundInputs { get; set; }
-
+        
         public static HealthCheckViewModel Create(int parseBlockTasksQueuedCount, 
             IBlockStatus lastQueuedBlock,
             IEnumerable<ITransactionInput> waitingInputs,
@@ -53,7 +55,10 @@ namespace Lykke.Ninja.Web.Models
             long queuedBlocksCount,
             IEnumerable<IBlockStatus> processingBlocks,
             INinjaBlockHeader ninjaTop,
-            int lastSuccesfullyProcessedBlockHeight)
+            int lastSuccesfullyProcessedBlockHeight,
+            long failedUnconfirmedTxCount,
+            long allTxCount,
+            long waitingTxCount)
         {
             return new HealthCheckViewModel
             {
@@ -68,7 +73,8 @@ namespace Lykke.Ninja.Web.Models
                 NotFoundInputsCount = notFoundInputsCount,
                 WaitingInputsCount = waitingInputsCount,
                 ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create),
-                NinjaTopLag = ninjaTop.BlockHeight - lastSuccesfullyProcessedBlockHeight
+                NinjaTopLag = ninjaTop.BlockHeight - lastSuccesfullyProcessedBlockHeight,
+                Unconfirmed = UnconfirmedReportViewModel.Create(failedUnconfirmedTxCount, allTxCount, waitingTxCount)
             };
         }
     }
@@ -117,6 +123,25 @@ namespace Lykke.Ninja.Web.Models
                 Id = source.Id,
                 Index = source.Index,
                 TransactionId = source.TransactionId
+            };
+        }
+    }
+
+    public class UnconfirmedReportViewModel
+    {
+        public long AllTxCount { get; set; }
+        public long WaitingTxCount { get; set; }
+        public long FailedTxCount { get; set; }
+
+        public static UnconfirmedReportViewModel Create(long failedTxCount,
+            long allTxCount,
+            long waitingTxCount)
+        {
+            return new UnconfirmedReportViewModel
+            {
+                FailedTxCount = failedTxCount,
+                AllTxCount = allTxCount,
+                WaitingTxCount = waitingTxCount
             };
         }
     }

@@ -23,6 +23,12 @@ namespace Lykke.Ninja.Core.Settings
         [Required]
         public MongoCredentials NinjaData { get; set; }
 
+        [Required]
+        public UnconfirmedBalancesMongoCredentials UnconfirmedNinjaData { get; set; }
+
+        [Required]
+        public BitcoinRpcSettings BitcoinRpc { get; set; }
+
         public int MaxParseBlockQueuedCommandCount { get; set; } = 25;
 
         public ProxySettings Proxy { get; set; }
@@ -30,6 +36,14 @@ namespace Lykke.Ninja.Core.Settings
         public InitialParserSettings InitialParser { get; set; }
 
         public int MaxNinjaTopBlockDelay { get; set; } = 10;
+    }
+
+    public class BitcoinRpcSettings
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string IpAddress { get; set; }
+
     }
 
     public class DbSettings
@@ -71,5 +85,14 @@ namespace Lykke.Ninja.Core.Settings
 
         [Required]
         public string DbName { get; set; }
+    }
+
+    public class UnconfirmedBalancesMongoCredentials: MongoCredentials
+    {
+        public int StatusesCappedCollectionMaxDocuments { get; set; } = 300000;
+        public int StatusesCappedCollectionMaxSize { get; set; } = 1024000000;
+
+        public int ChangesCappedCollectionMaxDocuments { get; set; } = 1200000;
+        public int ChangesCappedCollectionMaxSize { get; set; } = 1024000000;
     }
 }

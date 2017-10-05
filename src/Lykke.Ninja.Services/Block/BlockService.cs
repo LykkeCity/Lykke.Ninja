@@ -21,6 +21,8 @@ namespace Lykke.Ninja.Services.Block
         {
             return $"{transactionId}_{index}";
         }
+
+
     }
 
     #endregion
@@ -222,7 +224,7 @@ namespace Lykke.Ninja.Services.Block
                 var warnMessage = "Failed to set spended outputs " +
                                   $"Failed inputs count {setSpendedResult.NotFound.Count()}";
 
-                await _notificationsProducer.SendNotification(
+                await _notificationsProducer.SendError(
                     nameof(InsertDataInDb),
                     warnMessage);
 

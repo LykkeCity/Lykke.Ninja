@@ -6,5 +6,6 @@
         public const string SlackNotifications = "slack-notifications";
         public const string AddressesToFix = "addresses-to-fix";
         public const string ScanNotFounds = "scan-not-founds";
+        public const string SynchronizeChanges = "synchronize-changes";
     }
 }

@@ -11,7 +11,6 @@ using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using Lykke.Ninja.Repositories.Mongo;
 
 namespace Lykke.Ninja.Repositories.Transactions
 {
@@ -27,16 +26,15 @@ namespace Lykke.Ninja.Repositories.Transactions
 
         private readonly BaseSettings _baseSettings;
 
-        public TransactionInputRepository(MongoSettings settings, 
-            ILog log, 
+        public TransactionInputRepository(ILog log, 
             IConsole console, 
             BaseSettings baseSettings)
         {
             _log = log;
             _console = console;
             _baseSettings = baseSettings;
-            var client = new MongoClient(settings.ConnectionString);
-            var db = client.GetDatabase(settings.DataDbName);
+            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
+            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
             _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
 
             _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);

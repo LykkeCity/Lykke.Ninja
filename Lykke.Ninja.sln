@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Ninja.Core", "src\Lykke.Ninja.Core\Lykke.Ninja.Core.csproj", "{FC7F0C81-1450-4202-9A67-04DECD5440CB}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Ninja.Tests", "tests\Lykke.Ninja.Tests\Lykke.Ninja.Tests.csproj", "{6C068DCF-C91B-4136-A577-327282D90B38}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Ninja.BalanceJob", "src\Lykke.Ninja.BalanceJob\Lykke.Ninja.BalanceJob.csproj", "{13B45F24-FF61-47EB-82A1-5CC37F713A7F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.Ninja.UnconfirmedBalanceJob", "src\Lykke.Ninja.UnconfirmedBalanceJob\Lykke.Ninja.UnconfirmedBalanceJob.csproj", "{F59A5EE3-8797-4FAC-8721-AE34288B70C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,8 +65,15 @@ Global
 		{13B45F24-FF61-47EB-82A1-5CC37F713A7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13B45F24-FF61-47EB-82A1-5CC37F713A7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13B45F24-FF61-47EB-82A1-5CC37F713A7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F59A5EE3-8797-4FAC-8721-AE34288B70C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F59A5EE3-8797-4FAC-8721-AE34288B70C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F59A5EE3-8797-4FAC-8721-AE34288B70C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F59A5EE3-8797-4FAC-8721-AE34288B70C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7890A34C-66E7-49E3-87B2-666BB4483AAE}
 	EndGlobalSection
 EndGlobal

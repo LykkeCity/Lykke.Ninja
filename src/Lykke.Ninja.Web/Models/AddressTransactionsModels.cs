@@ -4,6 +4,7 @@ using System.Linq;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Core.Ninja.Contracts;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using NBitcoin;
 using Newtonsoft.Json;
 using Lykke.Ninja.Services.Ninja;
@@ -12,32 +13,47 @@ namespace Lykke.Ninja.Web.Models
 {
     public class AddressTransactionsViewModel: AddressTransactionListContract
     {
-        public static AddressTransactionsViewModel Create(INinjaBlockHeader header, 
+        public static AddressTransactionsViewModel Create(INinjaBlockHeader ninjaTop, 
             Network network, 
             bool isColored,
             string continuationToken,
-            IEnumerable<ITransactionOutput> spended = null, 
-            IEnumerable<ITransactionOutput> received = null)
+            IEnumerable<ITransactionOutput> spended, 
+            IEnumerable<ITransactionOutput> received,
+            IEnumerable<IBalanceChange> unconfirmedSpended,
+            IEnumerable<IBalanceChange> unconfirmedReceived)
         {
             return new AddressTransactionsViewModel
             {
                 ContinuationToken = continuationToken,
-                Transactions = GetTxs(header, network, isColored, spended, received).ToArray(),
+                Transactions = GetTxs(ninjaTop, network, isColored, spended, received, unconfirmedSpended, unconfirmedReceived).ToArray(),
                 ConflictedOperations = Enumerable.Empty<object>().ToArray()
             };
         }
 
-        private static IEnumerable<AddressTransactionListItemContract> GetTxs(INinjaBlockHeader header, 
+        private static IEnumerable<AddressTransactionListItemContract> GetTxs(INinjaBlockHeader ninjaTop, 
             Network network, 
             bool isColored,
-            IEnumerable<ITransactionOutput> spended = null,
-            IEnumerable<ITransactionOutput> received = null)
+            IEnumerable<ITransactionOutput> spended,
+            IEnumerable<ITransactionOutput> received,
+            IEnumerable<IBalanceChange> unconfirmedSpended,
+            IEnumerable<IBalanceChange> unconfirmedReceived)
         {
             spended = spended ?? Enumerable.Empty<ITransactionOutput>();
             received = received ?? Enumerable.Empty<ITransactionOutput>();
             var scriptPubKeyDictionary = new Dictionary<string, string>();
-            var mappedSpended = spended.Select(p => InOutViewModel.CreateSpend(p, isColored, network, scriptPubKeyDictionary)).ToList();
-            var mappedReceived = received.Select(p => InOutViewModel.CreateReceived(p, isColored, network, scriptPubKeyDictionary)).ToList();
+
+            var mappedConfirmedSpended = spended
+                .Select(p => InOutViewModel.CreateConfirmedSpend(p, isColored, network, scriptPubKeyDictionary)).ToList();
+            var mappedUnconfirmedSpended = unconfirmedSpended
+                .Select(p =>InOutViewModel.CreateUnconfirmedSpend(p, isColored, network, scriptPubKeyDictionary, ninjaTop)).ToList();
+
+            var mappedConfirmedReceived = received
+                .Select(p => InOutViewModel.CreateConfirmedReceived(p, isColored, network, scriptPubKeyDictionary)).ToList();
+            var mappedUnconfirmedReceived = unconfirmedReceived
+                .Select(p => InOutViewModel.CreateUnconfirmedReceived(p, isColored, network, scriptPubKeyDictionary, ninjaTop)).ToList();
+
+            var mappedSpended = mappedConfirmedSpended.Union(mappedUnconfirmedSpended).ToList();
+            var mappedReceived = mappedConfirmedReceived.Union(mappedUnconfirmedReceived).ToList();
 
             var spendedLookup = mappedSpended.ToLookup(p => p.OperationTransactionId);
             var receivedLookup = mappedReceived.ToLookup(p => p.OperationTransactionId);
@@ -47,12 +63,13 @@ namespace Lykke.Ninja.Web.Models
 
             return txIds.Select(txId =>
                     AddressTransactionViewModel.Create(
-                        header,
+                        ninjaTop,
                         isColored,
                         spendedLookup[txId], 
                         receivedLookup[txId]))
                .ToList()
-               .OrderByDescending(p => p.Height)
+               .OrderBy(p => p.Confirmed)
+               .ThenByDescending(p => p.Height)
                .ThenBy(p => p.Amount);
         }
     }
@@ -65,6 +82,7 @@ namespace Lykke.Ninja.Web.Models
         [JsonIgnore]
         public string OperationBlockId { get; set; }
 
+
         [JsonIgnore]
         public int OperationBlockHeight { get; set; }
 
@@ -72,17 +90,20 @@ namespace Lykke.Ninja.Web.Models
         [JsonIgnore]
         public bool IsColored { get; set; }
 
-        public static InOutViewModel CreateReceived(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
+        [JsonIgnore]
+        public bool Confirmed { get; set; }
+
+        public static InOutViewModel CreateConfirmedReceived(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
         {
-            return Create(output.TransactionId, output.BlockId, output.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
+            return CreateConfirmed(output.TransactionId, output.BlockId, output.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
         }
 
-        public static InOutViewModel CreateSpend(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
+        public static InOutViewModel CreateConfirmedSpend(ITransactionOutput output, bool isColored, Network network, IDictionary<string, string> scriptPubKeyDictionary)
         {
-            return Create(output.SpendTxInput.SpendedInTxId, output.SpendTxInput.BlockId, output.SpendTxInput.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
+            return CreateConfirmed(output.SpendTxInput.SpendedInTxId, output.SpendTxInput.BlockId, output.SpendTxInput.BlockHeight, output, isColored, network, scriptPubKeyDictionary);
         }
 
-        private static InOutViewModel Create(string operationTransactionId, 
+        private static InOutViewModel CreateConfirmed(string operationTransactionId, 
             string operationBlockId, 
             int operationBlockHeight, 
             ITransactionOutput output, 
@@ -93,8 +114,8 @@ namespace Lykke.Ninja.Web.Models
             return new InOutViewModel
             {
                 Address = output.DestinationAddress,
-                AssetId = isColored ? (output.ColoredData?.AssetId) : null,
-                Quantity = isColored ? (output.ColoredData?.Quantity) : null,
+                AssetId = isColored ? output.ColoredData?.AssetId : null,
+                Quantity = isColored ? output.ColoredData?.Quantity : null,
                 TransactionId = output.TransactionId,
                 Index = output.Index,
                 Value = output.BtcSatoshiAmount,
@@ -102,7 +123,62 @@ namespace Lykke.Ninja.Web.Models
                 OperationBlockHeight = operationBlockHeight,
                 OperationBlockId = operationBlockId,
                 OperationTransactionId = operationTransactionId,
-                IsColored = output.ColoredData != null
+                IsColored = output.ColoredData != null,
+                Confirmed = true
+            };
+        }
+        
+        public static InOutViewModel CreateUnconfirmedSpend(
+            IBalanceChange balanceChange,
+            bool isColored,
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary,
+            INinjaBlockHeader ninjaTop)
+        {
+            return CreateUnconfirmed(balanceChange, 
+                isColored, 
+                network, 
+                scriptPubKeyDictionary, 
+                ninjaTop);
+        }
+
+        public static InOutViewModel CreateUnconfirmedReceived(
+            IBalanceChange balanceChange,
+            bool isColored,
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary,
+            INinjaBlockHeader ninjaTop)
+        {
+            return CreateUnconfirmed(balanceChange,
+                isColored, 
+                network, 
+                scriptPubKeyDictionary,
+                ninjaTop);
+        }
+
+        public static InOutViewModel CreateUnconfirmed(
+            IBalanceChange balanceChange,
+            bool isColored, 
+            Network network,
+            IDictionary<string, string> scriptPubKeyDictionary,
+            INinjaBlockHeader ninjaTop)
+        {
+            var assetQuantity =
+                balanceChange.IsInput ? balanceChange.AssetQuantity * (-1) : balanceChange.AssetQuantity;
+            return new InOutViewModel
+            {
+                Address = balanceChange.Address,
+                AssetId = isColored ? balanceChange.AssetId : null,
+                Quantity = isColored ? (long?)assetQuantity : null,
+                TransactionId = balanceChange.IsInput? balanceChange.SpendTxId:balanceChange.TxId,
+                Index = balanceChange.Index,
+                Value = balanceChange.IsInput ? balanceChange.BtcSatoshiAmount * (-1) : balanceChange.BtcSatoshiAmount,
+                ScriptPubKey = GetPubKeyCached(balanceChange.Address, network, scriptPubKeyDictionary),
+                OperationTransactionId = balanceChange.TxId,
+                IsColored = balanceChange.HasColoredData,
+                OperationBlockId = null,
+                OperationBlockHeight = ninjaTop.BlockHeight,
+                Confirmed = false
             };
         }
 
@@ -147,7 +223,6 @@ namespace Lykke.Ninja.Web.Models
                         return ((BitcoinExtPubKey)b58).ScriptPubKey.ToHex();
                     default:
                         return null;
-
                 }
             }
             catch (Exception e)
@@ -161,7 +236,10 @@ namespace Lykke.Ninja.Web.Models
 
     public class AddressTransactionViewModel: AddressTransactionListItemContract
     {
-        public static AddressTransactionListItemContract Create(INinjaBlockHeader tipHeader,
+        [JsonIgnore]
+        public bool Confirmed { get; set; }
+
+        public static AddressTransactionViewModel Create(INinjaBlockHeader tipHeader,
             bool isColored, 
             IEnumerable<InOutViewModel> spended,
             IEnumerable<InOutViewModel> received)
@@ -172,6 +250,7 @@ namespace Lykke.Ninja.Web.Models
             var transactionId = any.OperationTransactionId;
             var blockId = any.OperationBlockId;
             var blockHeight = any.OperationBlockHeight;
+            var isConfirmed = any.Confirmed;
 
             double amount;
             if (isColored)
@@ -182,7 +261,7 @@ namespace Lykke.Ninja.Web.Models
             {
                 amount = received.Sum(p => p.Value) - spended.Sum(p => p.Value);
             }
-            return new AddressTransactionListItemContract
+            return new AddressTransactionViewModel
             {
                 Amount = amount,
                 TxId = transactionId,
@@ -191,6 +270,7 @@ namespace Lykke.Ninja.Web.Models
                 Confirmations = tipHeader.BlockHeight - blockHeight,
                 Received = received.ToArray(),
                 Spent = spended.ToArray(),
+                Confirmed = isConfirmed
             };
         }
     }
