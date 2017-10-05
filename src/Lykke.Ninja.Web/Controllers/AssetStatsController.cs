@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Lykke.Ninja.Core;
+using Lykke.Ninja.Core.AssetStats;
 using Lykke.Ninja.Core.Ninja.Block;
 using Lykke.Ninja.Services.Ninja;
 using Lykke.Ninja.Web.Models;

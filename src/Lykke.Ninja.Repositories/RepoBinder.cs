@@ -1,19 +1,18 @@
 ﻿using Autofac;
 using AzureStorage.Queue;
-using AzureStorage.Tables;
 using Common.Log;
-using Lykke.Ninja.Core;
-using Lykke.Ninja.Core.AlertNotifications;
+using Lykke.Ninja.Core.AssetStats;
 using Lykke.Ninja.Core.BlockStatus;
 using Lykke.Ninja.Core.ParseBlockCommand;
 using Lykke.Ninja.Core.Queue;
-using Lykke.Ninja.Core.ServiceMonitoring;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Core.Transaction;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
+using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using Lykke.Ninja.Repositories.BlockStatuses;
-using Lykke.Ninja.Repositories.Mongo;
 using Lykke.Ninja.Repositories.ParseBlockCommand;
 using Lykke.Ninja.Repositories.Transactions;
+using Lykke.Ninja.Repositories.UnconfirmedBalances;
 
 namespace Lykke.Ninja.Repositories
 {
@@ -27,17 +26,12 @@ namespace Lykke.Ninja.Repositories
 
         private static void BindRepo(this ContainerBuilder ioc, BaseSettings settings, ILog log)
         {
-
-            ioc.RegisterInstance(new MongoSettings
-            {
-                ConnectionString = settings.NinjaData.ConnectionString,
-                DataDbName = settings.NinjaData.DbName
-            });
-
             ioc.RegisterType<BlockStatusesRepository>().As<IBlockStatusesRepository>().SingleInstance();
             ioc.RegisterType<TransactionOutputRepository>().As<ITransactionOutputRepository>().SingleInstance();
             ioc.RegisterType<TransactionOutputRepository>().As<IAssetStatsService>().SingleInstance();
             ioc.RegisterType<TransactionInputRepository>().As<ITransactionInputRepository>().SingleInstance();
+            ioc.RegisterType<UnconfirmedStatusesRepository>().As<IUnconfirmedStatusesRepository>().SingleInstance();
+            ioc.RegisterType<UnconfirmedBalanceChangesRepository>().As<IUnconfirmedBalanceChangesRepository>().SingleInstance();
         }
 
         private static void BindQueue(this ContainerBuilder ioc, BaseSettings settings)
@@ -50,6 +44,9 @@ namespace Lykke.Ninja.Repositories
 
             ioc.Register(p => new ScanNotFoundsCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.ScanNotFounds)))
                 .As<IScanNotFoundsCommandProducer>();
+
+            ioc.Register(p => new UnconfirmedBalanceChangesCommandProducer(new AzureQueueExt(settings.Db.DataConnString, QueueNames.SynchronizeChanges)))
+                .As<IUnconfirmedBalanceChangesCommandProducer>();
         }
     }
 }

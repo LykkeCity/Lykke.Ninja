@@ -1,4 +1,5 @@
 ﻿using Lykke.Ninja.Core;
+using Lykke.Ninja.Core.AssetStats;
 
 namespace Lykke.Ninja.Web.Models
 {

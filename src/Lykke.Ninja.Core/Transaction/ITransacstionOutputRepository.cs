@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using NBitcoin;
 
 namespace Lykke.Ninja.Core.Transaction
@@ -67,9 +68,11 @@ namespace Lykke.Ninja.Core.Transaction
 
         Task<long> GetBtcReceivedSummary(BitcoinAddress address, int? at = null, bool isColored = false);
 
-        Task<IDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsReceived(BitcoinAddress address, int? at = null);
 
-        Task<IDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
+        Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
+
+        Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids, int timeoutSeconds = 240);
 
         Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,

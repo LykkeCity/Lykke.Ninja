@@ -14,7 +14,7 @@ namespace Lykke.Ninja.BalanceJob.Monitoring
             _monitoringService = monitoringService;
         }
 
-        private const string ServiceName = "Lykke.Ninja.Jobs";
+        private const string ServiceName = "Lykke.Ninja.Jobs.Balances";
 
         [TimerTrigger("00:00:30")]
         public  async Task WriteMonitoringRecord()
