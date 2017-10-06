@@ -267,7 +267,7 @@ namespace Lykke.Ninja.Web.Models
                 TxId = transactionId,
                 BlockId = blockId,
                 Height = blockHeight,
-                Confirmations = tipHeader.BlockHeight - blockHeight,
+                Confirmations = isConfirmed? (tipHeader.BlockHeight - blockHeight + 1) : 0,
                 Received = received.ToArray(),
                 Spent = spended.ToArray(),
                 Confirmed = isConfirmed
