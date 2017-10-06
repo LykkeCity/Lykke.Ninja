@@ -80,10 +80,8 @@ namespace Lykke.Ninja.Repositories.Transactions
                 await Insert(itemsToInsert);
                 WriteConsole(blockHeight, "Insert done");
             }
-            catch (Exception e) // todo catch mongoDuplicate exception
+            catch (Exception) // todo catch mongoDuplicate exception
             {
-                await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(InsertIfNotExists), blockHeight.ToString(), e.ToString());
-
                 await InsertIfNotExists(items);
             }
         }
