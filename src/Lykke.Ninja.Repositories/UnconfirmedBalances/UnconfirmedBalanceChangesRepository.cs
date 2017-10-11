@@ -50,15 +50,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                         BalanceChangeMongoEntity.Create(p))
                     { IsUpsert = true });
 
-                try
-                {
-                    await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    throw;
-                }
+                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
             }
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
