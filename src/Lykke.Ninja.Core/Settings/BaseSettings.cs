@@ -61,9 +61,6 @@ namespace Lykke.Ninja.Core.Settings
 
         public int SemaphoreThreadCount { get; set; }
 
-        public bool SetOutputIdIndex { get; set; }
-        public bool SetInputIdIndex { get; set; }
-
         public SetSpendableSettings SetSpendable { get; set; }
     }
 

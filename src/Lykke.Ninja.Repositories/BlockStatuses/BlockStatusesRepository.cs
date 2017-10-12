@@ -21,13 +21,12 @@ namespace Lykke.Ninja.Repositories.BlockStatuses
         private readonly Lazy<Task> _ensureInsertIndexes;
 
         private readonly ILog _log;
-        public BlockStatusesRepository(BaseSettings settings, ILog log)
-        {
-            _log = log;
-            var client = new MongoClient(settings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(settings.NinjaData.DbName);
-            _collection = db.GetCollection<BlockStatusMongoEntity>(BlockStatusMongoEntity.CollectionName);
 
+        public BlockStatusesRepository(IMongoCollection<BlockStatusMongoEntity> collection, ILog log)
+        {
+            _collection = collection;
+            _log = log;
+            
             _ensureQueryIndexes = new Lazy<Task>(SetQueryIndexes);
             _ensureInsertIndexes = new Lazy<Task>(SetInsertionIndexes);
         }
