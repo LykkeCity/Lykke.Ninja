@@ -36,7 +36,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 
             if (!await _balanceChangesCommandProducer.IsQueueFull())
             {
-                await ScanUnconfirmedInner().WithTimeout(10*60*1000)
+                await ScanUnconfirmedInner().WithTimeout(10 * 60 * 1000);
             }
             else
             {
