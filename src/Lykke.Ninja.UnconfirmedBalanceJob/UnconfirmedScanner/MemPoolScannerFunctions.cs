@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Common.Extensions;
 using Common.Log;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.Bitcoin;
@@ -35,16 +36,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 
             if (!await _balanceChangesCommandProducer.IsQueueFull())
             {
-                var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
-                WriteConsole($"{nameof(ScanUnconfirmed)}. {txIds.Count} unconfirmedTxs");
-
-                var synchronizePlan =
-                    await _statusesSinchronizeService.GetStatusesSynchronizePlan(txIds.Select(p => p.ToString()));
-                if (synchronizePlan.TxIdsToAdd.Any() || synchronizePlan.TxIdsToRemove.Any())
-                {
-                    await _statusesSinchronizeService.Synchronize(synchronizePlan);
-                    await _balanceChangesCommandProducer.ProduceSynchronizeCommand();
-                }
+                await ScanUnconfirmedInner().WithTimeout(10 * 60 * 1000);
             }
             else
             {
@@ -52,6 +44,20 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
             }
 
             WriteConsole($"{nameof(ScanUnconfirmed)} done");
+        }
+
+        private async Task ScanUnconfirmedInner()
+        {
+            var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
+            WriteConsole($"{nameof(ScanUnconfirmed)}. {txIds.Count} unconfirmedTxs");
+
+            var synchronizePlan =
+                await _statusesSinchronizeService.GetStatusesSynchronizePlan(txIds.Select(p => p.ToString()));
+            if (synchronizePlan.TxIdsToAdd.Any() || synchronizePlan.TxIdsToRemove.Any())
+            {
+                await _statusesSinchronizeService.Synchronize(synchronizePlan);
+                await _balanceChangesCommandProducer.ProduceSynchronizeCommand();
+            }
         }
 
         private void WriteConsole(string message)

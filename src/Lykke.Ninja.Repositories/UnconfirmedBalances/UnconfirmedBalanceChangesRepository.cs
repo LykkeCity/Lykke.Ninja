@@ -21,17 +21,13 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         private readonly IConsole _console;
         private readonly AggregateOptions _defaultAggregateOptions;
 
-        public UnconfirmedBalanceChangesRepository(BaseSettings settings, IConsole console)
+        public UnconfirmedBalanceChangesRepository(IConsole console, 
+            IMongoCollection<BalanceChangeMongoEntity> collection)
         {
             _console = console;
+            _collection = collection;
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
 
-            var client = new MongoClient(settings.UnconfirmedNinjaData.ConnectionString);
-            var db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
-
-            _collection =
-                db.GetCollection<BalanceChangeMongoEntity>(BalanceChangeMongoEntity
-                    .CollectionName);
             _defaultAggregateOptions = new AggregateOptions { MaxTime = TimeSpan.FromSeconds(35) };
         }
 
@@ -50,15 +46,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                         BalanceChangeMongoEntity.Create(p))
                     { IsUpsert = true });
 
-                try
-                {
-                    await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    throw;
-                }
+                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
             }
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");

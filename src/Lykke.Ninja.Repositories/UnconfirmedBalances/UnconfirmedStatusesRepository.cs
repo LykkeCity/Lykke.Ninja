@@ -19,17 +19,11 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
 
-        public UnconfirmedStatusesRepository(BaseSettings settings, IConsole console)
+        public UnconfirmedStatusesRepository(IConsole console, IMongoCollection<TransactionStatusMongoEntity> collection)
         {
             _console = console;
+            _collection = collection;
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
-
-            var client = new MongoClient(settings.UnconfirmedNinjaData.ConnectionString);
-            var db = client.GetDatabase(settings.UnconfirmedNinjaData.DbName);
-
-            _collection =
-                db.GetCollection<TransactionStatusMongoEntity>(TransactionStatusMongoEntity
-                    .CollectionName);
         }
 
 

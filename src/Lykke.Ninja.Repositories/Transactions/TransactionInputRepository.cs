@@ -23,19 +23,13 @@ namespace Lykke.Ninja.Repositories.Transactions
         private readonly Lazy<Task> _ensureQueryIndexesLocker;
         private readonly Lazy<Task> _ensureInsertIndexesLocker;
         private readonly Lazy<Task> _ensureUpdateIndexesLocker;
+        
 
-        private readonly BaseSettings _baseSettings;
-
-        public TransactionInputRepository(ILog log, 
-            IConsole console, 
-            BaseSettings baseSettings)
+        public TransactionInputRepository(IConsole console, ILog log, IMongoCollection<TransactionInputMongoEntity> collection)
         {
-            _log = log;
             _console = console;
-            _baseSettings = baseSettings;
-            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
-            _collection = db.GetCollection<TransactionInputMongoEntity>(TransactionInputMongoEntity.CollectionName);
+            _log = log;
+            _collection = collection;
 
             _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);
             _ensureInsertIndexesLocker = new Lazy<Task>(SetInsertionIndexes);
@@ -193,13 +187,8 @@ namespace Lykke.Ninja.Repositories.Transactions
             var setIndexes = new List<Task>
             {
                 SetHeightIndex(),
+                SetIdIndex()
             };
-
-
-            if (_baseSettings.InitialParser?.SetInputIdIndex ?? true)
-            {
-                setIndexes.Add(SetIdIndex());
-            }
 
             await Task.WhenAll(setIndexes);
 

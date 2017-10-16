@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Common.Extensions;
 using Common.Log;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
@@ -24,7 +25,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
         {
             WriteConsole($"{nameof(UpdateExpiration)} started");
 
-            await _balanceChangesRepository.UpdateExpiration();
+            await _balanceChangesRepository.UpdateExpiration().WithTimeout(10*60*1000);
 
             WriteConsole($"{nameof(UpdateExpiration)} done");
         }

@@ -102,25 +102,18 @@ namespace Lykke.Ninja.Repositories.Transactions
         private readonly Lazy<Task> _ensureUpdateIndexesLocker;
 
         private readonly AggregateOptions _defaultAggregateOptions;
-        private readonly BaseSettings _baseSettings;
 
-        public TransactionOutputRepository(ILog log, 
-            IConsole console, 
-            BaseSettings baseSettings)
+        public TransactionOutputRepository(ILog log, IConsole console, IMongoCollection<TransactionOutputMongoEntity> collection)
         {
             _log = log;
             _console = console;
-            _baseSettings = baseSettings;
-
-            var client = new MongoClient(baseSettings.NinjaData.ConnectionString);
-            var db = client.GetDatabase(baseSettings.NinjaData.DbName);
-            _collection = db.GetCollection<TransactionOutputMongoEntity>(TransactionOutputMongoEntity.CollectionName);
+            _collection = collection;
 
             _ensureQueryIndexesLocker = new Lazy<Task>(SetQueryIndexes);
             _ensureInsertIndexesLocker = new Lazy<Task>(SetInsertionIndexes);
             _ensureUpdateIndexesLocker = new Lazy<Task>(SetUpdateIndexes);
 
-            _defaultAggregateOptions = new AggregateOptions {MaxTime = TimeSpan.FromSeconds(35)};
+            _defaultAggregateOptions = new AggregateOptions { MaxTime = TimeSpan.FromSeconds(35) };
         }
 
         private void WriteConsole(int blockHeight, string message)
@@ -541,17 +534,11 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Started");
 
-
             var setIndexes = new List<Task>
             {
-                SetHeightIndex()
+                SetHeightIndex(),
+                SetIdIndex()
             };
-
-
-            if (_baseSettings.InitialParser?.SetOutputIdIndex ?? true)
-            {
-                setIndexes.Add(SetIdIndex());
-            }
 
             await Task.WhenAll(setIndexes);
 
