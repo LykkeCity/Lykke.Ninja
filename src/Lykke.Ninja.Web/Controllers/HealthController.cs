@@ -59,7 +59,7 @@ namespace Lykke.Ninja.Web.Controllers
             var getFailedUnconfirmedTxCount = _unconfirmedStatusesRepository.GetNotRemovedTxCount(InsertProcessStatus.Failed);
             var getAllTxCount = _unconfirmedStatusesRepository.GetAllTxCount();
             var getWaitingUnconfirmedTxCount = _unconfirmedStatusesRepository.GetNotRemovedTxCount(InsertProcessStatus.Waiting);
-
+			
             await Task.WhenAll(getQueuedCount, 
                 getLastQueuedBlock, 
                 getFailedBlocks, 

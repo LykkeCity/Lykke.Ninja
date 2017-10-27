@@ -59,18 +59,22 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 			return await _collection.AsQueryable(_defaultAggregateOptions)
 				.Where(p => !p.Removed)
 				.Select(p => p.TxId)
+				.Distinct()
 				.ToListAsync();
 	    }
 
 	    public async Task Remove(IEnumerable<string> txIds)
         {
             await EnsureCollectionPrepared();
-            if (txIds.Any())
-            {
-                await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
-            }
-        }
-		
+
+	        await _collection.UpdateManyAsync(p => !txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
+		}
+
+	    public Task RemoveExcept(IEnumerable<string> txIds)
+	    {
+		    throw new NotImplementedException();
+	    }
+
 
 	    public async Task<long> GetTransactionsCount(string address)
         {
