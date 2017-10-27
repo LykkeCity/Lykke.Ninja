@@ -39,8 +39,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
         Task Upsert(IEnumerable<IBalanceChange> items);
 
         Task Remove(IEnumerable<string> txIds);
-
-        Task<long> GetTransactionsCount(string address);
+		Task<long> GetTransactionsCount(string address);
 
         Task<long> GetSpendTransactionsCount(string address);
 
@@ -58,6 +57,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
         Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids);
 
-        Task UpdateExpiration();
+        Task UpdateExpiration(IEnumerable<string> txIds);
     }
 }
