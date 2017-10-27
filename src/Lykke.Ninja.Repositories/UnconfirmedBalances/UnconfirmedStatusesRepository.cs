@@ -113,7 +113,8 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => numStatuses.Contains(p.InsertProcessStatus))
                 .Where(p => !p.Removed)
-                .CountAsync();}
+                .CountAsync();
+        }
 
         public async Task<IEnumerable<string>> GetRemovedTxIds(RemoveProcessStatus[] statuses)
         {

@@ -63,6 +63,16 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 				.ToListAsync();
 	    }
 
+	    public async Task<long> GetNotRemovedTxCount()
+		{
+			await EnsureCollectionPrepared();
+			return await _collection.AsQueryable(_defaultAggregateOptions)
+				.Where(p => !p.Removed)
+				.Select(p => p.TxId)
+				.Distinct()
+				.CountAsync();
+		}
+
 	    public async Task Remove(IEnumerable<string> txIds)
         {
             await EnsureCollectionPrepared();

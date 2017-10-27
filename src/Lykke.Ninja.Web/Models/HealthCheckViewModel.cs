@@ -57,8 +57,9 @@ namespace Lykke.Ninja.Web.Models
             INinjaBlockHeader ninjaTop,
             int lastSuccesfullyProcessedBlockHeight,
             long failedUnconfirmedTxCount,
-            long allTxCount,
-            long waitingTxCount)
+            long allUnconfirmedStatusesTxCount,
+            long waitingTxCount,
+			long allUnconfirmedBalancesTxCount)
         {
             return new HealthCheckViewModel
             {
@@ -74,7 +75,7 @@ namespace Lykke.Ninja.Web.Models
                 WaitingInputsCount = waitingInputsCount,
                 ProcessingBlocks = processingBlocks.Select(BlockStatusViewModel.Create),
                 NinjaTopLag = ninjaTop.BlockHeight - lastSuccesfullyProcessedBlockHeight,
-                Unconfirmed = UnconfirmedReportViewModel.Create(failedUnconfirmedTxCount, allTxCount, waitingTxCount)
+                Unconfirmed = UnconfirmedReportViewModel.Create(failedUnconfirmedTxCount, allUnconfirmedStatusesTxCount, waitingTxCount, allUnconfirmedBalancesTxCount)
             };
         }
     }
@@ -129,19 +130,22 @@ namespace Lykke.Ninja.Web.Models
 
     public class UnconfirmedReportViewModel
     {
-        public long AllTxCount { get; set; }
-        public long WaitingTxCount { get; set; }
-        public long FailedTxCount { get; set; }
+        public long AllStatusesTxCount { get; set; }
+	    public long AllBalancesTxCount { get; set; }
+		public long WaitingStatusesTxCount { get; set; }
+        public long FailedStatusesTxCount { get; set; }
 
         public static UnconfirmedReportViewModel Create(long failedTxCount,
-            long allTxCount,
-            long waitingTxCount)
+            long allStatusesTxCount,
+            long waitingTxCount,
+	        long allUnconfirmedBalancesTxCount)
         {
             return new UnconfirmedReportViewModel
             {
-                FailedTxCount = failedTxCount,
-                AllTxCount = allTxCount,
-                WaitingTxCount = waitingTxCount
+                FailedStatusesTxCount = failedTxCount,
+                AllStatusesTxCount = allStatusesTxCount,
+                WaitingStatusesTxCount = waitingTxCount,
+				AllBalancesTxCount = allUnconfirmedBalancesTxCount
             };
         }
     }
