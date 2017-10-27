@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Common.Extensions;
+using Common.Log;
 using Lykke.JobTriggers.Triggers.Attributes;
 using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
@@ -14,19 +15,28 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
     {
 	    private readonly IUnconfirmedStatusesRepository _unconfirmedStatusesRepository;
 	    private readonly IUnconfirmedBalanceChangesRepository _unconfirmedBalanceChangesRepository;
+	    private readonly ILog _log;
 
 	    public ConsystencyFunctions(IUnconfirmedStatusesRepository unconfirmedStatusesRepository, 
-			IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository)
+			IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository, ILog log)
 	    {
 		    _unconfirmedStatusesRepository = unconfirmedStatusesRepository;
 		    _unconfirmedBalanceChangesRepository = unconfirmedBalanceChangesRepository;
+		    _log = log;
 	    }
 
 
 	    [TimerTrigger("00:10:00")]
 		public async Task CheckRemoved()
 	    {
-		    await CheckRemovedInner().WithTimeout(10 * 60 * 1000);
+		    try
+		    {
+			    await CheckRemovedInner().WithTimeout(10 * 60 * 1000);
+			}
+		    catch (Exception e)
+		    {
+			    await _log.WriteErrorAsync(nameof(ConsystencyFunctions), nameof(CheckRemoved), null, e);
+		    }
 	    }
 
 	    private async Task CheckRemovedInner()
@@ -38,7 +48,14 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 	    [TimerTrigger("00:10:00")]
 	    public async Task CheckExisted()
 	    {
-		    await CheckExistedInner().WithTimeout(10 * 60 * 1000);
+		    try
+		    {
+				await CheckExistedInner().WithTimeout(10 * 60 * 1000);
+			}
+		    catch (Exception e)
+		    {
+			    await _log.WriteErrorAsync(nameof(ConsystencyFunctions), nameof(CheckExisted), null, e);
+		    }
 		}
 
 	    public async Task CheckExistedInner()

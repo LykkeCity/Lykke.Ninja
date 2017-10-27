@@ -77,13 +77,15 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-	        await _collection.UpdateManyAsync(p => !txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
+	        await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
 		}
 
-	    public Task RemoveExcept(IEnumerable<string> txIds)
-	    {
-		    throw new NotImplementedException();
-	    }
+	    public async Task RemoveExcept(IEnumerable<string> txIds)
+		{
+			await EnsureCollectionPrepared();
+
+			await _collection.UpdateManyAsync(p => !txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
+		}
 
 
 	    public async Task<long> GetTransactionsCount(string address)
