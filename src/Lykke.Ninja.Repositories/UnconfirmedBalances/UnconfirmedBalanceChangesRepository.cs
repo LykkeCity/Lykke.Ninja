@@ -52,7 +52,17 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
         }
 
-        public async Task Remove(IEnumerable<string> txIds)
+	    public async Task<IEnumerable<string>> GetNotRemovedTxIds()
+		{
+			await EnsureCollectionPrepared();
+
+			return await _collection.AsQueryable(_defaultAggregateOptions)
+				.Where(p => !p.Removed)
+				.Select(p => p.TxId)
+				.ToListAsync();
+	    }
+
+	    public async Task Remove(IEnumerable<string> txIds)
         {
             await EnsureCollectionPrepared();
             if (txIds.Any())
@@ -60,8 +70,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
             }
         }
+		
 
-        public async Task<long> GetTransactionsCount(string address)
+	    public async Task<long> GetTransactionsCount(string address)
         {
             await EnsureCollectionPrepared();
 
@@ -211,11 +222,14 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return result;
         }
 
-        public async Task UpdateExpiration()
-        {
-            await EnsureCollectionPrepared();
-            await _collection.UpdateManyAsync(p => !p.Removed, Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow));
-        }
+	    public async Task UpdateExpiration(IEnumerable<string> txIds)
+		{
+			await EnsureCollectionPrepared();
+			if (txIds.Any())
+			{
+				await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow));
+			}
+		}
 
         private Task EnsureCollectionPrepared()
         {

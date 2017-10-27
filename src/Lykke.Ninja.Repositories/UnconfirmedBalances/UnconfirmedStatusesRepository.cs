@@ -18,13 +18,15 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
         private readonly Lazy<Task> _collectionPreparedLocker;
         private readonly IConsole _console;
+	    private readonly AggregateOptions _defaultAggregateOptions;
 
-        public UnconfirmedStatusesRepository(IConsole console, IMongoCollection<TransactionStatusMongoEntity> collection)
+		public UnconfirmedStatusesRepository(IConsole console, IMongoCollection<TransactionStatusMongoEntity> collection)
         {
             _console = console;
             _collection = collection;
             _collectionPreparedLocker = new Lazy<Task>(PrepareCollection);
-        }
+	        _defaultAggregateOptions = new AggregateOptions { MaxTime = TimeSpan.FromSeconds(35) };
+		}
 
 
         public  async Task Upsert(IEnumerable<ITransactionStatus> items)
@@ -85,19 +87,19 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             await EnsureCollectionPrepared();
 
-            return await _collection.AsQueryable().Where(p => !p.Removed).Select(p => p.TxId).ToListAsync();
+            return await _collection.AsQueryable(_defaultAggregateOptions).Where(p => !p.Removed).Select(p => p.TxId).ToListAsync();
         }
 
         public async Task<long> GetAllTxCount()
         {
             await EnsureCollectionPrepared();
-            return await _collection.AsQueryable().Where(p => !p.Removed).CountAsync();
+            return await _collection.AsQueryable(_defaultAggregateOptions).Where(p => !p.Removed).CountAsync();
         }
 
         public async Task<IEnumerable<string>> GetNotRemovedTxIds(InsertProcessStatus[] statuses)
         {
             var numStatuses = statuses.Select(p=>(int)p);
-            return await _collection.AsQueryable()
+            return await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => numStatuses.Contains(p.InsertProcessStatus))
                 .Where(p => !p.Removed)
                 .Select(p => p.TxId)
@@ -108,7 +110,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             var numStatuses = statuses.Select(p => (int)p);
 
-            return await _collection.AsQueryable()
+            return await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => numStatuses.Contains(p.InsertProcessStatus))
                 .Where(p => !p.Removed)
                 .CountAsync();}
@@ -116,7 +118,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         public async Task<IEnumerable<string>> GetRemovedTxIds(RemoveProcessStatus[] statuses)
         {
             var numStatuses = statuses.Select(p => (int)p);
-            return await _collection.AsQueryable()
+            return await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => numStatuses.Contains(p.RemoveProcessStatus))
                 .Where(p => p.Removed)
                 .Select(p => p.TxId).ToListAsync();
