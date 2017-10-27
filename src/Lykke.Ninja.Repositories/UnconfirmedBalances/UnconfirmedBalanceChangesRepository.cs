@@ -52,7 +52,17 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
         }
 
-        public async Task Remove(IEnumerable<string> txIds)
+	    public async Task<IEnumerable<string>> GetNotRemovedTxIds()
+		{
+			await EnsureCollectionPrepared();
+
+			return await _collection.AsQueryable(_defaultAggregateOptions)
+				.Where(p => !p.Removed)
+				.Select(p => p.TxId)
+				.ToListAsync();
+	    }
+
+	    public async Task Remove(IEnumerable<string> txIds)
         {
             await EnsureCollectionPrepared();
             if (txIds.Any())

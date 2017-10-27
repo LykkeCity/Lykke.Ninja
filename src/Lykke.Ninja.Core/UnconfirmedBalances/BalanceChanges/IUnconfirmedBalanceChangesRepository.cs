@@ -37,7 +37,7 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
     public interface IUnconfirmedBalanceChangesRepository
     {
         Task Upsert(IEnumerable<IBalanceChange> items);
-
+	    Task<IEnumerable<string>> GetNotRemovedTxIds();
         Task Remove(IEnumerable<string> txIds);
 		Task<long> GetTransactionsCount(string address);
 
