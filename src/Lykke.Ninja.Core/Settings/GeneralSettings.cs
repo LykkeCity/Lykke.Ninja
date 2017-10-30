@@ -8,9 +8,6 @@ namespace Lykke.Ninja.Core.Settings
         public BaseSettings LykkeNinja { get; set; }
 
         [Required]
-        public MonitoringServiceClientSettings MonitoringServiceClient { get; set; }
-
-        [Required]
         public SlackNotificationSettings SlackNotifications { get; set; }
     }
 
@@ -23,15 +20,7 @@ namespace Lykke.Ninja.Core.Settings
         [Required]
         public string QueueName { get; set; }
     }
-
-
-
-    public class MonitoringServiceClientSettings
-    {
-        [Required]
-        public string MonitoringServiceUrl { get; set; }
-    }
-
+	
     public class SlackNotificationSettings
     {
         [Required]
