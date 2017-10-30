@@ -18,7 +18,6 @@ using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
 using Microsoft.Extensions.PlatformAbstractions;
 using QBitNinja.Client;
-using Lykke.Ninja.Repositories.ServiceMonitoring;
 using Lykke.Ninja.Services.AlertNotifications;
 using Lykke.Ninja.Services.Bitcoin;
 using Lykke.Ninja.Services.Block;
@@ -29,7 +28,6 @@ using Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges;
 using Lykke.Ninja.Services.UnconfirmedTransactions.Statuses;
 using NBitcoin;
 using NBitcoin.RPC;
-using IMonitoringService = Lykke.Ninja.Core.ServiceMonitoring.IMonitoringService;
 
 namespace Lykke.Ninja.Services
 {
@@ -38,8 +36,6 @@ namespace Lykke.Ninja.Services
         public static void BindCommonServices(this ContainerBuilder ioc, GeneralSettings generalSettings, ILog log)
         {
             var settings = generalSettings.LykkeNinja;
-            ioc.RegisterInstance(new MonitoringService(new MonitoringServiceFacade(generalSettings.MonitoringServiceClient.MonitoringServiceUrl)))
-                .As<IMonitoringService>();
             ioc.RegisterInstance(new QBitNinjaClient(settings.NinjaUrl, settings.UsedNetwork()) { Colored = true}).As<QBitNinjaClient>();
             ioc.RegisterType<NinjaBlockService>().As<INinjaBlockService>();
             ioc.RegisterType<NinjaTransactionService>().As<INinjaTransactionService>(); 
