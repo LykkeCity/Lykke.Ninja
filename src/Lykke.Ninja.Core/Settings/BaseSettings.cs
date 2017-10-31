@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Lykke.SettingsReader.Attributes;
 
 namespace Lykke.Ninja.Core.Settings
 {
@@ -9,32 +9,33 @@ namespace Lykke.Ninja.Core.Settings
             Proxy = new ProxySettings();
         }
 
+        
+        [Optional]
         public int ItemsOnAddressTransactionPage { get; set; } = 500;
 
-        [Required]
+
         public DbSettings Db { get; set; }
 
-        [Required]
         public string NinjaUrl { get; set; }
 
-        [Required]
+
         public string Network { get; set; }
 
-        [Required]
         public MongoCredentials NinjaData { get; set; }
 
-        [Required]
-        public UnconfirmedBalancesMongoCredentials UnconfirmedNinjaData { get; set; }
+        public MongoCredentials UnconfirmedNinjaData { get; set; }
 
-        [Required]
+
         public BitcoinRpcSettings BitcoinRpc { get; set; }
 
+        [Optional]
         public int MaxParseBlockQueuedCommandCount { get; set; } = 25;
-
+        [Optional]
         public ProxySettings Proxy { get; set; }
 
+        [Optional]
         public InitialParserSettings InitialParser { get; set; }
-
+        [Optional]
         public int MaxNinjaTopBlockDelay { get; set; } = 10;
     }
 
@@ -48,9 +49,8 @@ namespace Lykke.Ninja.Core.Settings
 
     public class DbSettings
     {
-        [Required]
         public string DataConnString { get; set; }
-        [Required]
+
         public string LogsConnString { get; set; }
     }
 
@@ -72,24 +72,17 @@ namespace Lykke.Ninja.Core.Settings
     }
     public class ProxySettings
     {
+        [Optional]
         public bool ProxyAllRequests { get; set; } = false;
     }
 
     public class MongoCredentials
     {
-        [Required]
+
         public string ConnectionString { get; set; }
 
-        [Required]
+
         public string DbName { get; set; }
     }
-
-    public class UnconfirmedBalancesMongoCredentials: MongoCredentials
-    {
-        public int StatusesCappedCollectionMaxDocuments { get; set; } = 300000;
-        public int StatusesCappedCollectionMaxSize { get; set; } = 1024000000;
-
-        public int ChangesCappedCollectionMaxDocuments { get; set; } = 1200000;
-        public int ChangesCappedCollectionMaxSize { get; set; } = 1024000000;
-    }
+    
 }
