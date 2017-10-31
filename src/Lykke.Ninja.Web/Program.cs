@@ -9,7 +9,7 @@ namespace Lykke.Ninja.Web
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine($"Lykke.Ninja.BalanceJob version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+            Console.WriteLine($"Lykke.Ninja.Web version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
 #if DEBUG
             Console.WriteLine("Is DEBUG");
 #else
