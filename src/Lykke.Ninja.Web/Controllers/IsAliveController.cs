@@ -77,7 +77,14 @@ namespace Lykke.Ninja.Web.Controllers
 
             return new OkObjectResult(new IsAliveResponse
             {
+                Name = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName,
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
+                Env = Environment.GetEnvironmentVariable("ENV_INFO"),
+#if DEBUG
+                IsDebug = true,
+#else
+                IsDebug = false,
+#endif
                 IssueIndicators = issueIndicators
             });
         }

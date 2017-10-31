@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace Lykke.Ninja.Web.Models
+namespace Lykke.Ninja.BalanceJob.Models
 {
     public class IsAliveResponse
     {
+        public string Name { get; set; }
         public string Version { get; set; }
+        public string Env { get; set; }
+        public bool IsDebug { get; set; }
         public IEnumerable<IssueIndicator> IssueIndicators { get; set; }
 
         public class IssueIndicator

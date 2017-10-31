@@ -44,8 +44,6 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.Binders
             ioc.BindCommonServices(settings, log);
             ioc.BindRepositories(settings.LykkeNinja, log);
             ioc.BindBackgroundJobs(settings.LykkeNinja, log);
-
-            ioc.RegisterSource(new AnyConcreteTypeNotAlreadyRegisteredSource());
         }        
     }
 }
