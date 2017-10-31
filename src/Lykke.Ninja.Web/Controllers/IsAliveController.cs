@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Ninja.Web.Controllers
 {
-    [Route("isalive")]
+    [Route("api/isalive")]
     public class IsAliveController:Controller
     {
 
