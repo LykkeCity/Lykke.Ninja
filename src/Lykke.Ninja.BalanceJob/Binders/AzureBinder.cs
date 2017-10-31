@@ -6,19 +6,14 @@ using Common;
 using Common.Log;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Repositories;
-using Lykke.Ninja.Repositories.Log;
 using Lykke.Ninja.Services;
 
 namespace Lykke.Ninja.BalanceJob.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(GeneralSettings settings)
+        public ContainerBuilder Bind(GeneralSettings settings, ILog log)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsError", null),
-                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.LykkeNinja.Db.LogsConnString, "LykkeNinjaBalanceJobsInfo", null));
-            var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
 

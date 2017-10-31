@@ -8,10 +8,10 @@
     <Version>1.0.1</Version>
   </PropertyGroup> 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.97" />
+    <PackageReference Include="Lykke.Common" Version="3.0.2" />
     <PackageReference Include="NBitcoin" Version="4.0.0.38" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="QBitNinja.Client" Version="1.0.3.39" />
+    <PackageReference Include="QBitNinja.Client" Version="1.0.3.41" />
   </ItemGroup>
 
 </Project>

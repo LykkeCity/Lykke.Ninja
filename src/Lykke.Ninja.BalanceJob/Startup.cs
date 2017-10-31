@@ -4,22 +4,19 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
+using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
+using Lykke.Ninja.BalanceJob.Binders;
 using Lykke.Ninja.Core.Settings;
-using Lykke.Ninja.Core.Settings.Validation;
+using Lykke.SettingsReader;
+using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Lykke.Ninja.Web.Binders;
-using Lykke.Ninja.Web.Filters;
-using Lykke.Ninja.Web.Proxy;
-using Lykke.SettingsReader;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace Lykke.Ninja.Web
+namespace Lykke.Ninja.BalanceJob
 {
     public class Startup
     {
@@ -27,56 +24,66 @@ namespace Lykke.Ninja.Web
         public IContainer ApplicationContainer { get; private set; }
         public IConfigurationRoot Configuration { get; }
         public ILog Log { get; private set; }
+        private TriggerHost _triggerHost;
+        private Task _triggerHostTask;
 
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
+
             Configuration = builder.Build();
+            Environment = env;
         }
-        
+
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(o =>
-                {
-                    o.Filters.Add(new HandleAllExceptionsFilterFactory());
-                })
-                .AddJsonOptions(options =>
-                {
-                    options.SerializerSettings.Formatting = Formatting.Indented;
-                });
-
-            services.AddSwaggerGen(options =>
+            try
             {
-                options.SwaggerDoc("v1", new Info { Title = "lykke.ninja", Version = "v1" });
+                services.AddMvc()
+                    .AddJsonOptions(options =>
+                    {
+                        options.SerializerSettings.ContractResolver =
+                            new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                    });
 
-                options.DescribeAllEnumsAsStrings();
-            });
+                services.AddSwaggerGen(options =>
+                {
+                    options.SwaggerDoc("v1", new Info { Title = "lykke.ninja.balancejob", Version = "v1" });
 
-            var settings = Configuration.LoadSettings<GeneralSettings>();
+                    options.DescribeAllEnumsAsStrings();
+                });
+                
+                var appSettings = Configuration.LoadSettings<GeneralSettings>();
 
-            Log = CreateLog(services, settings);
-            var builder = new AzureBinder().Bind(settings.CurrentValue, Log);
-            builder.Populate(services);
-            
+                Log = CreateLog(services, appSettings);
 
-            return new AutofacServiceProvider(builder.Build());
+                var builder = new AzureBinder().Bind(appSettings.CurrentValue, Log);
+
+                builder.Populate(services);
+
+                ApplicationContainer = builder.Build();
+
+                return new AutofacServiceProvider(ApplicationContainer);
+            }
+            catch (Exception ex)
+            {
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                throw;
+            }
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
-            var settings = Configuration.LoadSettings<GeneralSettings>();
-
-
-            if (!settings.CurrentValue.LykkeNinja.Proxy.ProxyAllRequests)
+            try
             {
                 if (env.IsDevelopment())
                 {
                     app.UseDeveloperExceptionPage();
                 }
+
+
 
                 app.UseStaticFiles();
 
@@ -88,22 +95,25 @@ namespace Lykke.Ninja.Web
                 });
 
                 app.UseMvc();
+
+                appLifetime.ApplicationStarted.Register(() => StartApplication().Wait());
+                appLifetime.ApplicationStopping.Register(() => StopApplication().Wait());
+                appLifetime.ApplicationStopped.Register(() => CleanUp().Wait());
             }
-
-            appLifetime.ApplicationStarted.Register(() => StartApplication().Wait());
-            appLifetime.ApplicationStopping.Register(() => StopApplication().Wait());
-            appLifetime.ApplicationStopped.Register(() => CleanUp().Wait());
-
-            var ninjaUrl = new Uri(settings.CurrentValue.LykkeNinja.NinjaUrl);
-            app.RunProxy(new ProxyOptions { Host = ninjaUrl.Host, Scheme = ninjaUrl.Scheme });
+            catch (Exception ex)
+            {
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                throw;
+            }
         }
-
-
 
         private async Task StartApplication()
         {
             try
             {
+                _triggerHost = new TriggerHost(new AutofacServiceProvider(ApplicationContainer));
+
+                _triggerHostTask = _triggerHost.Start();
                 await Log.WriteMonitorAsync("", "", "Started");
             }
             catch (Exception ex)
@@ -118,6 +128,8 @@ namespace Lykke.Ninja.Web
             try
             {
 
+                _triggerHost?.Cancel();
+                await _triggerHostTask;
             }
             catch (Exception ex)
             {
@@ -133,11 +145,13 @@ namespace Lykke.Ninja.Web
         {
             try
             {
+                // NOTE: Job can't recieve and process IsAlive requests here, so you can destroy all resources
+                
                 if (Log != null)
                 {
                     await Log.WriteMonitorAsync("", "", "Terminating");
                 }
-
+                
                 ApplicationContainer.Dispose();
             }
             catch (Exception ex)
@@ -151,7 +165,6 @@ namespace Lykke.Ninja.Web
             }
         }
 
-
         private static ILog CreateLog(IServiceCollection services, IReloadingManager<GeneralSettings> settings)
         {
             var consoleLogger = new LogToConsole();
@@ -161,13 +174,13 @@ namespace Lykke.Ninja.Web
 
             var dbLogConnectionStringManager = settings.Nested(x => x.LykkeNinja.Db.LogsConnString);
             var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
-            
+
             if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
             {
                 var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                    AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "LykkeNinjaWebLogs", consoleLogger),
+                    AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "LykkeNinjaBalanceJobLogs", consoleLogger),
                     consoleLogger);
-                
+
 
                 var azureStorageLogger = new LykkeLogToAzureStorage(
                     persistenceManager,

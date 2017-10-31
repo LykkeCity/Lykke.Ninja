@@ -1,29 +1,54 @@
 ﻿using System;
-using System.Runtime.Loader;
-using Autofac.Extensions.DependencyInjection;
-using Lykke.Ninja.Core.Settings;
-using Lykke.Ninja.Core.Settings.Validation;
-using Lykke.JobTriggers.Triggers;
-using System.Threading;
-using Lykke.Ninja.BalanceJob;
-using Microsoft.Extensions.Configuration;
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
 
-namespace Lykke.Ninja.Jobs
+namespace Lykke.Ninja.BalanceJob
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            Console.Clear();
-            Console.Title = "Lykke Ninja Balance job - Ver. " + Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion;
+            Console.WriteLine($"Lykke.Ninja.BalanceJob version {Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion}");
+#if DEBUG
+            Console.WriteLine("Is DEBUG");
+#else
+            Console.WriteLine("Is RELEASE");
+#endif           
+            Console.WriteLine($"ENV_INFO: {Environment.GetEnvironmentVariable("ENV_INFO")}");
 
-            var host = new AppHost();
+            try
+            {
+                var host = new WebHostBuilder()
+                    .UseKestrel()
+                    .UseUrls("http://*:5000")
+                    .UseContentRoot(Directory.GetCurrentDirectory())
+                    .UseStartup<Startup>()
+                    .Build();
 
-            Console.WriteLine("Lykke Ninja Balance job is running");
-            Console.WriteLine("Utc time: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                host.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Fatal error:");
+                Console.WriteLine(ex);
 
-            host.Run();
+                // Lets devops to see startup error in console between restarts in the Kubernetes
+                var delay = TimeSpan.FromMinutes(1);
+
+                Console.WriteLine();
+                Console.WriteLine($"Process will be terminated in {delay}. Press any key to terminate immediately.");
+
+                Task.WhenAny(
+                        Task.Delay(delay),
+                        Task.Run(() =>
+                        {
+                            Console.ReadKey(true);
+                        }))
+                    .Wait();
+            }
+
+            Console.WriteLine("Terminated");
         }
-        
     }
 }
