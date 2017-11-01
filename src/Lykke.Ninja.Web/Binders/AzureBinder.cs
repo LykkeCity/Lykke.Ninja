@@ -6,19 +6,14 @@ using Common;
 using Common.Log;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Repositories;
-using Lykke.Ninja.Repositories.Log;
 using Lykke.Ninja.Services;
 
 namespace Lykke.Ninja.Web.Binders
 {
     public class AzureBinder
     {
-        public ContainerBuilder Bind(GeneralSettings generalSettings)
+        public ContainerBuilder Bind(GeneralSettings generalSettings, ILog log)
         {
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebError", null),
-                                            new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebWarning", null),
-                                            new AzureTableStorage<LogEntity>(generalSettings.LykkeNinja.Db.LogsConnString, "LykkeNinjaWebInfo", null));
-            var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
             var ioc = new ContainerBuilder();
 

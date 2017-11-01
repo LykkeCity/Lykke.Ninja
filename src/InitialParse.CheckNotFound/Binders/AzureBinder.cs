@@ -6,7 +6,6 @@ using Common;
 using Common.Log;
 using Lykke.Ninja.Core.Settings;
 using Lykke.Ninja.Repositories;
-using Lykke.Ninja.Repositories.Log;
 using Lykke.Ninja.Services;
 
 namespace InitialParse.CheckNotFound.Binders
@@ -15,25 +14,26 @@ namespace InitialParse.CheckNotFound.Binders
     {
         public ContainerBuilder Bind(GeneralSettings generalSettings)
         {
-            var settings = generalSettings.LykkeNinja;
-            var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundError", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundWarning", null),
-                                            new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundInfo", null));
-            var log = new LogToTableAndConsole(logToTable, new LogToConsole());
+            throw new NotImplementedException();
+            //var settings = generalSettings.LykkeNinja;
+            //var logToTable = new LogToTable(new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundError", null),
+            //                                new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundWarning", null),
+            //                                new AzureTableStorage<LogEntity>(settings.Db.LogsConnString, "LykkeNinjaInitialParserCheckNotFoundInfo", null));
+            //var log = new LogToTableAndConsole(logToTable, new LogToConsole());
 
-            var ioc = new ContainerBuilder();
+            //var ioc = new ContainerBuilder();
 
-            var consoleWriter = new ConsoleLWriter(p =>
-            {
-                Console.WriteLine($"{DateTime.UtcNow:T} -  {p}");
-            });
+            //var consoleWriter = new ConsoleLWriter(p =>
+            //{
+            //    Console.WriteLine($"{DateTime.UtcNow:T} -  {p}");
+            //});
 
-            ioc.RegisterInstance(consoleWriter).As<IConsole>();
+            //ioc.RegisterInstance(consoleWriter).As<IConsole>();
 
             
-            InitContainer(ioc, generalSettings, log);
+            //InitContainer(ioc, generalSettings, log);
 
-            return ioc;
+            //return ioc;
         }
 
         private void InitContainer(ContainerBuilder ioc, GeneralSettings generalSettings, ILog log)
