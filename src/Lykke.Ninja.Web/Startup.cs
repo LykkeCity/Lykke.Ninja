@@ -55,8 +55,8 @@ namespace Lykke.Ninja.Web
 
                 options.DescribeAllEnumsAsStrings();
             });
-
-            var settings = Configuration.LoadSettings<GeneralSettings>();
+            
+            var settings = Configuration.ReadLykkeNinjaSettings<GeneralSettings>();
 
             Log = CreateLog(services, settings);
             var builder = new AzureBinder().Bind(settings.CurrentValue, Log);
@@ -68,9 +68,9 @@ namespace Lykke.Ninja.Web
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime appLifetime)
         {
-            var settings = Configuration.LoadSettings<GeneralSettings>();
+            var settings = Configuration.ReadLykkeNinjaSettings<GeneralSettings>();
 
-
+            
             if (!settings.CurrentValue.LykkeNinja.Proxy.ProxyAllRequests)
             {
                 if (env.IsDevelopment())

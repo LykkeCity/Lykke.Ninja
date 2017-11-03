@@ -55,7 +55,7 @@ namespace Lykke.Ninja.BalanceJob
                     options.DescribeAllEnumsAsStrings();
                 });
                 
-                var appSettings = Configuration.LoadSettings<GeneralSettings>();
+                var appSettings = Configuration.ReadLykkeNinjaSettings<GeneralSettings>();
 
                 Log = CreateLog(services, appSettings);
 
