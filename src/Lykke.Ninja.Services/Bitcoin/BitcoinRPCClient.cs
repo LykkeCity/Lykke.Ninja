@@ -15,22 +15,23 @@ namespace Lykke.Ninja.Services.Bitcoin
 {
     public class BitcoinRpcClient: IBitcoinRpcClient
     {
-        private readonly RPCClient _client;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(100);
         private readonly IConsole _console;
         private readonly ILog _log;
+        private readonly IBitcoinRpcClientFactory _bitcoinRpcClientFactory;
 
-
-        public BitcoinRpcClient(RPCClient client, IConsole console, ILog log)
+        public BitcoinRpcClient(IConsole console,
+            ILog log, 
+            IBitcoinRpcClientFactory bitcoinRpcClientFactory)
         {
-            _client = client;
             _console = console;
             _log = log;
+            _bitcoinRpcClientFactory = bitcoinRpcClientFactory;
         }
 
         public async Task<IEnumerable<uint256>> GetUnconfirmedTransactionIds()
         {
-            return await _client.GetRawMempoolAsync();
+            return await _bitcoinRpcClientFactory.GetClient().GetRawMempoolAsync();
         }
 
         public async Task<IEnumerable<Transaction>> GetRawTransactions(IEnumerable<uint256> txIds)
@@ -66,7 +67,7 @@ namespace Lykke.Ninja.Services.Bitcoin
             await _lock.WaitAsync();
             try
             {
-                var result =  await _client.GetRawTransactionAsync(txId, false).ConfigureAwait(false);
+                var result =  await _bitcoinRpcClientFactory.GetClient().GetRawTransactionAsync(txId, false).ConfigureAwait(false);
 
 
 

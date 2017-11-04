@@ -58,8 +58,8 @@ namespace Lykke.Ninja.Services
                 .As<IPoisionQueueNotifier>();
 
 
-            ioc.RegisterInstance(new RPCClient(new NetworkCredential(settings.BitcoinRpc.Username, settings.BitcoinRpc.Password), settings.BitcoinRpc.IpAddress, settings.UsedNetwork()))
-                .AsSelf();
+
+            ioc.RegisterType<BitcoinRpcClientFactory>().As<IBitcoinRpcClientFactory>();
 
 
             ioc.RegisterInstance(settings.UsedNetwork()).AsSelf();
