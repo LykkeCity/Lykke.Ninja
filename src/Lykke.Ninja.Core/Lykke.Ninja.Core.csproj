@@ -10,11 +10,6 @@
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="3.0.2" />
     <PackageReference Include="Lykke.SettingsReader" Version="1.0.42" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
     <PackageReference Include="NBitcoin" Version="4.0.0.38" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="QBitNinja.Client" Version="1.0.3.41" />
