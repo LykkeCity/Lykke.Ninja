@@ -192,7 +192,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
         private async Task InsertChanges(IEnumerable<string> txIds)
         {
             var notFoundInputs = new List<GroupedTransactionInputs>();
-            foreach (var batch in txIds.Batch(500, p => p.ToList()))
+            foreach (var batch in txIds.Batch(100, p => p.ToList()))
             {
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
 

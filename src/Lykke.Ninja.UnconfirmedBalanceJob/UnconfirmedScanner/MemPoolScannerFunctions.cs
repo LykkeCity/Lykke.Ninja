@@ -34,21 +34,19 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
         {
             WriteConsole($"{nameof(ScanUnconfirmed)} started");
 
-            if (!await _balanceChangesCommandProducer.IsQueueFull())
-            {
-                await ScanUnconfirmedInner().WithTimeout(10 * 60 * 1000);
-            }
-            else
-            {
-                WriteConsole($"{nameof(ScanUnconfirmed)} Queue is full");
-            }
+	        await ScanUnconfirmedInner().WithTimeout(10 * 60 * 1000);
 
-            WriteConsole($"{nameof(ScanUnconfirmed)} done");
+			WriteConsole($"{nameof(ScanUnconfirmed)} done");
         }
 
         private async Task ScanUnconfirmedInner()
         {
-            var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
+	        if (await _balanceChangesCommandProducer.IsQueueFull())
+			{
+				WriteConsole($"{nameof(ScanUnconfirmed)} Queue is full");
+				return;
+	        }
+	        var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
             WriteConsole($"{nameof(ScanUnconfirmed)}. {txIds.Count} unconfirmedTxs");
 
             var synchronizePlan =

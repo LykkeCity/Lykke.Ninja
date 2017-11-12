@@ -10,9 +10,9 @@
   <ItemGroup>
     <PackageReference Include="Lykke.Common" Version="3.0.2" />
     <PackageReference Include="Lykke.SettingsReader" Version="1.0.42" />
-    <PackageReference Include="NBitcoin" Version="4.0.0.38" />
+    <PackageReference Include="NBitcoin" Version="4.0.0.42" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="QBitNinja.Client" Version="1.0.3.41" />
+    <PackageReference Include="QBitNinja.Client" Version="1.0.3.44" />
   </ItemGroup>
 
 </Project>
