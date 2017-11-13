@@ -857,15 +857,18 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var blockHeight = await _collection.AsQueryable(_defaultAggregateOptions)
+            var data = await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
-                .Select(p => new[] { p.BlockHeight, p.SpendTxInput.BlockHeight })
-                .SelectMany(p => p)
-                .Distinct()
+                .OrderBy(p=>p.BlockHeight) //
+                .ThenBy(p=>p.SpendTxInput.BlockHeight) //force to use 
+                .Select(p => new { h = p.BlockHeight, sp = p.SpendTxInput.BlockHeight })
                 .ToListAsync();
 
-            return blockHeight
+            return data
+                .Select(p=> new []{ p.h, p.sp })
+                .SelectMany(p => p)
+                .Distinct()
                 .Where(p => p != 0)
                 .OrderByDescending(p => p)
                 .Select(AssetStatsBlock.Create);
