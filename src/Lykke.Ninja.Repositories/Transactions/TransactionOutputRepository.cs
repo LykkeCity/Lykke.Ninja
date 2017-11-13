@@ -860,8 +860,8 @@ namespace Lykke.Ninja.Repositories.Transactions
             var data = await _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
-                .OrderBy(p=>p.BlockHeight) //
-                .ThenBy(p=>p.SpendTxInput.BlockHeight) //force to use 
+                .OrderBy(p=>p.BlockHeight)  //force to use AssetsStatsBlocksWithChanges index
+                .ThenBy(p=>p.SpendTxInput.BlockHeight) //force to use AssetsStatsBlocksWithChanges index
                 .Select(p => new { h = p.BlockHeight, sp = p.SpendTxInput.BlockHeight })
                 .ToListAsync();
 
