@@ -19,13 +19,15 @@ namespace Lykke.Ninja.Web.Models
             IEnumerable<ITransactionOutput> spended, 
             IEnumerable<ITransactionOutput> received,
             string continuationToken = null,
-            IEnumerable<IBalanceChange> unconfirmedSpended= null,
-            IEnumerable<IBalanceChange> unconfirmedReceived = null)
+            IEnumerable<IBalanceChange> unconfirmedSpended = null,
+            IEnumerable<IBalanceChange> unconfirmedReceived = null,
+            bool showFees = false,
+            bool showAmount = true)
         {
             return new TransactionsViewModel
             {
                 ContinuationToken = continuationToken,
-                Transactions = GetTxs(ninjaTop, network, isColored, spended, received, unconfirmedSpended, unconfirmedReceived).ToArray(),
+                Transactions = GetTxs(ninjaTop, network, isColored, spended, received, unconfirmedSpended, unconfirmedReceived, showFees, showAmount).ToArray(),
                 ConflictedOperations = Enumerable.Empty<object>().ToArray()
             };
         }
@@ -36,7 +38,9 @@ namespace Lykke.Ninja.Web.Models
             IEnumerable<ITransactionOutput> spended,
             IEnumerable<ITransactionOutput> received,
             IEnumerable<IBalanceChange> unconfirmedSpended,
-            IEnumerable<IBalanceChange> unconfirmedReceived)
+            IEnumerable<IBalanceChange> unconfirmedReceived,
+            bool showFees,
+            bool showAmount)
         {
             spended = spended ?? Enumerable.Empty<ITransactionOutput>();
             received = received ?? Enumerable.Empty<ITransactionOutput>();
@@ -69,7 +73,9 @@ namespace Lykke.Ninja.Web.Models
                         ninjaTop,
                         isColored,
                         spendedLookup[txId], 
-                        receivedLookup[txId]))
+                        receivedLookup[txId],
+                        showFees,
+                        showAmount))
                .ToList()
                .OrderBy(p => p.Confirmed)
                .ThenByDescending(p => p.Height)
@@ -245,24 +251,46 @@ namespace Lykke.Ninja.Web.Models
         public static TransactionViewModel Create(INinjaBlockHeader tipHeader,
             bool isColored, 
             IEnumerable<InOutViewModel> spended,
-            IEnumerable<InOutViewModel> received)
+            IEnumerable<InOutViewModel> received,
+            bool showFees,
+            bool showAmount)
         {
-
-            var any = spended.FirstOrDefault() ?? received.First();
+            var spendedArr = spended as InOutViewModel[] ?? spended.ToArray();
+            var receivedArr = received as InOutViewModel[] ?? received.ToArray();
+            var any = spendedArr.FirstOrDefault() ?? receivedArr.First();
 
             var transactionId = any.OperationTransactionId;
             var blockId = any.OperationBlockId;
             var blockHeight = any.OperationBlockHeight;
             var isConfirmed = any.Confirmed;
 
-            double amount;
-            if (isColored)
+            double? amount = null;
+
+            if (showAmount)
             {
-                amount = received.Where(p => !p.IsColored).Sum(p => p.Value) - spended.Where(p => !p.IsColored).Sum(p => p.Value);
+                if (isColored)
+                {
+                    amount = receivedArr.Where(p => !p.IsColored).Sum(p => p.Value) - spendedArr.Where(p => !p.IsColored).Sum(p => p.Value);
+                }
+                else
+                {
+                    amount = receivedArr.Sum(p => p.Value) - spendedArr.Sum(p => p.Value);
+                }
             }
-            else
+
+
+            double? fees = null;
+
+            if (showFees)
             {
-                amount = received.Sum(p => p.Value) - spended.Sum(p => p.Value);
+                if (spendedArr.Any())
+                {
+                    fees = spendedArr.Sum(p => p.Value) - receivedArr.Sum(p => p.Value);
+                }
+                else
+                {
+                    fees = 0;
+                }
             }
             return new TransactionViewModel
             {
@@ -271,9 +299,10 @@ namespace Lykke.Ninja.Web.Models
                 BlockId = blockId,
                 Height = blockHeight,
                 Confirmations = isConfirmed? (tipHeader.BlockHeight - blockHeight + 1) : 0,
-                Received = received.ToArray(),
-                Spent = spended.ToArray(),
-                Confirmed = isConfirmed
+                Received = receivedArr,
+                Spent = spendedArr,
+                Confirmed = isConfirmed,
+                Fees = fees
             };
         }
     }

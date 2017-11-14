@@ -36,7 +36,7 @@ namespace Lykke.Ninja.Web.Controllers
 
             await Task.WhenAll(getTip, getSpended, getReceived);
 
-            return TransactionsViewModel.Create(getTip.Result, _network, colored, getSpended.Result, getReceived.Result);
+            return TransactionsViewModel.Create(getTip.Result, _network, colored, getSpended.Result, getReceived.Result, showFees: true, showAmount: false);
         }
 
         private async Task<int> GetBlockHeight(string blockFeature)

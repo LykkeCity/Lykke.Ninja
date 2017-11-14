@@ -22,7 +22,7 @@ namespace Lykke.Ninja.Core.Ninja.Contracts
     public class TransactionListItemContract
     {
         [JsonProperty("amount")]
-        public double Amount { get; set; }
+        public double? Amount { get; set; }
 
         [JsonProperty("confirmations")]
         public int Confirmations { get; set; }
@@ -41,6 +41,9 @@ namespace Lykke.Ninja.Core.Ninja.Contracts
 
         [JsonProperty("spentCoins")]
         public InOutContract[] Spent { get; set; }
+
+        [JsonProperty("fees")]
+        public double? Fees { get; set; }
     }
 
 
