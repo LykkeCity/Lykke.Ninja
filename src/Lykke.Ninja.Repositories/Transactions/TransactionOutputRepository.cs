@@ -572,7 +572,8 @@ namespace Lykke.Ninja.Repositories.Transactions
                 SetSupportGetSpendedQueryIndex(),
                 SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
                 SetSupportAssetsStatsAddressGroupingQueryIndex(),
-                SetSupportAssetsStatsTransactionsQueryIndex()
+                SetSupportAssetsStatsTransactionsQueryIndex(),
+                SetSupportSpendedBlockHeightIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -712,6 +713,25 @@ namespace Lykke.Ninja.Repositories.Transactions
                     PartialFilterExpression = hasColoredDataFilterExpression
                 });
         }
+
+        private async Task SetSupportSpendedBlockHeightIndex()
+        {
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
+            var spendedBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.BlockHeight);
+
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(isSpended, spendedBlockHeight);
+
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportSpendedBlockHeightIndex",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.SpendTxInput.IsSpended, true)
+                };
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
+
 
         #endregion
 
