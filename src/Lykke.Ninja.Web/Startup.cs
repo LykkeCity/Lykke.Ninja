@@ -47,6 +47,7 @@ namespace Lykke.Ninja.Web
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.Formatting = Formatting.Indented;
+                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                 });
 
             services.AddSwaggerGen(options =>
