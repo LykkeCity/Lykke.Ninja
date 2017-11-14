@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
+using Common.Extensions;
 using Lykke.Ninja.Core.ParseBlockCommand;
 
 namespace Lykke.Ninja.Repositories.ParseBlockCommand
@@ -29,7 +30,7 @@ namespace Lykke.Ninja.Repositories.ParseBlockCommand
 
         public async Task<int> GetQueuedCommandCount()
         {
-            return await _queue.Count() ?? 0;
+            return await _queue.Count().WithTimeout(3*60*1000) ?? 0;
         }
     }
 }

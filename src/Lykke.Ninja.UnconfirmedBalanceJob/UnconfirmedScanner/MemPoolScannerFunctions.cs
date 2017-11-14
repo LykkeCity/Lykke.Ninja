@@ -34,20 +34,23 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
         {
             WriteConsole($"{nameof(ScanUnconfirmed)} started");
 
-	        await ScanUnconfirmedInner().WithTimeout(10 * 60 * 1000);
+	        await ScanUnconfirmedInner().WithTimeout(20 * 60 * 1000);
 
 			WriteConsole($"{nameof(ScanUnconfirmed)} done");
         }
 
         private async Task ScanUnconfirmedInner()
-        {
-	        if (await _balanceChangesCommandProducer.IsQueueFull())
+		{
+			WriteConsole($"{nameof(ScanUnconfirmed)}. Check queue is full started");
+			if (await _balanceChangesCommandProducer.IsQueueFull())
 			{
 				WriteConsole($"{nameof(ScanUnconfirmed)} Queue is full");
 				return;
 	        }
-	        var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
-            WriteConsole($"{nameof(ScanUnconfirmed)}. {txIds.Count} unconfirmedTxs");
+
+			WriteConsole($"{nameof(ScanUnconfirmed)}. GetUnconfirmedTransactionIds started");
+			var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
+            WriteConsole($"{nameof(ScanUnconfirmed)}. GetUnconfirmedTransactionIds :: found {txIds.Count} unconfirmedTxs");
 
             var synchronizePlan =
                 await _statusesSinchronizeService.GetStatusesSynchronizePlan(txIds.Select(p => p.ToString()));

@@ -149,7 +149,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 
         private void WriteConsole(string message)
         {
-            _console.WriteLine($"{nameof(UnconfirmedStatusesRepository)}{message}");
+            _console.WriteLine($"{nameof(UnconfirmedStatusesRepository)} {message}");
         }
 
         private async Task SetConfirmedIndex()
