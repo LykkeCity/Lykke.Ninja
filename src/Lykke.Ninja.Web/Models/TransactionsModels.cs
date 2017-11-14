@@ -11,18 +11,18 @@ using Lykke.Ninja.Services.Ninja;
 
 namespace Lykke.Ninja.Web.Models
 {
-    public class AddressTransactionsViewModel: AddressTransactionListContract
+    public class TransactionsViewModel: TransactionListContract
     {
-        public static AddressTransactionsViewModel Create(INinjaBlockHeader ninjaTop, 
+        public static TransactionsViewModel Create(INinjaBlockHeader ninjaTop, 
             Network network, 
             bool isColored,
-            string continuationToken,
             IEnumerable<ITransactionOutput> spended, 
             IEnumerable<ITransactionOutput> received,
-            IEnumerable<IBalanceChange> unconfirmedSpended,
-            IEnumerable<IBalanceChange> unconfirmedReceived)
+            string continuationToken = null,
+            IEnumerable<IBalanceChange> unconfirmedSpended= null,
+            IEnumerable<IBalanceChange> unconfirmedReceived = null)
         {
-            return new AddressTransactionsViewModel
+            return new TransactionsViewModel
             {
                 ContinuationToken = continuationToken,
                 Transactions = GetTxs(ninjaTop, network, isColored, spended, received, unconfirmedSpended, unconfirmedReceived).ToArray(),
@@ -30,7 +30,7 @@ namespace Lykke.Ninja.Web.Models
             };
         }
 
-        private static IEnumerable<AddressTransactionListItemContract> GetTxs(INinjaBlockHeader ninjaTop, 
+        private static IEnumerable<TransactionListItemContract> GetTxs(INinjaBlockHeader ninjaTop, 
             Network network, 
             bool isColored,
             IEnumerable<ITransactionOutput> spended,
@@ -40,6 +40,9 @@ namespace Lykke.Ninja.Web.Models
         {
             spended = spended ?? Enumerable.Empty<ITransactionOutput>();
             received = received ?? Enumerable.Empty<ITransactionOutput>();
+            unconfirmedSpended = unconfirmedSpended ?? Enumerable.Empty<IBalanceChange>();
+            unconfirmedReceived = unconfirmedReceived ?? Enumerable.Empty<IBalanceChange>();
+
             var scriptPubKeyDictionary = new Dictionary<string, string>();
 
             var mappedConfirmedSpended = spended
@@ -62,7 +65,7 @@ namespace Lykke.Ninja.Web.Models
             var txIds = mappedSpended.Union(mappedReceived).Select(p=>p.OperationTransactionId).Distinct();
 
             return txIds.Select(txId =>
-                    AddressTransactionViewModel.Create(
+                    TransactionViewModel.Create(
                         ninjaTop,
                         isColored,
                         spendedLookup[txId], 
@@ -234,12 +237,12 @@ namespace Lykke.Ninja.Web.Models
         }
     }
 
-    public class AddressTransactionViewModel: AddressTransactionListItemContract
+    public class TransactionViewModel: TransactionListItemContract
     {
         [JsonIgnore]
         public bool Confirmed { get; set; }
 
-        public static AddressTransactionViewModel Create(INinjaBlockHeader tipHeader,
+        public static TransactionViewModel Create(INinjaBlockHeader tipHeader,
             bool isColored, 
             IEnumerable<InOutViewModel> spended,
             IEnumerable<InOutViewModel> received)
@@ -261,7 +264,7 @@ namespace Lykke.Ninja.Web.Models
             {
                 amount = received.Sum(p => p.Value) - spended.Sum(p => p.Value);
             }
-            return new AddressTransactionViewModel
+            return new TransactionViewModel
             {
                 Amount = amount,
                 TxId = transactionId,

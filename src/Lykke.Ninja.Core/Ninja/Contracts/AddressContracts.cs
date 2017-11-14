@@ -5,21 +5,21 @@ using Newtonsoft.Json;
 
 namespace Lykke.Ninja.Core.Ninja.Contracts
 {
-    #region AddressTransactionListContract
+    #region TransactionListContract
 
-    public class AddressTransactionListContract
+    public class TransactionListContract
     {
         [JsonProperty("continuation")]
         public string ContinuationToken { get; set; }
 
         [JsonProperty("operations")]
-        public AddressTransactionListItemContract[] Transactions { get; set; }
+        public TransactionListItemContract[] Transactions { get; set; }
 
         [JsonProperty("conflictedOperations")]
         public object[] ConflictedOperations { get; set; }
     }
 
-    public class AddressTransactionListItemContract
+    public class TransactionListItemContract
     {
         [JsonProperty("amount")]
         public double Amount { get; set; }

@@ -73,7 +73,8 @@ namespace Lykke.Ninja.Core.Transaction
         Task<IReadOnlyDictionary<string, long>> GetAssetsAmount(BitcoinAddress address, int? at = null);
 
         Task<IEnumerable<ITransactionOutput>> GetByIds(IEnumerable<string> ids, int timeoutSeconds = 240);
-
+        Task<IEnumerable<ITransactionOutput>> GetSpendedByBlock(int blockHeight);
+        Task<IEnumerable<ITransactionOutput>> GetReceivedByBlock(int blockHeight);
         Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,
             int? maxBlockHeight = null,

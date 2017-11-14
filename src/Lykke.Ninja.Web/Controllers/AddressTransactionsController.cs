@@ -9,6 +9,7 @@ using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
 using Microsoft.AspNetCore.Mvc;
 using Lykke.Ninja.Services.Ninja;
 using Lykke.Ninja.Web.Models;
+using NBitcoin;
 
 namespace Lykke.Ninja.Web.Controllers
 {
@@ -16,27 +17,30 @@ namespace Lykke.Ninja.Web.Controllers
     public class AddressTransactionsController:Controller
     {
         private readonly ITransactionOutputRepository _outputRepository;
-        private readonly BaseSettings _baseSettings;
+        private readonly Network _network;
         private readonly INinjaBlockService _ninjaBlockService;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly IUnconfirmedBalanceChangesRepository _unconfirmedBalanceChangesRepository;
-        
+        private readonly int _itemsOnAddressTransactionPage;
 
-        public AddressTransactionsController(ITransactionOutputRepository outputRepository, 
-            BaseSettings baseSettings, 
+
+        public AddressTransactionsController(ITransactionOutputRepository outputRepository,
+            Network network, 
             INinjaBlockService ninjaBlockService,
             IBlockStatusesRepository blockStatusesRepository,
-            IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository)
+            IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository,
+            BaseSettings baseSettings)
         {
             _outputRepository = outputRepository;
-            _baseSettings = baseSettings;
+            _network = network;
             _ninjaBlockService = ninjaBlockService;
             _blockStatusesRepository = blockStatusesRepository;
             _unconfirmedBalanceChangesRepository = unconfirmedBalanceChangesRepository;
+            _itemsOnAddressTransactionPage = baseSettings.ItemsOnAddressTransactionPage;
         }
 
         [HttpGet("{address}")]
-        public async Task<AddressTransactionsViewModel> Get(string address, 
+        public async Task<TransactionsViewModel> Get(string address, 
             [FromQuery]bool colored = false, 
             [FromQuery]bool unspentonly = false, 
             [FromQuery(Name = "from")]string maxBlockDescriptor = null, 
@@ -57,14 +61,14 @@ namespace Lykke.Ninja.Web.Controllers
                 maxBlockHeight: getMaxBlockHeight.Result);
         }
 
-        private async Task<AddressTransactionsViewModel> GetTransactions(string address, 
+        private async Task<TransactionsViewModel> GetTransactions(string address, 
             bool colored, 
             bool unspendOnly, 
             string continuation,
             int? minBlockHeight = null, 
             int? maxBlockHeight = null)
         {
-            var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _baseSettings.UsedNetwork());
+            var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _network);
 
             var getNinjaTop = _ninjaBlockService.GetTip(withRetry:false);
             var itemsToSkip = ContiniationBinder.GetItemsToSkipFromContinuationToke(continuation);
@@ -76,7 +80,7 @@ namespace Lykke.Ninja.Web.Controllers
                     minBlockHeight: minBlockHeight,
                     maxBlockHeight: maxBlockHeight,
                     itemsToSkip: itemsToSkip,
-                    itemsToTake: _baseSettings.ItemsOnAddressTransactionPage);
+                    itemsToTake: _itemsOnAddressTransactionPage);
             }
             else
             {
@@ -88,7 +92,7 @@ namespace Lykke.Ninja.Web.Controllers
                 minBlockHeight: minBlockHeight, 
                 maxBlockHeight: maxBlockHeight,
                 itemsToSkip: itemsToSkip,
-                itemsToTake: _baseSettings.ItemsOnAddressTransactionPage);
+                itemsToTake: _itemsOnAddressTransactionPage);
 
             Task<IEnumerable<IBalanceChange>> getUnconfirmedSpended;
             Task<IEnumerable<IBalanceChange>> getUnconfirmedReceived;
@@ -111,19 +115,19 @@ namespace Lykke.Ninja.Web.Controllers
                 getUnconfirmedReceived);
 
             string newContinuation = null;
-            if (getSpended.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage ||
-                getReceived.Result.Count() == _baseSettings.ItemsOnAddressTransactionPage)
+            if (getSpended.Result.Count() == _itemsOnAddressTransactionPage ||
+                getReceived.Result.Count() == _itemsOnAddressTransactionPage)
             {
                 newContinuation =
-                    ContiniationBinder.GetContinuationToken(itemsToSkip ,_baseSettings.ItemsOnAddressTransactionPage);
+                    ContiniationBinder.GetContinuationToken(itemsToSkip ,_itemsOnAddressTransactionPage);
             }
 
-            return AddressTransactionsViewModel.Create(getNinjaTop.Result, 
-                _baseSettings.UsedNetwork(), 
+            return TransactionsViewModel.Create(getNinjaTop.Result, 
+                _network, 
                 colored, 
-                newContinuation,
                 getSpended.Result, 
                 getReceived.Result,
+                newContinuation,
                 getUnconfirmedSpended.Result,
                 getUnconfirmedReceived.Result);
         }

@@ -422,6 +422,23 @@ namespace Lykke.Ninja.Repositories.Transactions
             return result;
         }
 
+        public async Task<IEnumerable<ITransactionOutput>> GetSpendedByBlock(int blockHeight)
+        {
+
+            await EnsureQueryIndexes();
+
+            return await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.SpendTxInput.IsSpended && p.SpendTxInput.BlockHeight == blockHeight)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ITransactionOutput>> GetReceivedByBlock(int blockHeight)
+        {
+            return await _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.BlockHeight == blockHeight)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<ITransactionOutput>> GetSpended(BitcoinAddress address,
             int? minBlockHeight = null,
             int? maxBlockHeight = null,
@@ -511,229 +528,6 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .ToListAsync())
                 .Where(p => p.BtcSatoshiAmount != 0);
         }
-
-        #region Indexes
-
-        private async Task EnsureInsertionIndexes()
-        {
-            await _ensureInsertIndexesLocker.Value;
-        }
-
-        private async Task EnsureQueryIndexes()
-        {
-            await _ensureQueryIndexesLocker.Value;
-        }
-
-        private async Task EnsureUpdateIndexes()
-        {
-            await _ensureUpdateIndexesLocker.Value;
-        }
-
-
-        private async Task SetInsertionIndexes()
-        {
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Started");
-
-            var setIndexes = new List<Task>
-            {
-                SetHeightIndex(),
-                SetIdIndex()
-            };
-
-            await Task.WhenAll(setIndexes);
-
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Done");
-        }
-
-        private async Task SetUpdateIndexes()
-        {
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Started");
-
-
-            var setIndexes = new List<Task>
-            {
-                SetIdIndex()
-            };
-            
-            await Task.WhenAll(setIndexes);
-
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Done");
-        }
-
-        private async Task SetQueryIndexes()
-        {
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Started");
-
-            var setIndexes = new[]
-            {
-                SetSupportHistorySummaryQueryIndex(),
-                SetSupportSummaryQueryIndex(),
-                SetSupportGetReceivedQueryIndex(),
-                SetSupportGetSpendedQueryIndex(),
-                SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
-                SetSupportAssetsStatsAddressGroupingQueryIndex(),
-                SetSupportAssetsStatsTransactionsQueryIndex(),
-                SetSupportSpendedBlockHeightIndex()
-            };
-
-            await Task.WhenAll(setIndexes);
-
-            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Done");
-        }
-
-        #region Single
-
-        private async Task SetHeightIndex()
-        {
-            var blockHeightIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = false });
-        }
-
-        private async Task SetIdIndex()
-        {
-            var idIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.Id);
-            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
-        }
-
-        #endregion
-
-
-        private async Task SetSupportSummaryQueryIndex()
-        {
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
-            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
-
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData, height, btcValue);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummary" });
-        }
-
-        private async Task SetSupportHistorySummaryQueryIndex()
-        {
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
-            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            var spendHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-
-            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
-
-            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, spendHeight, height, hasColoredData, btcValue);
-            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummaryHistory" });
-        }
-
-        private async Task SetSupportGetReceivedQueryIndex()
-        {
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-
-            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, height, isSpended);
-            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetReceived" });
-        }
-
-        private async Task SetSupportGetSpendedQueryIndex()
-        {
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
-            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
-
-            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, spentTxInputBlockHeight, isSpended);
-            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
-        }
-
-        private async Task SetSupportAssetsStatsBlocksWithChangesQueryIndex()
-        {
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
-            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, spentTxInputBlockHeight);
-            var indexOpt =
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "AssetsStatsBlocksWithChanges",
-                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
-                };
-            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
-        }
-
-        private async Task SetSupportAssetsStatsAddressGroupingQueryIndex()
-        {
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
-            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
-            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.DestinationAddress);
-            var quantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.Quantity);
-            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, isSpended, address, quantity);
-
-            var indexOpt =
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "SupportAssetStatsAddressGrouping",
-                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
-                };
-
-            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
-        }
-
-        private async Task SetSupportAssetsStatsTransactionsQueryIndex()
-        {
-            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
-            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
-            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
-            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
-
-            var txId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.TransactionId);
-            var spendedTxId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.SpendedInTxId);
-
-            var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, spentTxInputBlockHeight, spendedTxId);
-            var outputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, txId);
-
-            var hasColoredDataFilterExpression =
-                Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true);
-
-            await _collection.Indexes.CreateOneAsync(inputsCombineIndex, 
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "SupportAssetStatsTransactionsInputs",
-                    PartialFilterExpression = hasColoredDataFilterExpression
-                });
-
-            await _collection.Indexes.CreateOneAsync(outputsCombineIndex, 
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "SupportAssetStatsTransactionsOutputs",
-                    PartialFilterExpression = hasColoredDataFilterExpression
-                });
-        }
-
-        private async Task SetSupportSpendedBlockHeightIndex()
-        {
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
-            var spendedBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.BlockHeight);
-
-            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(isSpended, spendedBlockHeight);
-
-            var indexOpt =
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "SupportSpendedBlockHeightIndex",
-                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.SpendTxInput.IsSpended, true)
-                };
-
-            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
-        }
-
-
-        #endregion
 
         public async Task<IEnumerable<IAssetStatsAddressSummary>> GetSummaryAsync(IEnumerable<string> assetIds, int? maxBlockHeight)
         {
@@ -893,6 +687,229 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .OrderByDescending(p => p)
                 .Select(AssetStatsBlock.Create);
         }
+
+        #region Indexes
+
+        private async Task EnsureInsertionIndexes()
+        {
+            await _ensureInsertIndexesLocker.Value;
+        }
+
+        private async Task EnsureQueryIndexes()
+        {
+            await _ensureQueryIndexesLocker.Value;
+        }
+
+        private async Task EnsureUpdateIndexes()
+        {
+            await _ensureUpdateIndexesLocker.Value;
+        }
+
+
+        private async Task SetInsertionIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Started");
+
+            var setIndexes = new List<Task>
+            {
+                SetHeightIndex(),
+                SetIdIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetInsertionIndexes), null, "Done");
+        }
+
+        private async Task SetUpdateIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Started");
+
+
+            var setIndexes = new List<Task>
+            {
+                SetIdIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetUpdateIndexes), null, "Done");
+        }
+
+        private async Task SetQueryIndexes()
+        {
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Started");
+
+            var setIndexes = new[]
+            {
+                SetSupportHistorySummaryQueryIndex(),
+                SetSupportSummaryQueryIndex(),
+                SetSupportGetReceivedQueryIndex(),
+                SetSupportGetSpendedQueryIndex(),
+                SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
+                SetSupportAssetsStatsAddressGroupingQueryIndex(),
+                SetSupportAssetsStatsTransactionsQueryIndex(),
+                SetSupportSpendedBlockHeightIndex()
+            };
+
+            await Task.WhenAll(setIndexes);
+
+            await _log.WriteInfoAsync(nameof(TransactionOutputRepository), nameof(SetQueryIndexes), null, "Done");
+        }
+
+        #region Single
+
+        private async Task SetHeightIndex()
+        {
+            var blockHeightIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            await _collection.Indexes.CreateOneAsync(blockHeightIndex, new CreateIndexOptions { Background = false });
+        }
+
+        private async Task SetIdIndex()
+        {
+            var idIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.Id);
+            await _collection.Indexes.CreateOneAsync(idIndex, new CreateIndexOptions { Unique = true });
+        }
+
+        #endregion
+
+
+        private async Task SetSupportSummaryQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
+
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, hasColoredData, height, btcValue);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummary" });
+        }
+
+        private async Task SetSupportHistorySummaryQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spendHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            var btcValue = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BtcSatoshiAmount);
+
+            var definition = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, isSpended, spendHeight, height, hasColoredData, btcValue);
+            await _collection.Indexes.CreateOneAsync(definition, new CreateIndexOptions { Background = false, Name = "SupportSummaryHistory" });
+        }
+
+        private async Task SetSupportGetReceivedQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var height = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+
+            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, height, isSpended);
+            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetReceived" });
+        }
+
+        private async Task SetSupportGetSpendedQueryIndex()
+        {
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.DestinationAddress);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.IsSpended);
+
+            var supportGetSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(address, spentTxInputBlockHeight, isSpended);
+            await _collection.Indexes.CreateOneAsync(supportGetSpended, new CreateIndexOptions { Background = false, Name = "SupportGetSpended" });
+        }
+
+        private async Task SetSupportAssetsStatsBlocksWithChangesQueryIndex()
+        {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, spentTxInputBlockHeight);
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "AssetsStatsBlocksWithChanges",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
+                };
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
+
+        private async Task SetSupportAssetsStatsAddressGroupingQueryIndex()
+        {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
+            var address = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.DestinationAddress);
+            var quantity = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.Quantity);
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, isSpended, address, quantity);
+
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsAddressGrouping",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true)
+                };
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
+
+        private async Task SetSupportAssetsStatsTransactionsQueryIndex()
+        {
+            var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
+            var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
+            var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
+
+            var txId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.TransactionId);
+            var spendedTxId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.SpendedInTxId);
+
+            var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, spentTxInputBlockHeight, spendedTxId);
+            var outputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, txId);
+
+            var hasColoredDataFilterExpression =
+                Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.ColoredData.HasColoredData, true);
+
+            await _collection.Indexes.CreateOneAsync(inputsCombineIndex,
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsTransactionsInputs",
+                    PartialFilterExpression = hasColoredDataFilterExpression
+                });
+
+            await _collection.Indexes.CreateOneAsync(outputsCombineIndex,
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportAssetStatsTransactionsOutputs",
+                    PartialFilterExpression = hasColoredDataFilterExpression
+                });
+        }
+
+        private async Task SetSupportSpendedBlockHeightIndex()
+        {
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
+            var spendedBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.BlockHeight);
+
+            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(isSpended, spendedBlockHeight);
+
+            var indexOpt =
+                new CreateIndexOptions<TransactionOutputMongoEntity>
+                {
+                    Background = true,
+                    Name = "SupportSpendedBlockHeightIndex",
+                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.SpendTxInput.IsSpended, true)
+                };
+
+            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
+        }
+
+
+        #endregion
     }
 
     public class TransactionOutputMongoEntity: ITransactionOutput
