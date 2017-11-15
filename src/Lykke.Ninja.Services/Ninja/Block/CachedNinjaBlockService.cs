@@ -41,7 +41,6 @@ namespace Lykke.Ninja.Services.Ninja.Block
 
         private async Task<INinjaBlockHeader> Get(string blockFeature, int cacheTimeMinutes = 10)
         {
-
             if (_cache.IsSet(blockFeature))
             {
                 return _cache.Get<INinjaBlockHeader>(blockFeature);

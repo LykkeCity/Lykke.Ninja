@@ -55,7 +55,7 @@ namespace Lykke.Ninja.Repositories
                 .As<IScanNotFoundsCommandProducer>();
 
             ioc.Register(p =>
-                    new UnconfirmedBalanceChangesCommandProducer(new AzureQueueExt(settings.Db.DataConnString,
+                    new UnconfirmedBalanceChangesCommandProducer(()=> new AzureQueueExt(settings.Db.DataConnString,
                         QueueNames.SynchronizeChanges)))
                 .As<IUnconfirmedBalanceChangesCommandProducer>();
         }

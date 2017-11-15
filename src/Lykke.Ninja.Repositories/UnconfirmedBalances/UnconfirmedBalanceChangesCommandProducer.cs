@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using AzureStorage.Queue;
 using Common;
 using Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges;
@@ -7,9 +8,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 {
     public class UnconfirmedBalanceChangesCommandProducer: IUnconfirmedBalanceChangesCommandProducer
     {
-        private readonly IQueueExt _queue;
+        private readonly Func<IQueueExt> _queue;
 
-        public UnconfirmedBalanceChangesCommandProducer(IQueueExt queue)
+        public UnconfirmedBalanceChangesCommandProducer(Func<IQueueExt> queue)
         {
             _queue = queue;
         }
@@ -18,12 +19,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         {
             var msg = new BalanceChangeSynchronizeCommandContext();
 
-            await _queue.PutRawMessageAsync(msg.ToJson());
+            await _queue().PutRawMessageAsync(msg.ToJson());
         }
 
         public async Task<bool> IsQueueFull()
         {
-            return await _queue.Count() > 5;
+            return await _queue().Count() > 5;
         } 
     }
 }
