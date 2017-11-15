@@ -14,12 +14,12 @@ namespace Lykke.Ninja.Web.Controllers
     [Route("balances")]
     public class AddressSummaryController : Controller
     {
-        private readonly INinjaBlockService _ninjaBlockService;
+        private readonly ICachedNinjaBlockService _ninjaBlockService;
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly BaseSettings _baseSettings;
         private readonly IUnconfirmedBalanceChangesRepository _unconfirmedBalanceChangesRepository;
 
-        public AddressSummaryController(INinjaBlockService ninjaBlockService, 
+        public AddressSummaryController(ICachedNinjaBlockService ninjaBlockService, 
             ITransactionOutputRepository outputRepository, 
             BaseSettings baseSettings, IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository)
         {
@@ -148,7 +148,7 @@ namespace Lykke.Ninja.Web.Controllers
             }
 
 
-            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor, withRetry: false);
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor);
 
             return blockHeader?.BlockHeight;
         }

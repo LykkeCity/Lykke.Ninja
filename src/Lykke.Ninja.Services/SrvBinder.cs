@@ -26,8 +26,7 @@ using Lykke.Ninja.Services.Ninja.Transaction;
 using Lykke.Ninja.Services.PaseBlockCommand;
 using Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges;
 using Lykke.Ninja.Services.UnconfirmedTransactions.Statuses;
-using NBitcoin;
-using NBitcoin.RPC;
+using Common.Cache;
 
 namespace Lykke.Ninja.Services
 {
@@ -61,6 +60,12 @@ namespace Lykke.Ninja.Services
 
             ioc.RegisterType<BitcoinRpcClientFactory>().As<IBitcoinRpcClientFactory>();
 
+            ioc.Register(p =>
+                {
+                    var context = p.Resolve<IComponentContext>();
+                    return new CachedNinjaBlockService(new MemoryCacheManager(), context.Resolve<INinjaBlockService>());
+                }
+            ).As<ICachedNinjaBlockService>().SingleInstance();
 
             ioc.RegisterInstance(settings.UsedNetwork()).AsSelf();
             ioc.RegisterType<BitcoinRpcClient>().As<IBitcoinRpcClient>();

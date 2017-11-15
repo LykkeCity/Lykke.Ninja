@@ -15,10 +15,10 @@ namespace Lykke.Ninja.Web.Controllers
     public class AssetStatsController:Controller
     {
         private readonly IAssetStatsService _assetStatsService;
-        private readonly INinjaBlockService _ninjaBlockService;
+        private readonly ICachedNinjaBlockService _ninjaBlockService;
 
-        public AssetStatsController(IAssetStatsService assetStatsService, 
-            INinjaBlockService ninjaBlockService)
+        public AssetStatsController(IAssetStatsService assetStatsService,
+            ICachedNinjaBlockService ninjaBlockService)
         {
             _assetStatsService = assetStatsService;
             _ninjaBlockService = ninjaBlockService;
@@ -97,7 +97,7 @@ namespace Lykke.Ninja.Web.Controllers
             }
 
 
-            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor, withRetry: false);
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor);
 
             return blockHeader?.BlockHeight;
         }

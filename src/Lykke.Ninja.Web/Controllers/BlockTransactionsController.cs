@@ -13,11 +13,11 @@ namespace Lykke.Ninja.Web.Controllers
     public class BlockTransactionsController: Controller
     {
         private readonly ITransactionOutputRepository _transactionOutputRepository;
-        private readonly INinjaBlockService _ninjaBlockService;
+        private readonly ICachedNinjaBlockService _ninjaBlockService;
         private readonly Network _network;
 
-        public BlockTransactionsController(ITransactionOutputRepository transactionOutputRepository, 
-            INinjaBlockService ninjaBlockService, 
+        public BlockTransactionsController(ITransactionOutputRepository transactionOutputRepository,
+            ICachedNinjaBlockService ninjaBlockService, 
             Network network)
         {
             _transactionOutputRepository = transactionOutputRepository;
@@ -28,7 +28,7 @@ namespace Lykke.Ninja.Web.Controllers
         [HttpGet("blocks/{block}/transactions")]
         public async Task<TransactionsViewModel> GetByBlock(string block, [FromQuery] bool colored = true)
         {
-            var getTip = _ninjaBlockService.GetTip(false);
+            var getTip = _ninjaBlockService.GetTip();
             var blockHeight = await GetBlockHeight(block);
             
             var getSpended = _transactionOutputRepository.GetSpendedByBlock(blockHeight);
@@ -47,7 +47,7 @@ namespace Lykke.Ninja.Web.Controllers
                 return result;
             }
             
-            var blockHeader = await _ninjaBlockService.GetBlockHeader(blockFeature, withRetry: false);
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(blockFeature);
 
             if (blockHeader != null)
             {

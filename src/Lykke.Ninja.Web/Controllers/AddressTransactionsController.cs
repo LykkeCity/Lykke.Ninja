@@ -18,15 +18,15 @@ namespace Lykke.Ninja.Web.Controllers
     {
         private readonly ITransactionOutputRepository _outputRepository;
         private readonly Network _network;
-        private readonly INinjaBlockService _ninjaBlockService;
+        private readonly ICachedNinjaBlockService _ninjaBlockService;
         private readonly IBlockStatusesRepository _blockStatusesRepository;
         private readonly IUnconfirmedBalanceChangesRepository _unconfirmedBalanceChangesRepository;
         private readonly int _itemsOnAddressTransactionPage;
 
 
         public AddressTransactionsController(ITransactionOutputRepository outputRepository,
-            Network network, 
-            INinjaBlockService ninjaBlockService,
+            Network network,
+            ICachedNinjaBlockService ninjaBlockService,
             IBlockStatusesRepository blockStatusesRepository,
             IUnconfirmedBalanceChangesRepository unconfirmedBalanceChangesRepository,
             BaseSettings baseSettings)
@@ -70,7 +70,7 @@ namespace Lykke.Ninja.Web.Controllers
         {
             var bitcoinAddress = BitcoinAddressHelper.GetBitcoinAddress(address, _network);
 
-            var getNinjaTop = _ninjaBlockService.GetTip(withRetry:false);
+            var getNinjaTop = _ninjaBlockService.GetTip();
             var itemsToSkip = ContiniationBinder.GetItemsToSkipFromContinuationToke(continuation);
             
             Task<IEnumerable<ITransactionOutput>> getSpended;
@@ -168,7 +168,7 @@ namespace Lykke.Ninja.Web.Controllers
             }
 
 
-            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor, withRetry: false);
+            var blockHeader = await _ninjaBlockService.GetBlockHeader(descriptor);
 
             return blockHeader?.BlockHeight;
         }
