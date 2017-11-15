@@ -1,80 +1,51 @@
 ﻿using System;
 using NBitcoin;
+using QBitNinja.Client.Models;
 
 namespace Lykke.Ninja.Services.Ninja
 {
     public class BitcoinAddressHelper
     {
-        public static BitcoinAddress GetBitcoinAddress(string base58, Network network)
-        {
-            if (IsBitcoinColoredAddress(base58, network))
-            {
-                return new BitcoinColoredAddress(base58, network).Address;
-            }
-
-            if (IsBitcoinPubKeyAddress(base58, network))
-            {
-                return new BitcoinPubKeyAddress(base58, network);
-            }
-
-
-
-            if (IsBitcoinScriptAddress(base58, network))
-            {
-                return new BitcoinScriptAddress(base58, network);
-            }
-
-            throw new Exception("Invalid base58 address");
-        }
-
-        public static bool IsBitcoinColoredAddress(string base58, Network network)
+        public static BitcoinAddress GetBitcoinAddress(string data, Network network)
         {
             try
             {
-                var notUsed = new BitcoinColoredAddress(base58, network);
-
-                return true;
+                var b58 = Network.Parse<IBase58Data>(data, network);
+                if (b58 != null)
+                {
+                    if (b58 is BitcoinAddress)
+                    {
+                        return (BitcoinAddress)b58;
+                    }
+                    if (b58 is BitcoinColoredAddress)
+                    {
+                        return ((BitcoinColoredAddress)b58).Address;
+                    }
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
+            catch (FormatException) { }
 
-        public static bool IsBitcoinPubKeyAddress(string base58, Network network)
-        {
             try
             {
-                var notUsed = new BitcoinPubKeyAddress(base58, network);
+                var b32 = Network.Parse<IBech32Data>(data, null);
+                if (b32 != null)
+                {
+                    switch (b32.Type)
+                    {
+                        case Bech32Type.WITNESS_PUBKEY_ADDRESS:
+                        case Bech32Type.WITNESS_SCRIPT_ADDRESS:
+                            return (BitcoinAddress)b32;
+                        default:
+                            throw new FormatException("Invalid bech32 string");
+                    }
 
-                return true;
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
+            catch (FormatException) { }
+            throw new FormatException("Not a base58 or bech32");
+            
         }
 
-        public static bool IsBitcoinScriptAddress(string base58, Network network)
-        {
-            try
-            {
-                var notUsed = new BitcoinScriptAddress(base58, network);
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-
-        public static bool IsAddress(string base58, Network network)
-        {
-            return IsBitcoinColoredAddress(base58, network) ||
-                   IsBitcoinPubKeyAddress(base58, network) ||
-                   IsBitcoinScriptAddress(base58, network);
-        }
+        
     }
 }

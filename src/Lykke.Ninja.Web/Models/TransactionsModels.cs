@@ -216,28 +216,11 @@ namespace Lykke.Ninja.Web.Models
         {
             try
             {
-                IBase58Data b58 = Network.Parse<IBase58Data>(address, network);
-                switch (b58.Type)
-                {
-                    case Base58Type.SCRIPT_ADDRESS:
-                    case Base58Type.PUBKEY_ADDRESS:
-                        return ((BitcoinAddress)b58).ScriptPubKey.ToHex();
-                    case Base58Type.SECRET_KEY:
-                        return ((BitcoinSecret)b58).ScriptPubKey.ToHex();
-                    case Base58Type.COLORED_ADDRESS:
-                        return ((BitcoinColoredAddress)b58).ScriptPubKey.ToHex();
-                    case Base58Type.EXT_SECRET_KEY:
-                        return ((BitcoinExtKey)b58).ScriptPubKey.ToHex();
-                    case Base58Type.EXT_PUBLIC_KEY:
-                        return ((BitcoinExtPubKey)b58).ScriptPubKey.ToHex();
-                    default:
-                        return null;
-                }
+                return BitcoinAddressHelper.GetBitcoinAddress(address, network).ScriptPubKey.ToHex();
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                return null;
             }
 
         }
