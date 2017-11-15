@@ -671,17 +671,25 @@ namespace Lykke.Ninja.Repositories.Transactions
         {
             await EnsureQueryIndexes();
 
-            var data = await _collection.AsQueryable(_defaultAggregateOptions)
+            var getblockHeights = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
-                .OrderBy(p=>p.BlockHeight)  //force to use AssetsStatsBlocksWithChanges index
-                .ThenBy(p=>p.SpendTxInput.BlockHeight) //force to use AssetsStatsBlocksWithChanges index
-                .Select(p => new { h = p.BlockHeight, sp = p.SpendTxInput.BlockHeight })
+                .Select(p => p.BlockHeight)
+                .Distinct()
                 .ToListAsync();
 
-            return data
-                .Select(p=> new []{ p.h, p.sp })
-                .SelectMany(p => p)
+
+            var getblockSpendedHeights = _collection.AsQueryable(_defaultAggregateOptions)
+                .Where(p => p.ColoredData.HasColoredData)
+                .Where(p => assetIds.Contains(p.ColoredData.AssetId))
+                .Select(p => p.SpendTxInput.BlockHeight)
+                .Distinct()
+                .ToListAsync();
+
+            await Task.WhenAll(getblockSpendedHeights, getblockSpendedHeights);
+
+
+            return getblockHeights.Result.Union(getblockSpendedHeights.Result)
                 .Distinct()
                 .Where(p => p != 0)
                 .OrderByDescending(p => p)
@@ -748,8 +756,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 SetSupportGetSpendedQueryIndex(),
                 SetSupportAssetsStatsBlocksWithChangesQueryIndex(),
                 SetSupportAssetsStatsAddressGroupingQueryIndex(),
-                SetSupportAssetsStatsTransactionsQueryIndex(),
-                SetSupportSpendedBlockHeightIndex()
+                SetSupportAssetsStatsTransactionsQueryIndex()
             };
 
             await Task.WhenAll(setIndexes);
@@ -888,24 +895,6 @@ namespace Lykke.Ninja.Repositories.Transactions
                     Name = "SupportAssetStatsTransactionsOutputs",
                     PartialFilterExpression = hasColoredDataFilterExpression
                 });
-        }
-
-        private async Task SetSupportSpendedBlockHeightIndex()
-        {
-            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
-            var spendedBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.SpendTxInput.BlockHeight);
-
-            var combineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(isSpended, spendedBlockHeight);
-
-            var indexOpt =
-                new CreateIndexOptions<TransactionOutputMongoEntity>
-                {
-                    Background = true,
-                    Name = "SupportSpendedBlockHeightIndex",
-                    PartialFilterExpression = Builders<TransactionOutputMongoEntity>.Filter.Eq(p => p.SpendTxInput.IsSpended, true)
-                };
-
-            await _collection.Indexes.CreateOneAsync(combineIndex, indexOpt);
         }
 
 
