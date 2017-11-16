@@ -570,7 +570,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(output => assetIds.Contains(output.ColoredData.AssetId));
 
-            var inputsQuery = query;
+            var inputsQuery = query.Where(p=>p.SpendTxInput.IsSpended);
             var outputsQuery = query;
 
             if (minBlockHeight != null)
@@ -681,6 +681,7 @@ namespace Lykke.Ninja.Repositories.Transactions
 
             var getblockSpendedHeights = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => p.ColoredData.HasColoredData)
+                .Where(p => p.SpendTxInput.IsSpended)
                 .Where(p => assetIds.Contains(p.ColoredData.AssetId))
                 .Select(p => p.SpendTxInput.BlockHeight)
                 .Distinct()
@@ -867,6 +868,7 @@ namespace Lykke.Ninja.Repositories.Transactions
         private async Task SetSupportAssetsStatsTransactionsQueryIndex()
         {
             var hasColoredData = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.ColoredData.HasColoredData);
+            var isSpended = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.IsSpended);
             var asset = Builders<TransactionOutputMongoEntity>.IndexKeys.Ascending(p => p.ColoredData.AssetId);
             var blockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.BlockHeight);
             var spentTxInputBlockHeight = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.BlockHeight);
@@ -874,7 +876,7 @@ namespace Lykke.Ninja.Repositories.Transactions
             var txId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.TransactionId);
             var spendedTxId = Builders<TransactionOutputMongoEntity>.IndexKeys.Descending(p => p.SpendTxInput.SpendedInTxId);
 
-            var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, spentTxInputBlockHeight, spendedTxId);
+            var inputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, isSpended, asset, spentTxInputBlockHeight, spendedTxId);
             var outputsCombineIndex = Builders<TransactionOutputMongoEntity>.IndexKeys.Combine(hasColoredData, asset, blockHeight, txId);
 
             var hasColoredDataFilterExpression =
@@ -884,7 +886,7 @@ namespace Lykke.Ninja.Repositories.Transactions
                 new CreateIndexOptions<TransactionOutputMongoEntity>
                 {
                     Background = true,
-                    Name = "SupportAssetStatsTransactionsInputs",
+                    Name = "SupportAssetStatsTransactionsSpendedInputs",
                     PartialFilterExpression = hasColoredDataFilterExpression
                 });
 
