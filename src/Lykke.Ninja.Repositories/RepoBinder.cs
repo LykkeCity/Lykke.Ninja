@@ -53,11 +53,6 @@ namespace Lykke.Ninja.Repositories
                     new ScanNotFoundsCommandProducer(new AzureQueueExt(settings.Db.DataConnString,
                         QueueNames.ScanNotFounds)))
                 .As<IScanNotFoundsCommandProducer>();
-
-            ioc.Register(p =>
-                    new UnconfirmedBalanceChangesCommandProducer(()=> new AzureQueueExt(settings.Db.DataConnString,
-                        QueueNames.SynchronizeChanges)))
-                .As<IUnconfirmedBalanceChangesCommandProducer>();
         }
 
         private static void BindMongoCollections(this ContainerBuilder ioc, BaseSettings settings)

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Common.Extensions;
 using Common.Log;
@@ -16,49 +17,67 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
         private readonly IBitcoinRpcClient _client;
         private readonly IUnconfirmedStatusesSinchronizeService _statusesSinchronizeService;
         private readonly IConsole _console;
-        private readonly IUnconfirmedBalanceChangesCommandProducer _balanceChangesCommandProducer;
+        private readonly IUnconfirmedBalanceChangesSinchronizeService _balanceChangesSinchronizeService;
+        private readonly ILog _log;
 
         public MemPoolScannerFunctions(IBitcoinRpcClient client,
             IUnconfirmedStatusesSinchronizeService statusesSinchronizeService,
             IConsole console,
-            IUnconfirmedBalanceChangesCommandProducer balanceChangesCommandProducer)
+            IUnconfirmedBalanceChangesSinchronizeService balanceChangesSinchronizeService, 
+            ILog log)
         {
             _client = client;
             _statusesSinchronizeService = statusesSinchronizeService;
             _console = console;
-            _balanceChangesCommandProducer = balanceChangesCommandProducer;
+            _balanceChangesSinchronizeService = balanceChangesSinchronizeService;
+            _log = log;
         }
 
-        [TimerTrigger("00:00:10")]
-        public async Task ScanUnconfirmed()
+        [TimerTrigger("00:01:00")]
+        public async Task SyncMempoolTransactions()
         {
-            WriteConsole($"{nameof(ScanUnconfirmed)} started");
+            await ScanMempoolTransactions().WithTimeout(5 * 60 * 1000);
 
-	        await ScanUnconfirmedInner().WithTimeout(20 * 60 * 1000);
-
-			WriteConsole($"{nameof(ScanUnconfirmed)} done");
+            await SynchronizeChanges().WithTimeout(20 * 60 * 1000);
         }
 
-        private async Task ScanUnconfirmedInner()
-		{
-			WriteConsole($"{nameof(ScanUnconfirmed)}. Check queue is full started");
-			if (await _balanceChangesCommandProducer.IsQueueFull())
-			{
-				WriteConsole($"{nameof(ScanUnconfirmed)} Queue is full");
-				return;
-	        }
+        private async Task ScanMempoolTransactions()
+        {
+            WriteConsole($"{nameof(ScanMempoolTransactions)} started");
 
-			WriteConsole($"{nameof(ScanUnconfirmed)}. GetUnconfirmedTransactionIds started");
+			WriteConsole($"{nameof(ScanMempoolTransactions)}. GetUnconfirmedTransactionIds started");
 			var txIds = (await _client.GetUnconfirmedTransactionIds()).ToList();
-            WriteConsole($"{nameof(ScanUnconfirmed)}. GetUnconfirmedTransactionIds :: found {txIds.Count} unconfirmedTxs");
+            WriteConsole($"{nameof(ScanMempoolTransactions)}. GetUnconfirmedTransactionIds :: found {txIds.Count} unconfirmedTxs");
 
             var synchronizePlan =
                 await _statusesSinchronizeService.GetStatusesSynchronizePlan(txIds.Select(p => p.ToString()));
             if (synchronizePlan.TxIdsToAdd.Any() || synchronizePlan.TxIdsToRemove.Any())
             {
                 await _statusesSinchronizeService.Synchronize(synchronizePlan);
-                await _balanceChangesCommandProducer.ProduceSynchronizeCommand();
             }
+
+            WriteConsole($"{nameof(ScanMempoolTransactions)} done");
+        }
+
+        private async Task SynchronizeChanges()
+        {
+            WriteConsole($"{nameof(SynchronizeChanges)} started");
+
+            try
+            {
+                var synchronizePlan = await _balanceChangesSinchronizeService.GetBalanceChangesSynchronizePlan();
+
+                WriteConsole($"Synchronyze started {synchronizePlan.TxIdsToRemove.Count()} items to remove, {synchronizePlan.TxIdsToAdd.Count()} items to add");
+
+                await _balanceChangesSinchronizeService.Synchronyze(synchronizePlan);
+
+                WriteConsole($"{nameof(SynchronizeChanges)} done");
+            }
+            catch (Exception e)
+            {
+                await _log.WriteErrorAsync(nameof(MemPoolScannerFunctions), nameof(SynchronizeChanges), null, e);
+            }
+
         }
 
         private void WriteConsole(string message)
