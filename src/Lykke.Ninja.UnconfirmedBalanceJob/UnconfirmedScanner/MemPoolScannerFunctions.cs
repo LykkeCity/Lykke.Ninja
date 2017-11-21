@@ -33,7 +33,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
             _log = log;
         }
 
-        [TimerTrigger("00:01:00")]
+        [TimerTrigger("00:02:00")]
         public async Task SyncMempoolTransactions()
         {
             await ScanMempoolTransactions().WithTimeout(5 * 60 * 1000);
