@@ -263,7 +263,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                 {
                     foundInputs[foundOutput.Id] = foundOutput;
                 }
-            } while (foundInputs.Count != allInputIds.Count && counter <= 1);
+            } while (foundInputs.Count != allInputIds.Count && counter <= 2);
 
 
 
