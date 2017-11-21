@@ -569,29 +569,22 @@ namespace Lykke.Ninja.Repositories.Transactions
             var query = _collection.AsQueryable(_defaultAggregateOptions)
                 .Where(p => p.ColoredData.HasColoredData)
                 .Where(output => assetIds.Contains(output.ColoredData.AssetId));
-
-            var inputsQuery = query.Where(p=>p.SpendTxInput.IsSpended);
+            
             var outputsQuery = query;
 
             if (minBlockHeight != null)
             {
-                inputsQuery = inputsQuery.Where(p => p.SpendTxInput.BlockHeight >= minBlockHeight);
                 outputsQuery = outputsQuery.Where(p => p.BlockHeight >= minBlockHeight);
             }
-
-            var inputsTxs = inputsQuery
-                .OrderByDescending(p => p.SpendTxInput.BlockHeight)
-                .Select(p => p.SpendTxInput.SpendedInTxId)
-                .ToListAsync();
 
             var outputsTxs = outputsQuery
                 .OrderByDescending(p => p.BlockHeight)
                 .Select(p => p.TransactionId)
                 .ToListAsync();
 
-            await Task.WhenAll(inputsTxs, outputsTxs);
+            await Task.WhenAll(outputsTxs);
 
-            return inputsTxs.Result.Union(outputsTxs.Result)
+            return outputsTxs.Result
                 .Where(p=> p!= null)
                 .Distinct()
                 .ToList()
