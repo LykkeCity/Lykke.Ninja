@@ -678,19 +678,9 @@ namespace Lykke.Ninja.Repositories.Transactions
                 .Distinct()
                 .ToListAsync();
 
-
-            var getblockSpendedHeights = _collection.AsQueryable(_defaultAggregateOptions)
-                .Where(p => p.ColoredData.HasColoredData)
-                .Where(p => p.SpendTxInput.IsSpended)
-                .Where(p => assetIds.Contains(p.ColoredData.AssetId))
-                .Select(p => p.SpendTxInput.BlockHeight)
-                .Distinct()
-                .ToListAsync();
-
-            await Task.WhenAll(getblockSpendedHeights, getblockSpendedHeights);
-
-
-            return getblockHeights.Result.Union(getblockSpendedHeights.Result)
+            await Task.WhenAll(getblockHeights);
+            
+            return getblockHeights.Result
                 .Distinct()
                 .Where(p => p != 0)
                 .OrderByDescending(p => p)
