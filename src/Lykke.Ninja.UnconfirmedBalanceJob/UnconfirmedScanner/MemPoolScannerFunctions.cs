@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Extensions;
 using Common.Log;
@@ -36,13 +37,14 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
         [TimerTrigger("00:02:00")]
         public async Task SyncMempoolTransactions()
         {
-            await ScanMempoolTransactions().WithTimeout(5 * 60 * 1000);
+            await ScanMempoolTransactions();
 
-            await SynchronizeChanges().WithTimeout(20 * 60 * 1000);
+            await SynchronizeChanges();
         }
 
         private async Task ScanMempoolTransactions()
         {
+
             WriteConsole($"{nameof(ScanMempoolTransactions)} started");
 
 			WriteConsole($"{nameof(ScanMempoolTransactions)}. GetUnconfirmedTransactionIds started");
@@ -51,9 +53,18 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 
             var synchronizePlan =
                 await _statusesSinchronizeService.GetStatusesSynchronizePlan(txIds.Select(p => p.ToString()));
+
             if (synchronizePlan.TxIdsToAdd.Any() || synchronizePlan.TxIdsToRemove.Any())
             {
-                await _statusesSinchronizeService.Synchronize(synchronizePlan);
+                var cancellationTokenSource = new CancellationTokenSource(delay: TimeSpan.FromMinutes(5));
+                try
+                {
+                    await _statusesSinchronizeService.Synchronize(synchronizePlan, cancellationTokenSource.Token);
+                }
+                catch 
+                {
+                    cancellationTokenSource.Cancel();
+                }
             }
 
             WriteConsole($"{nameof(ScanMempoolTransactions)} done");
@@ -68,8 +79,17 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
                 var synchronizePlan = await _balanceChangesSinchronizeService.GetBalanceChangesSynchronizePlan();
 
                 WriteConsole($"Synchronyze started {synchronizePlan.TxIdsToRemove.Count()} items to remove, {synchronizePlan.TxIdsToAdd.Count()} items to add");
+                var cancellationTokenSource = new CancellationTokenSource(delay: TimeSpan.FromMinutes(20));
+                try
+                {
 
-                await _balanceChangesSinchronizeService.Synchronyze(synchronizePlan);
+                    await _balanceChangesSinchronizeService.Synchronyze(synchronizePlan, cancellationTokenSource.Token);
+                }
+                catch 
+                {
+                    cancellationTokenSource.Cancel();
+                    throw;
+                }
 
                 WriteConsole($"{nameof(SynchronizeChanges)} done");
             }

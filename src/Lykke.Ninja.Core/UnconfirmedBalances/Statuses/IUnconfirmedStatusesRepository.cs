@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NBitcoin;
 
@@ -58,14 +59,15 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
 
     public interface IUnconfirmedStatusesRepository
     {
-        Task Upsert(IEnumerable<ITransactionStatus> items);
-        Task SetInsertStatus(IEnumerable<string> txIds, InsertProcessStatus status);
-        Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status);
-        Task Remove(IEnumerable<string> txIds, RemoveProcessStatus status);
+        Task Upsert(IEnumerable<ITransactionStatus> items, CancellationToken cancellationToken);
+        Task SetInsertStatus(IEnumerable<string> txIds, InsertProcessStatus status, CancellationToken cancellationToken);
+        Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status, CancellationToken cancellationToken);
+        Task Remove(IEnumerable<string> txIds, RemoveProcessStatus status, CancellationToken cancellationToken);
         Task<IEnumerable<string>> GetAllTxIds();
         Task<long> GetAllTxCount();
         Task<IEnumerable<string>> GetNotRemovedTxIds(params InsertProcessStatus[] status);
         Task<long> GetNotRemovedTxCount(params InsertProcessStatus[] status);
         Task<IEnumerable<string>> GetRemovedTxIds(params RemoveProcessStatus[] status);
+        Task UpdateExpiration(IEnumerable<string> txIds, CancellationToken cancellationToken);
     }
 }

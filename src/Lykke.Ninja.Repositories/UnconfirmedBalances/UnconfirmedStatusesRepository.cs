@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Ninja.Core.Settings;
@@ -29,7 +30,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 		}
 
 
-        public  async Task Upsert(IEnumerable<ITransactionStatus> items)
+        public  async Task Upsert(IEnumerable<ITransactionStatus> items, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
@@ -40,11 +41,11 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                         TransactionStatusMongoEntity.Create(p))
                     { IsUpsert = true });
 
-                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
+                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false }, cancellationToken);
             }
         }
 
-        public async Task SetInsertStatus(IEnumerable<string> txIds, InsertProcessStatus status)
+        public async Task SetInsertStatus(IEnumerable<string> txIds, InsertProcessStatus status, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
@@ -54,13 +55,13 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue).Set(p=>p.Changed, DateTime.Now));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.InsertProcessStatus, updatedStatusValue).Set(p => p.Changed, DateTime.Now), cancellationToken: cancellationToken);
             }
 
             WriteConsole($"{nameof(SetInsertStatus)} {status.ToString()} done");
         }
 
-        public async Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status)
+        public async Task SetRemovedProcessingStatus(IEnumerable<string> txIds, RemoveProcessStatus status, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
@@ -68,18 +69,19 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             {
                 var updatedStatusValue = (int)status;
                 await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
-                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue).Set(p => p.Changed, DateTime.Now));
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.RemoveProcessStatus, updatedStatusValue).Set(p => p.Changed, DateTime.Now), 
+                    cancellationToken: cancellationToken);
             }
         }
 
-        public async Task Remove(IEnumerable<string> txIds, RemoveProcessStatus status)
+        public async Task Remove(IEnumerable<string> txIds, RemoveProcessStatus status, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
             if (txIds.Any())
             {
                 var numStatus = (int) status;
-                await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<TransactionStatusMongoEntity>.Update.Set(p => p.Removed, true).Set(p => p.RemoveProcessStatus, numStatus));
+                await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<TransactionStatusMongoEntity>.Update.Set(p => p.Removed, true).Set(p => p.RemoveProcessStatus, numStatus), cancellationToken: cancellationToken);
             }
         }
 
@@ -123,6 +125,18 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                 .Where(p => numStatuses.Contains(p.RemoveProcessStatus))
                 .Where(p => p.Removed)
                 .Select(p => p.TxId).ToListAsync();
+        }
+
+        public async Task UpdateExpiration(IEnumerable<string> txIds, CancellationToken cancellationToken)
+        {
+            await EnsureCollectionPrepared();
+
+            if (txIds.Any())
+            {
+                await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId),
+                    Builders<TransactionStatusMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow),
+                    cancellationToken: cancellationToken);
+            }
         }
 
         private Task EnsureCollectionPrepared()

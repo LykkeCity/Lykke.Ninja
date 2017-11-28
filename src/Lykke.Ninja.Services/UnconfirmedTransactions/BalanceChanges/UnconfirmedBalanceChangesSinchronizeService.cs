@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Ninja.Core.Bitcoin;
@@ -168,10 +169,10 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
         #region Synchronyze
 
-        public async Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan)
+        public async Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan, CancellationToken cancellationToken)
         {
-            var insertChanges = InsertChanges(synchronizePlan.TxIdsToAdd);
-            var removeChanges = RemoveChanges(synchronizePlan.TxIdsToRemove);
+            var insertChanges = InsertChanges(synchronizePlan.TxIdsToAdd, cancellationToken);
+            var removeChanges = RemoveChanges(synchronizePlan.TxIdsToRemove, cancellationToken);
 
             await Task.WhenAll(removeChanges, insertChanges);
             
@@ -179,29 +180,31 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
         #region RemoveChanges
 
-        private async Task RemoveChanges(IEnumerable<string> txIds)
+        private async Task RemoveChanges(IEnumerable<string> txIds, CancellationToken cancellationToken)
         {
-            await _balanceChangesRepository.Remove(txIds);
-            await _unconfirmedStatusesRepository.SetRemovedProcessingStatus(txIds, RemoveProcessStatus.Processed);
+            await _balanceChangesRepository.Remove(txIds, cancellationToken);
+            await _unconfirmedStatusesRepository.SetRemovedProcessingStatus(txIds, RemoveProcessStatus.Processed, cancellationToken);
         }
         
         #endregion
 
         #region InsertChanges
 
-        private async Task InsertChanges(IEnumerable<string> txIds)
+        private async Task InsertChanges(IEnumerable<string> txIds, CancellationToken cancellationToken)
         {
             var notFoundInputs = new List<GroupedTransactionInputs>();
             foreach (var batch in txIds.Batch(100, p => p.ToList()))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} started");
 
                 var rawTxs = (await _bitcoinRpcClient.GetRawTransactions(batch.Select(uint256.Parse))).ToDictionary(p => p.GetHash().ToString());
 
                 var failedToRetrieveFromBitcoinClient = batch.Where(p => !rawTxs.ContainsKey(p)).ToList();
-                var insertChanges =  InsertChangesInner(rawTxs.Values);
+                var insertChanges =  InsertChangesInner(rawTxs.Values, cancellationToken);
 
-                var setFailed = _unconfirmedStatusesRepository.SetInsertStatus(failedToRetrieveFromBitcoinClient, InsertProcessStatus.Failed);
+                var setFailed = _unconfirmedStatusesRepository.SetInsertStatus(failedToRetrieveFromBitcoinClient, InsertProcessStatus.Failed, cancellationToken);
 
                 await Task.WhenAll(insertChanges, setFailed);
 
@@ -210,10 +213,12 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                 WriteConsole($"{nameof(InsertChanges)} Batch {batch.Count} done");
             }
 
-            await InsertUnconfirmedInputs(notFoundInputs);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await InsertUnconfirmedInputs(notFoundInputs, cancellationToken);
         }
 
-        private async Task<InsertChangesResult> InsertChangesInner(IEnumerable<Transaction> rawTxs)
+        private async Task<InsertChangesResult> InsertChangesInner(IEnumerable<Transaction> rawTxs, CancellationToken cancellationToken)
         {
             var getConfirmedInputs = GetConfirmedInputs(rawTxs);
             var getOutputs = GetOutputs(rawTxs);
@@ -222,10 +227,10 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
 
             var balanceChanges = getConfirmedInputs.Result.Add(getOutputs.Result);
 
-            var insertBalanceChanges = _balanceChangesRepository.Upsert(balanceChanges.FoundBalanceChanges);
+            var insertBalanceChanges = _balanceChangesRepository.Upsert(balanceChanges.FoundBalanceChanges, cancellationToken);
 
-            var setDoneStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.OkTxIds, InsertProcessStatus.Processed);
-            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed);
+            var setDoneStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.OkTxIds, InsertProcessStatus.Processed, cancellationToken);
+            var setFailedStatus = _unconfirmedStatusesRepository.SetInsertStatus(balanceChanges.FailedTxIds, InsertProcessStatus.Failed, cancellationToken);
 
             await Task.WhenAll(insertBalanceChanges, setDoneStatus, setFailedStatus);
 
@@ -286,7 +291,7 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                     inpId => inputDictionary[inpId]));
         }
 
-        private async Task InsertUnconfirmedInputs(IEnumerable<GroupedTransactionInputs> groupedTxInputs)
+        private async Task InsertUnconfirmedInputs(IEnumerable<GroupedTransactionInputs> groupedTxInputs, CancellationToken cancellationToken)
         {
             var inputTransactions = groupedTxInputs
                 .SelectMany(p => p.Inputs.Select(x => new {input = x, txId = p.TransactionId}))
@@ -303,8 +308,8 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.BalanceChanges
                 }
             }
             var insertChanges =_balanceChangesRepository.Upsert(
-                foundInputIds.Values.Select(p =>BalanceChange.CreateInput(p, inputTransactions[p.Id])));
-            var setOkStatuses = _unconfirmedStatusesRepository.SetInsertStatus(okTxIds, InsertProcessStatus.Processed);
+                foundInputIds.Values.Select(p =>BalanceChange.CreateInput(p, inputTransactions[p.Id])), cancellationToken);
+            var setOkStatuses = _unconfirmedStatusesRepository.SetInsertStatus(okTxIds, InsertProcessStatus.Processed, cancellationToken);
 
             await Task.WhenAll(insertChanges, setOkStatuses);
         }

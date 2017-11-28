@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
@@ -15,6 +16,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
     public interface IUnconfirmedBalanceChangesSinchronizeService
     {
         Task<IBalanceChangesSynchronizePlan> GetBalanceChangesSynchronizePlan();
-        Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan);
+        Task Synchronyze(IBalanceChangesSynchronizePlan synchronizePlan, CancellationToken cancellationToken);
     }
 }

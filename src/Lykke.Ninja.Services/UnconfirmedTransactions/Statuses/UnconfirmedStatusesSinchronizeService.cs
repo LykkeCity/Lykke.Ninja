@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 
@@ -44,10 +45,10 @@ namespace Lykke.Ninja.Services.UnconfirmedTransactions.Statuses
             return  StatusesSynchronizePlan.Create(existed.Distinct().ToList(), txIds.Distinct().ToList());
         }
 
-        public async Task Synchronize(IStatusesSynchronizePlan plan)
+        public async Task Synchronize(IStatusesSynchronizePlan plan, CancellationToken cancellationToken)
         {
-            var insert = _repository.Upsert(plan.TxIdsToAdd.Select(TransactionStatus.Create));
-            var update = _repository.Remove(plan.TxIdsToRemove, RemoveProcessStatus.Waiting);
+            var insert = _repository.Upsert(plan.TxIdsToAdd.Select(TransactionStatus.Create), cancellationToken);
+            var update = _repository.Remove(plan.TxIdsToRemove, RemoveProcessStatus.Waiting, cancellationToken);
 
             await Task.WhenAll(insert, update);
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
@@ -17,6 +18,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.Statuses
     public interface IUnconfirmedStatusesSinchronizeService
     {
         Task<IStatusesSynchronizePlan> GetStatusesSynchronizePlan(IEnumerable<string> txIds);
-        Task Synchronize(IStatusesSynchronizePlan plan);
+        Task Synchronize(IStatusesSynchronizePlan plan, CancellationToken cancellationToken);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Lykke.Ninja.Core.UnconfirmedBalances.Statuses;
 using NBitcoin;
@@ -36,11 +37,11 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
     public interface IUnconfirmedBalanceChangesRepository
     {
-        Task Upsert(IEnumerable<IBalanceChange> items);
+        Task Upsert(IEnumerable<IBalanceChange> items, CancellationToken cancellationToken);
 	    Task<IEnumerable<string>> GetNotRemovedTxIds();
 	    Task<long> GetNotRemovedTxCount();
-		Task Remove(IEnumerable<string> txIds);
-	    Task RemoveExcept(IEnumerable<string> txIds);
+		Task Remove(IEnumerable<string> txIds, CancellationToken cancellationToken);
+	    Task RemoveExcept(IEnumerable<string> txIds, CancellationToken cancellationToken);
 		Task<long> GetTransactionsCount(string address);
 
         Task<long> GetSpendTransactionsCount(string address);
@@ -59,6 +60,6 @@ namespace Lykke.Ninja.Core.UnconfirmedBalances.BalanceChanges
 
         Task<IEnumerable<IBalanceChange>> GetByIds(IEnumerable<string> ids);
 
-        Task UpdateExpiration(IEnumerable<string> txIds);
+        Task UpdateExpiration(IEnumerable<string> txIds, CancellationToken cancellationToken);
     }
 }

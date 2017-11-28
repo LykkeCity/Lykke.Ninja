@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Extensions;
 using Common.Log;
@@ -29,28 +30,31 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 	    [TimerTrigger("00:10:00")]
 		public async Task CheckRemoved()
 	    {
-		    try
+	        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            try
 		    {
-			    await CheckRemovedInner().WithTimeout(10 * 60 * 1000);
+			    await CheckRemovedInner(cancellationTokenSource.Token);
 			}
 		    catch (Exception e)
 		    {
-			    await _log.WriteErrorAsync(nameof(ConsystencyFunctions), nameof(CheckRemoved), null, e);
+		        cancellationTokenSource.Cancel();
+                await _log.WriteErrorAsync(nameof(ConsystencyFunctions), nameof(CheckRemoved), null, e);
 		    }
 	    }
 
-	    private async Task CheckRemovedInner()
+	    private async Task CheckRemovedInner(CancellationToken cancellationToken)
 	    {
 		    var existedTxids = await _unconfirmedStatusesRepository.GetNotRemovedTxIds(InsertProcessStatus.Processed);
-		    await _unconfirmedBalanceChangesRepository.RemoveExcept(existedTxids);
+		    await _unconfirmedBalanceChangesRepository.RemoveExcept(existedTxids, cancellationToken);
 	    }
 
 	    [TimerTrigger("00:10:00")]
 	    public async Task CheckExisted()
 	    {
-		    try
+	        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            try
 		    {
-				await CheckExistedInner().WithTimeout(10 * 60 * 1000);
+				await CheckExistedInner(cancellationTokenSource.Token);
 			}
 		    catch (Exception e)
 		    {
@@ -58,7 +62,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 		    }
 		}
 
-	    public async Task CheckExistedInner()
+	    public async Task CheckExistedInner(CancellationToken cancellationToken)
 	    {
 			var existedTxidsFromStatuses = _unconfirmedStatusesRepository.GetNotRemovedTxIds(InsertProcessStatus.Processed);
 		    var existedTxidsFromBalanceChanges = _unconfirmedBalanceChangesRepository.GetNotRemovedTxIds();
@@ -68,7 +72,7 @@ namespace Lykke.Ninja.UnconfirmedBalanceJob.UnconfirmedScanner
 		    var existedBalanceChangesTxIds = existedTxidsFromBalanceChanges.Result.Distinct().ToDictionary(p => p);
 		    var missedTxIds = existedTxidsFromStatuses.Result.Where(p => !existedBalanceChangesTxIds.ContainsKey(p));
 
-		    await _unconfirmedStatusesRepository.SetInsertStatus(missedTxIds, InsertProcessStatus.Waiting); // shall be processed on next update balance changes iteration
+		    await _unconfirmedStatusesRepository.SetInsertStatus(missedTxIds, InsertProcessStatus.Waiting, cancellationToken); // shall be processed on next update balance changes iteration
 	    }
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Ninja.Core.Settings;
@@ -32,7 +33,7 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
         }
 
 
-        public async Task Upsert(IEnumerable<IBalanceChange> items)
+        public async Task Upsert(IEnumerable<IBalanceChange> items, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
@@ -46,7 +47,9 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
                         BalanceChangeMongoEntity.Create(p))
                     { IsUpsert = true });
 
-                await _collection.BulkWriteAsync(updates, new BulkWriteOptions { IsOrdered = false });
+                await _collection.BulkWriteAsync(updates, 
+                    new BulkWriteOptions { IsOrdered = false }, 
+                    cancellationToken: cancellationToken);
             }
 
             WriteConsole($"{nameof(Upsert)} {items.Count()} items done");
@@ -73,18 +76,22 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
 				.CountAsync();
 		}
 
-	    public async Task Remove(IEnumerable<string> txIds)
+	    public async Task Remove(IEnumerable<string> txIds, CancellationToken cancellationToken)
         {
             await EnsureCollectionPrepared();
 
-	        await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
+	        await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), 
+                Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true), 
+                cancellationToken:cancellationToken);
 		}
 
-	    public async Task RemoveExcept(IEnumerable<string> txIds)
+	    public async Task RemoveExcept(IEnumerable<string> txIds, CancellationToken cancellationToken)
 		{
 			await EnsureCollectionPrepared();
 
-			await _collection.UpdateManyAsync(p => !txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true));
+			await _collection.UpdateManyAsync(p => !txIds.Contains(p.TxId), 
+                Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Removed, true), 
+                cancellationToken: cancellationToken);
 		}
 
 
@@ -238,12 +245,12 @@ namespace Lykke.Ninja.Repositories.UnconfirmedBalances
             return result;
         }
 
-	    public async Task UpdateExpiration(IEnumerable<string> txIds)
+	    public async Task UpdateExpiration(IEnumerable<string> txIds, CancellationToken cancellationToken)
 		{
 			await EnsureCollectionPrepared();
 			if (txIds.Any())
 			{
-				await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow));
+                await _collection.UpdateManyAsync(p => txIds.Contains(p.TxId), Builders<BalanceChangeMongoEntity>.Update.Set(p => p.Changed, DateTime.UtcNow), cancellationToken: cancellationToken);
 			}
 		}
 
